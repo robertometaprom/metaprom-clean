@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -17,8 +19,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    // REDUCE IMAGE SIZE
 
     const resizedBuffer = Buffer.from(
       await uploadedFile.arrayBuffer()
@@ -59,19 +59,19 @@ Do NOT invent another property.
             {
               type: "input_image",
               image_url: `data:image/jpeg;base64,${base64Image}`,
-              detail: "low"
+              detail: "low",
             },
           ],
         },
       ],
     });
-const imageData = response.output
-  ?.filter(
-    (item): item is { type: string; result: string[] } =>
-      item.type === "image_generation_call"
-  )
-  ?.flatMap((item) => item.result);
-    
+
+    const imageData = response.output
+      ?.filter(
+        (item: any) =>
+          item.type === "image_generation_call"
+      )
+      ?.flatMap((item: any) => item.result);
 
     if (!imageData || !imageData[0]) {
       return Response.json(

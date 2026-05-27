@@ -65,10 +65,13 @@ Do NOT invent another property.
         },
       ],
     });
-
-    const imageData = response.output
-      ?.filter((item: any) => item.type === "image_generation_call")
-      ?.flatMap((item: any) => item.result);
+const imageData = response.output
+  ?.filter(
+    (item): item is { type: string; result: string[] } =>
+      item.type === "image_generation_call"
+  )
+  ?.flatMap((item) => item.result);
+    
 
     if (!imageData || !imageData[0]) {
       return Response.json(

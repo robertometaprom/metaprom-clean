@@ -14,25 +14,26 @@ export default function Hero() {
       >
 
         <div className="mb-6 inline-flex rounded-full border border-purple-500/20 bg-purple-500/10 px-4 py-2 text-sm text-purple-300">
-          Your AI copilot for campaigns
+          ✨ IA para vendedores de ecommerce
         </div>
 
         <h1 className="text-7xl font-bold leading-none tracking-tight">
 
-          Create ads
+          Convierte fotos
           <br />
-          that sell.
+          normales en imágenes
           <br />
 
           <span className="bg-gradient-to-r from-purple-300 to-purple-600 bg-clip-text text-transparent">
-            10x faster.
+            que venden.
           </span>
 
         </h1>
 
         <p className="mt-8 max-w-2xl text-xl leading-9 text-white/70">
-          Generate ad copies, AI images and viral videos
-          ready for Instagram, TikTok and Facebook.
+          Incrementa tus ventas sustancialmente con fotografías profesionales
+          para Mercado Libre, Amazon, Shopify y tiendas online generadas con IA
+          en segundos.
         </p>
 
         {/* INPUT */}
@@ -41,12 +42,12 @@ export default function Hero() {
           <div className="flex flex-col gap-3 md:flex-row">
 
             <input
-              placeholder="Describe your product..."
+              placeholder="Describe cómo quieres mejorar tus imágenes..."
               className="flex-1 bg-transparent px-4 py-4 text-white outline-none placeholder:text-white/30"
             />
 
             <button className="rounded-2xl bg-purple-600 px-8 py-4 font-medium transition hover:bg-purple-500">
-              Generate ✨
+              Mejorar fotos 🚀
             </button>
 
           </div>
@@ -54,9 +55,9 @@ export default function Hero() {
         </div>
 
         <div className="mt-6 flex gap-6 text-sm text-white/50">
-          <span>No credit card</span>
-          <span>Results in seconds</span>
-          <span>AI-powered</span>
+          <span>Prueba gratuita</span>
+          <span>Resultados en segundos</span>
+          <span>Hasta 20 imágenes por proyecto</span>
         </div>
 
       </motion.div>
@@ -70,24 +71,28 @@ export default function Hero() {
       >
 
         {/* Main Glow */}
-        <div className="
+        <div
+          className="
           absolute
           h-[700px]
           w-[700px]
           rounded-full
           bg-purple-600/20
           blur-3xl
-        " />
+        "
+        />
 
         {/* Secondary Glow */}
-        <div className="
+        <div
+          className="
           absolute
           h-[500px]
           w-[500px]
           rounded-full
           bg-cyan-500/10
           blur-3xl
-        " />
+        "
+        />
 
         {/* Background Logo Atmosphere */}
         <img

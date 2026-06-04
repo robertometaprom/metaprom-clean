@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -16,7 +17,7 @@ export default function Home() {
 
   const handleUpload = async () => {
     if (!file) {
-      alert("Select an image first");
+      alert("Selecciona una imagen primero");
       return;
     }
 
@@ -36,12 +37,11 @@ export default function Home() {
       if (data.image) {
         setResult(data.image);
       } else {
-        alert(data.error || "No image returned");
+        alert(data.error || "No se recibió ninguna imagen");
       }
-
     } catch (error) {
       console.error(error);
-      alert("Enhancement failed");
+      alert("Error al mejorar la imagen");
     }
 
     setLoading(false);
@@ -60,9 +60,9 @@ export default function Home() {
 
         <Hero />
 
-        <Pricing />
-
-        <DashboardPreview />
+        {/* TEMPORALMENTE OCULTOS */}
+        {/* <Pricing /> */}
+        {/* <DashboardPreview /> */}
 
         <Transformation />
 
@@ -73,17 +73,19 @@ export default function Home() {
         <section className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 py-32 text-center">
 
           <div className="space-y-6">
+
             <p className="text-sm uppercase tracking-[0.35em] text-purple-400">
-              LIVE AI PROPERTY ENHANCEMENT
+              LIVE AI PHOTO ENHANCEMENT
             </p>
 
             <h2 className="text-5xl font-bold md:text-7xl">
-              Try Metaprom AI
+              Prueba Metaprom AI
             </h2>
 
             <p className="mx-auto max-w-3xl text-lg text-white/70 md:text-xl">
-              Upload a real property photo and instantly transform it into a premium marketing-ready visual powered by AI.
+              Sube una o varias imágenes y conviértelas en fotografías profesionales para ecommerce usando IA.
             </p>
+
           </div>
 
           <div className="w-full max-w-2xl rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
@@ -91,7 +93,8 @@ export default function Home() {
             <div className="flex flex-col items-center gap-6">
 
               <label className="cursor-pointer rounded-2xl border border-white/20 bg-white/10 px-8 py-5 text-lg transition hover:bg-white/20">
-                Select Property Photo
+
+                Seleccionar imagen
 
                 <input
                   type="file"
@@ -103,6 +106,7 @@ export default function Home() {
                     }
                   }}
                 />
+
               </label>
 
               {file && (
@@ -116,10 +120,11 @@ export default function Home() {
                 disabled={loading}
                 className="rounded-2xl bg-white px-10 py-5 text-lg font-semibold text-black transition hover:scale-105 disabled:opacity-50"
               >
-                {loading ? "Enhancing with AI..." : "Enhance with AI"}
+                {loading ? "Mejorando imagen..." : "Mejorar con IA"}
               </button>
 
             </div>
+
           </div>
 
           {result && (
@@ -128,8 +133,9 @@ export default function Home() {
               {/* BEFORE */}
 
               <div className="space-y-4">
+
                 <p className="text-sm uppercase tracking-[0.3em] text-white/40">
-                  Before
+                  ANTES
                 </p>
 
                 <div className="overflow-hidden rounded-[28px] border border-white/10">
@@ -139,13 +145,15 @@ export default function Home() {
                     className="w-full"
                   />
                 </div>
+
               </div>
 
               {/* AFTER */}
 
               <div className="space-y-4">
+
                 <p className="text-sm uppercase tracking-[0.3em] text-purple-400">
-                  AI Enhanced
+                  DESPUÉS
                 </p>
 
                 <div className="overflow-hidden rounded-[28px] border border-purple-500/20">
@@ -155,6 +163,7 @@ export default function Home() {
                     className="w-full"
                   />
                 </div>
+
               </div>
 
             </div>

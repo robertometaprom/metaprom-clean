@@ -47,46 +47,63 @@ export default function Navbar() {
               "
             />
 
-            <span className="
-              text-3xl
-              font-semibold
-              tracking-tight
-              text-white
-            ">
-              Metaprom AI
-            </span>
+            <div className="flex flex-col">
+
+              <span
+                className="
+                  text-3xl
+                  font-semibold
+                  tracking-tight
+                  text-white
+                "
+              >
+                Metaprom AI
+              </span>
+
+              <span
+                className="
+                  text-sm
+                  text-white/50
+                "
+              >
+                For Ecommerce
+              </span>
+
+            </div>
 
           </div>
 
           {/* CENTER */}
-          <div className="
-            hidden
-            md:flex
-            items-center
-            gap-10
-            text-white/70
-            text-lg
-          ">
+          <div
+            className="
+              hidden
+              md:flex
+              items-center
+              gap-10
+              text-white/70
+              text-lg
+            "
+          >
 
             <a
               href="#features"
               className="transition hover:text-white"
             >
-              Features
+              Funciones
             </a>
 
             <a
-              href="#pricing"
+              href="#examples"
               className="transition hover:text-white"
             >
-              Pricing
+              Ejemplos
             </a>
 
             <a
-              href="#dashboard"
+              href="#projects"
               className="transition hover:text-white"
             >
-              Dashboard
+              Mis proyectos
             </a>
 
           </div>
@@ -94,13 +111,15 @@ export default function Navbar() {
           {/* RIGHT */}
           <div className="relative z-10 flex items-center gap-5">
 
-            <button className="
-              text-lg
-              text-white/70
-              transition
-              hover:text-white
-            ">
-              Login
+            <button
+              className="
+                text-lg
+                text-white/70
+                transition
+                hover:text-white
+              "
+            >
+              Iniciar sesión
             </button>
 
             <button
@@ -119,7 +138,7 @@ export default function Navbar() {
                 hover:scale-105
               "
             >
-              Get Started
+              Probar gratis
             </button>
 
           </div>

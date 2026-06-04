@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 export default function PhotoEnhancement() {
 return ( <section className="relative overflow-hidden px-6 py-32">
 
-```
+
   {/* Background Glow */}
   <div className="absolute inset-0 overflow-hidden">
 
@@ -229,7 +229,7 @@ return ( <section className="relative overflow-hidden px-6 py-32">
   </div>
 
 </section>
-```
+
 
 );
 }

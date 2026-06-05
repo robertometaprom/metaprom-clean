@@ -56,7 +56,7 @@ return ( <section className="relative overflow-hidden px-6 py-32">
         tracking-tight
         text-white
       ">
-        Las malas fotos
+        Mejorar tus fotos
         <br />
 
         <span className="
@@ -66,7 +66,7 @@ return ( <section className="relative overflow-hidden px-6 py-32">
           bg-clip-text
           text-transparent
         ">
-          reducen ventas.
+          Aumenta por Mucho tus VENTAS.
         </span>
 
       </h2>
@@ -79,9 +79,8 @@ return ( <section className="relative overflow-hidden px-6 py-32">
         leading-8
         text-white/60
       ">
-        Mejora fotografías de productos para Mercado Libre,
-        Amazon y ecommerce sin fotógrafos, estudios ni
-        software complicado.
+        Convierte fotos normales de producto en imágenes profesionales
+listas para Mercado Libre, Amazon, Shopify y ecommerce.
       </p>
 
     </motion.div>
@@ -130,21 +129,21 @@ return ( <section className="relative overflow-hidden px-6 py-32">
 
         <div className="relative aspect-[4/3] bg-black">
 
-          <img
-            src="/before-room.jpg"
-            alt="Antes"
-            className="
-              h-full
-              w-full
-              object-cover
-            "
-          />
+ <img
+  src="/chocolate-before.jpeg"
+  alt="Antes"
+  className="
+    h-full
+    w-full
+    object-cover
+  "
+/>
 
         </div>
 
         <div className="p-6 text-white/50 leading-7">
-          Imagen original sin optimización visual ni
-          preparación para marketplaces o ecommerce.
+         Fotografía tomada con celular, sin edición ni
+preparación para ecommerce.
         </div>
 
       </motion.div>
@@ -190,7 +189,7 @@ return ( <section className="relative overflow-hidden px-6 py-32">
         <div className="relative aspect-[4/3] bg-black">
 
           <img
-            src="/after-room.png"
+            src="/chocolate-after.png"
             alt="Después"
             className="
               h-full
@@ -217,9 +216,9 @@ return ( <section className="relative overflow-hidden px-6 py-32">
         </div>
 
         <div className="p-6 text-white/70 leading-7">
-          Imagen optimizada con IA para una presentación
-          más profesional y orientada a generar confianza
-          y conversiones.
+Imagen optimizada con Metaprom AI.
+Fondo blanco profesional, iluminación de estudio
+y presentación premium para ecommerce.
         </div>
 
       </motion.div>

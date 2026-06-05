@@ -58,15 +58,13 @@ export default function Home() {
           <div className="absolute left-1/2 top-[-220px] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
         </div>
 
-        <Hero />
+<PhotoEnhancement />
 
-        {/* TEMPORALMENTE OCULTOS */}
-        {/* <Pricing /> */}
-        {/* <DashboardPreview /> */}
-
-        <Transformation />
-
-        <PhotoEnhancement />
+{/* TEMPORALMENTE OCULTOS */}
+{/* <Hero /> */}
+{/* <Pricing /> */}
+{/* <DashboardPreview /> */}
+{/* <Transformation /> */}
 
         {/* LIVE AI DEMO */}
 

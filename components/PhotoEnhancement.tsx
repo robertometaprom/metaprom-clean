@@ -162,7 +162,7 @@ export default function PhotoEnhancement() {
               <img
                 src="/chocolate-before.jpeg"
                 alt="Antes"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
 
             </div>

@@ -1,60 +1,120 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 type Platform = "amazon" | "mercado-libre" | "shopify" | "instagram" | "custom" | null;
 
 export default function Page() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [enhancedImage, setEnhancedImage] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [enhancedImages, setEnhancedImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const previewUrlsRef = useRef<string[]>([]);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    previewUrlsRef.current = previewUrls;
+  }, [previewUrls]);
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
       }
     };
-  }, [previewUrl]);
+  }, []);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-    setSelectedFile(file);
-    setEnhancedImage(null);
-    setPreviewUrl(file ? URL.createObjectURL(file) : null);
+    const newFiles = Array.from(event.target.files ?? []);
+    if (newFiles.length === 0) return;
+
+    const newPreviewUrls = newFiles.map((file) => URL.createObjectURL(file));
+    setSelectedFiles((prev) => [...prev, ...newFiles]);
+    setEnhancedImages([]);
+    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+    event.target.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, idx) => idx !== index));
+    setPreviewUrls((prev) => {
+      const removedUrl = prev[index];
+      if (removedUrl) {
+        URL.revokeObjectURL(removedUrl);
+      }
+      return prev.filter((_, idx) => idx !== index);
+    });
+  };
+
+  const clearAll = () => {
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    setCompletedCount(0);
+    setElapsedTime(0);
+    setCurrentFileName(null);
   };
 
   const handleGenerate = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
     try {
       setLoading(true);
-      setEnhancedImage(null);
+      setEnhancedImages([]);
+      setCompletedCount(0);
+      setElapsedTime(0);
+      setCurrentFileName(null);
 
-      const formData = new FormData();
-      formData.append("image", selectedFile);
+      const startTime = Date.now();
+      timerRef.current = window.setInterval(() => {
+        setElapsedTime(Math.round((Date.now() - startTime) / 1000));
+      }, 1000);
 
-      const response = await fetch("/api/enhancement", {
-        method: "POST",
-        body: formData,
-      });
+      for (const file of selectedFiles) {
+        setCurrentFileName(file.name);
+        const formData = new FormData();
+        formData.append("image", file);
 
-      const data = await response.json();
+        const response = await fetch("/api/enhancement", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (data.image) {
-        setEnhancedImage(data.image);
-      } else {
-        alert(data.error || "Enhancement failed");
+        const data = await response.json();
+
+        if (data.image) {
+          setEnhancedImages((prev) => [...prev, data.image]);
+        } else {
+          alert(data.error || "Enhancement failed");
+        }
+
+        setCompletedCount((prev) => prev + 1);
       }
+
+      setCurrentFileName(null);
     } catch (error) {
       console.error(error);
       alert("Error enhancing image");
     } finally {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       setLoading(false);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
   const platforms = [
@@ -235,11 +295,12 @@ export default function Page() {
                         htmlFor="file-upload"
                         className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/10"
                       >
-                        Select an image
+                        Add Images
                       </label>
                       <input
                         id="file-upload"
                         type="file"
+                        multiple
                         accept="image/*"
                         onChange={handleFileChange}
                         className="sr-only"
@@ -251,9 +312,9 @@ export default function Page() {
                       <p className="text-sm text-white/60">
                         Pick a photo from your computer and preview it before generating.
                       </p>
-                      {selectedFile ? (
+                      {selectedFiles.length > 0 ? (
                         <p className="truncate text-sm text-white/80">
-                          Selected file: <span className="font-medium text-white">{selectedFile.name}</span>
+                          Selected images: <span className="font-medium text-white">{selectedFiles.length}</span>
                         </p>
                       ) : (
                         <p className="text-sm text-white/50">No file selected yet.</p>
@@ -261,27 +322,98 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!selectedFile || loading}
-                    onClick={handleGenerate}
-                    className={`rounded-2xl px-6 py-3 text-sm font-semibold transition ${
-                      selectedFile && !loading
-                        ? "bg-purple-500 text-white hover:bg-purple-400"
-                        : "cursor-not-allowed bg-white/10 text-white/40"
-                    }`}
-                  >
-                    {loading ? "Generating..." : "Generate"}
-                  </button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      disabled={selectedFiles.length === 0 || loading}
+                      onClick={handleGenerate}
+                      className={`rounded-2xl px-6 py-3 text-sm font-semibold transition ${
+                        selectedFiles.length > 0 && !loading
+                          ? "bg-purple-500 text-white hover:bg-purple-400"
+                          : "cursor-not-allowed bg-white/10 text-white/40"
+                      }`}
+                    >
+                      {loading ? "Generating..." : "Generate"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedFiles.length === 0 || loading}
+                      onClick={clearAll}
+                      className={`rounded-2xl border px-6 py-3 text-sm font-semibold transition ${
+                        selectedFiles.length > 0 && !loading
+                          ? "border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10"
+                          : "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
+                      }`}
+                    >
+                      Clear All
+                    </button>
+                  </div>
                 </div>
 
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm text-white/70">
+                      <span>
+                        {completedCount}/{selectedFiles.length} completed
+                      </span>
+                      <span>
+                        {currentFileName
+                          ? `Processing: ${currentFileName}`
+                          : loading
+                          ? "Finalizing..."
+                          : "Ready"}
+                      </span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-purple-500 transition-all"
+                        style={{
+                          width: `${selectedFiles.length ? (completedCount / selectedFiles.length) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-white/50">
+                      <span>Elapsed: {formatTime(elapsedTime)}</span>
+                      <span>
+                        Remaining: {completedCount === 0
+                          ? "--"
+                          : formatTime(
+                              Math.max(
+                                0,
+                                Math.round(
+                                  (elapsedTime / completedCount) *
+                                    (selectedFiles.length - completedCount),
+                                ),
+                              ),
+                            )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-3">
-                  {previewUrl ? (
-                    <img
-                      src={previewUrl}
-                      alt="Selected preview"
-                      className="h-64 w-full rounded-3xl object-contain bg-black/30"
-                    />
+                  {previewUrls.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {previewUrls.map((url, index) => (
+                        <div key={index} className="relative overflow-hidden rounded-3xl">
+                          <img
+                            src={url}
+                            alt={`Selected preview ${index + 1}`}
+                            className="h-40 w-full rounded-3xl object-cover bg-black/30"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-sm text-white transition hover:bg-black/80"
+                          >
+                            <span className="sr-only">Remove image {index + 1}</span>
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="flex h-64 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/20 px-4 text-center text-sm text-white/50">
                       Image preview will appear here once you select a file.
@@ -289,16 +421,21 @@ export default function Page() {
                   )}
                 </div>
               </div>
-              {enhancedImage && (
+              {enhancedImages.length > 0 && (
                 <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6">
                   <p className="mb-4 text-sm uppercase tracking-[0.2em] text-purple-400">
-                    Enhanced result
+                    Enhanced results
                   </p>
-                  <img
-                    src={enhancedImage}
-                    alt="Enhanced result"
-                    className="w-full rounded-3xl object-contain bg-black/20"
-                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {enhancedImages.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`Enhanced result ${index + 1}`}
+                        className="w-full rounded-3xl object-contain bg-black/20"
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

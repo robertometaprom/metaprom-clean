@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import OpenAI from "openai";
+import sharp from "sharp";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const supportedImageTypes = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
 
 export async function POST(req: Request) {
   try {
@@ -20,11 +30,38 @@ export async function POST(req: Request) {
       );
     }
 
-    const resizedBuffer = Buffer.from(
-      await uploadedFile.arrayBuffer()
-    );
+    const mimeType = uploadedFile.type;
+    if (mimeType && !supportedImageTypes.has(mimeType)) {
+      return Response.json(
+        {
+          error:
+            "Unsupported image format. Please upload JPEG, PNG, WEBP, HEIC, or HEIF.",
+        },
+        { status: 415 }
+      );
+    }
 
-    const base64Image = resizedBuffer.toString("base64");
+    const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
+
+    let normalizedBuffer: Buffer;
+    try {
+      normalizedBuffer = await sharp(uploadBuffer)
+        .rotate()
+        .toColorspace("srgb")
+        .jpeg({ quality: 90, force: true })
+        .toBuffer();
+    } catch (sharpError) {
+      console.error("Image normalization failed:", sharpError);
+      return Response.json(
+        {
+          error:
+            "Unable to normalize the uploaded image. Please try a different photo.",
+        },
+        { status: 415 }
+      );
+    }
+
+    const base64Image = normalizedBuffer.toString("base64");
 
     const response = await openai.responses.create({
       model: "gpt-4.1",

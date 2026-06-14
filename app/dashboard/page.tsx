@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-
-type Platform = "amazon" | "mercado-libre" | "shopify" | "instagram" | "custom" | null;
+import type { Mode } from "../../lib/prompts";
 
 export default function Page() {
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(null);
+  const [selectedMode, setSelectedMode] = useState<Mode>("amazon");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [enhancedImages, setEnhancedImages] = useState<string[]>([]);
+  const [aiInstructions, setAiInstructions] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -80,6 +80,8 @@ export default function Page() {
         setCurrentFileName(file.name);
         const formData = new FormData();
         formData.append("image", file);
+        formData.append("mode", selectedMode);
+        formData.append("aiInstructions", aiInstructions);
 
         const response = await fetch("/api/enhancement", {
           method: "POST",
@@ -144,7 +146,7 @@ export default function Page() {
       ),
     },
     {
-      id: "shopify",
+      id: "premium",
       name: "Shopify",
       icon: (
         <svg className="h-16 w-16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -158,7 +160,7 @@ export default function Page() {
       ),
     },
     {
-      id: "instagram",
+      id: "social",
       name: "Instagram",
       icon: (
         <svg className="h-16 w-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -246,24 +248,24 @@ export default function Page() {
                   key={platform.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedPlatform(platform.id as Platform)}
+                  onClick={() => setSelectedMode(platform.id as Mode)}
                   className={`group relative overflow-hidden rounded-2xl border px-6 py-8 text-center transition-all duration-300 ${
-                    selectedPlatform === platform.id
+                    selectedMode === platform.id
                       ? "border-purple-500 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 shadow-lg shadow-purple-500/20"
                       : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
                   }`}
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className={`text-white transition-colors ${selectedPlatform === platform.id ? "text-purple-400" : "group-hover:text-cyan-400"}`}>
+                    <div className={`text-white transition-colors ${selectedMode === platform.id ? "text-purple-400" : "group-hover:text-cyan-400"}`}>
                       {platform.icon}
                     </div>
                     <p className="text-sm font-semibold">{platform.name}</p>
                   </div>
 
                   {/* Selection Indicator */}
-                  {selectedPlatform === platform.id && (
+                  {selectedMode === platform.id && (
                     <motion.div
-                      layoutId="selectedPlatform"
+                      layoutId="selectedMode"
                       className="absolute inset-0 rounded-2xl border-2 border-purple-400"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -319,13 +321,37 @@ export default function Page() {
                       ) : (
                         <p className="text-sm text-white/50">No file selected yet.</p>
                       )}
+                    <div className="mt-3">
+                      <p className="mb-2 text-sm font-semibold text-white">Selected Mode</p>
+                      <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+                        Selected Mode: <span className="font-semibold text-white">
+                          {platforms.find((option) => option.id === selectedMode)?.name ?? "Amazon"}
+                        </span>
+                      </p>
+
+                      <label className="mt-4 mb-2 block text-sm font-semibold text-white">AI Instructions</label>
+                      <textarea
+                        value={aiInstructions}
+                        onChange={(e) => setAiInstructions(e.target.value)}
+                        placeholder={
+                          selectedMode === "custom"
+                            ? `Describe exactly what you want...\n\nExamples:\n* Create a luxury product advertisement\n* Place the product in a modern kitchen\n* Create a Christmas campaign image\n* Create a Black Friday promotion\n* Create a 3D product render\n* Create a cinematic commercial image`
+                            : "Additional instructions (optional)"
+                        }
+                        className="mt-1 h-24 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40"
+                      />
+                    </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
-                      disabled={selectedFiles.length === 0 || loading}
+                      disabled={
+                        selectedFiles.length === 0 ||
+                        loading ||
+                        (selectedMode === "custom" && aiInstructions.trim().length === 0)
+                      }
                       onClick={handleGenerate}
                       className={`rounded-2xl px-6 py-3 text-sm font-semibold transition ${
                         selectedFiles.length > 0 && !loading

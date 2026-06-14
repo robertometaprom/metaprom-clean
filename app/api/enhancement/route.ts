@@ -2,6 +2,7 @@
 
 import OpenAI from "openai";
 import sharp from "sharp";
+import { buildPrompt, Mode } from "../../../lib/prompts";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -43,6 +44,19 @@ export async function POST(req: Request) {
 
     const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 
+    const rawMode = (formData.get("mode") as string | null) ?? "amazon";
+    const mode = (rawMode as Mode) ?? "amazon";
+    const aiInstructions = (formData.get("aiInstructions") as string) ?? "";
+
+    if (mode === "custom" && aiInstructions.trim().length === 0) {
+      return Response.json(
+        {
+          error: "Custom mode requires AI Instructions.",
+        },
+        { status: 400 },
+      );
+    }
+
     let normalizedBuffer: Buffer;
     try {
       normalizedBuffer = await sharp(uploadBuffer)
@@ -63,6 +77,8 @@ export async function POST(req: Request) {
 
     const base64Image = normalizedBuffer.toString("base64");
 
+    const promptText = buildPrompt(mode, aiInstructions);
+
     const response = await openai.responses.create({
       model: "gpt-4.1",
 
@@ -75,23 +91,10 @@ export async function POST(req: Request) {
       input: [
         {
           role: "user",
-          content: [
+            content: [
             {
               type: "input_text",
-              text: `
-Enhance this exact real estate property photo.
-
-Improve:
-- lighting
-- realism
-- sharpness
-- luxury feel
-- architectural aesthetics
-- premium interior design presentation
-
-Keep the SAME room and SAME composition.
-Do NOT invent another property.
-`,
+              text: promptText,
             },
             {
               type: "input_image",

@@ -3,6 +3,14 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { Mode } from "../../lib/prompts";
+import {
+  fetchBibliotecaProjects,
+  createBibliotecaProject,
+  fetchBibliotecaAssets,
+  saveBibliotecaAssets,
+  type BibliotecaAsset,
+  type BibliotecaProject,
+} from "../../lib/biblioteca";
 
 export default function Page() {
   const [selectedMode, setSelectedMode] = useState<Mode>("amazon");
@@ -14,6 +22,14 @@ export default function Page() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [projects, setProjects] = useState<BibliotecaProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectAssets, setProjectAssets] = useState<BibliotecaAsset[]>([]);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [savingAssets, setSavingAssets] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
+  const [projectLoading, setProjectLoading] = useState(false);
   const previewUrlsRef = useRef<string[]>([]);
   const timerRef = useRef<number | null>(null);
 
@@ -28,6 +44,10 @@ export default function Page() {
         window.clearInterval(timerRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    loadProjects();
   }, []);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -61,6 +81,65 @@ export default function Page() {
     setCurrentFileName(null);
   };
 
+  const loadProjects = async () => {
+    try {
+      setProjectLoading(true);
+      const projects = await fetchBibliotecaProjects();
+      setProjects(projects);
+      if (projects.length > 0) {
+        const projectId = projects[0].id;
+        setSelectedProjectId(projectId);
+        await loadProjectAssets(projectId);
+      }
+    } catch (error) {
+      console.error(error);
+      setProjectError("Unable to load Biblioteca projects.");
+    } finally {
+      setProjectLoading(false);
+    }
+  };
+
+  const loadProjectAssets = async (projectId: string) => {
+    try {
+      setProjectLoading(true);
+      const assets = await fetchBibliotecaAssets(projectId);
+      setProjectAssets(assets);
+    } catch (error) {
+      console.error(error);
+      setProjectError("Unable to load assets for the selected project.");
+    } finally {
+      setProjectLoading(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) {
+      setProjectError("Project name cannot be empty.");
+      return;
+    }
+
+    try {
+      setProjectLoading(true);
+      const project = await createBibliotecaProject(newProjectName.trim(), newProjectDescription.trim());
+      setProjects((prev) => [project, ...prev]);
+      setSelectedProjectId(project.id);
+      setNewProjectName("");
+      setNewProjectDescription("");
+      setProjectError(null);
+      setProjectAssets([]);
+    } catch (error) {
+      console.error(error);
+      setProjectError("Unable to create project.");
+    } finally {
+      setProjectLoading(false);
+    }
+  };
+
+  const handleProjectChange = async (projectId: string) => {
+    setSelectedProjectId(projectId);
+    await loadProjectAssets(projectId);
+  };
+
   const handleGenerate = async () => {
     if (selectedFiles.length === 0) return;
 
@@ -75,6 +154,8 @@ export default function Page() {
       timerRef.current = window.setInterval(() => {
         setElapsedTime(Math.round((Date.now() - startTime) / 1000));
       }, 1000);
+
+      const generatedImages: { file: File; image: string }[] = [];
 
       for (const file of selectedFiles) {
         setCurrentFileName(file.name);
@@ -91,12 +172,37 @@ export default function Page() {
         const data = await response.json();
 
         if (data.image) {
+          generatedImages.push({ file, image: data.image });
           setEnhancedImages((prev) => [...prev, data.image]);
         } else {
           alert(data.error || "Enhancement failed");
         }
 
         setCompletedCount((prev) => prev + 1);
+      }
+
+      if (selectedProjectId && generatedImages.length > 0) {
+        const savePayload = generatedImages.map(({ file, image }) => ({
+          project_id: selectedProjectId,
+          original_name: file.name,
+          image_url: image,
+          mode: selectedMode,
+          ai_instructions: aiInstructions,
+        }));
+
+        try {
+          setSavingAssets(true);
+          await saveBibliotecaAssets(savePayload);
+          if (selectedProjectId) {
+            const refreshedAssets = await fetchBibliotecaAssets(selectedProjectId);
+            setProjectAssets(refreshedAssets);
+          }
+        } catch (saveError) {
+          console.error(saveError);
+          alert("Unable to save assets to Biblioteca.");
+        } finally {
+          setSavingAssets(false);
+        }
       }
 
       setCurrentFileName(null);
@@ -228,6 +334,115 @@ export default function Page() {
               </div>
               <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-cyan-500">
                 <span className="text-4xl font-bold">✨</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Biblioteca */}
+        <div className="mx-auto max-w-6xl px-6 pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+          >
+            <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-widest text-purple-400">
+                  Biblioteca V1
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-white">Manage your projects and saved assets</h2>
+              </div>
+              <div className="space-y-2 text-right text-sm text-white/70 md:text-right">
+                <p>{projects.length} projects loaded</p>
+                <p>{projectAssets.length} assets in selected project</p>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_0.7fr]">
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Select project</label>
+                    <select
+                      value={selectedProjectId ?? ""}
+                      onChange={(event) => handleProjectChange(event.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white"
+                    >
+                      <option value="" disabled>
+                        {projectLoading ? "Loading projects..." : "Choose a project"}
+                      </option>
+                      {projects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">New project</label>
+                    <div className="grid gap-3">
+                      <input
+                        value={newProjectName}
+                        onChange={(event) => setNewProjectName(event.target.value)}
+                        placeholder="Project name"
+                        className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white"
+                      />
+                      <input
+                        value={newProjectDescription}
+                        onChange={(event) => setNewProjectDescription(event.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateProject}
+                        disabled={projectLoading || !newProjectName.trim()}
+                        className="rounded-2xl bg-purple-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {projectLoading ? "Creating..." : "Create project"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {projectError && (
+                  <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {projectError}
+                  </p>
+                )}
+
+                <div className="rounded-3xl border border-white/10 bg-black/40 p-4">
+                  {selectedProjectId ? (
+                    <div>
+                      <p className="mb-3 text-sm font-semibold text-white">Project preview</p>
+                      {projectAssets.length > 0 ? (
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {projectAssets.map((asset) => (
+                            <div key={asset.id} className="overflow-hidden rounded-3xl border border-white/10 bg-black/50">
+                              <img
+                                src={asset.image_url}
+                                alt={asset.original_name ?? "Saved asset"}
+                                className="h-48 w-full object-cover"
+                              />
+                              <div className="space-y-1 p-3 text-sm text-white/70">
+                                <p className="font-semibold text-white">{asset.original_name ?? "Asset"}</p>
+                                <p>{asset.mode}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-white/50">
+                          No saved assets yet. Generate images and they will be saved to the selected project.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white/50">Create or select a project to start saving assets to Biblioteca.</p>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

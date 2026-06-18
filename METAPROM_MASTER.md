@@ -21,6 +21,29 @@ The platform is designed to evolve beyond images into video, marketplace assets 
 
 ---
 
+## Product Philosophy
+
+Principle:
+
+Users choose outcomes, not AI settings.
+
+Implications:
+
+* Users should select business goals and destinations.
+* Metaprom should hide unnecessary AI complexity.
+* Marketplace and platform workflows should be pre-configured whenever possible.
+* Simplicity is a competitive advantage.
+
+Examples:
+
+Instead of asking users for prompts, models, aspect ratios or technical parameters, Metaprom should ask:
+
+* Where will this be published?
+* What are you trying to sell?
+* What result do you want?
+
+---
+
 ## Project Evolution
 
 ### Origin
@@ -62,11 +85,14 @@ Completed
 * Asset storage
 * Asset preview
 * Supabase integration
+* Google OAuth authentication flow
+* Login, callback and sign-out routes
+* Supabase SSR session architecture
 
 Pending
 
-* Authentication
-* User accounts
+* User ownership (projects.user_id)
+* Row Level Security (RLS) policies
 * Asset deletion
 * Project deletion
 * Video generation workflow
@@ -88,6 +114,12 @@ AI
 
 * OpenAI
 
+Authentication
+
+* Supabase Auth
+* Google OAuth (primary sign-in method)
+* Supabase SSR (session architecture)
+
 Development Environment
 
 * Cursor (primary IDE and repository intelligence)
@@ -96,6 +128,32 @@ Development Environment
 * Codex (targeted code generation)
 
 See **AI Development Workflow** for the multi-tool development approach.
+
+See **Authentication Architecture** for ownership and security model.
+
+---
+
+## Authentication Architecture
+
+### June 2026
+
+Decision:
+
+* Google OAuth is the primary authentication method.
+* Supabase Auth is the authentication provider.
+* Supabase SSR is the session architecture.
+* Authentication and ownership are separate concerns.
+* User ownership will be enforced through projects.user_id.
+* Assets inherit ownership through their parent project.
+* Row Level Security (RLS) is the long-term security boundary.
+* Authentication was implemented in phases to avoid breaking Biblioteca.
+
+Current status:
+
+* Google OAuth flow implemented.
+* Login, callback and sign-out routes implemented.
+* Session architecture implemented.
+* Ownership (user_id) and RLS still pending.
 
 ---
 
@@ -106,6 +164,10 @@ See **AI Development Workflow** for the multi-tool development approach.
 Image enhancement should primarily function as an acquisition channel.
 
 The objective is to attract and retain users through immediate value.
+
+Rationale:
+
+* Images create immediate value and encourage adoption.
 
 Status:
 Active hypothesis.
@@ -118,8 +180,17 @@ Demand for commercial video content is already proven.
 
 Metaprom may monetize primarily through video generation and other high-value services rather than basic image enhancement.
 
+Rationale:
+
+* Videos have significantly higher perceived business value.
+* Video generation may support premium pricing, pay-per-use pricing, or marketplace-specific offerings.
+
+Relationship to H1:
+
+Image enhancement is primarily an acquisition channel. Video generation is the most likely monetization engine.
+
 Status:
-Active hypothesis.
+Hypothesis not yet validated.
 
 ---
 
@@ -129,8 +200,16 @@ The Hispanic ecommerce market may be underserved by advanced AI content tools.
 
 The opportunity is not based on language alone but on understanding the workflows, needs and purchasing behavior of Hispanic sellers.
 
+The opportunity may come from:
+
+* Simpler workflows.
+* Lower friction.
+* Localized onboarding.
+* Local payment preferences.
+* Better adaptation to the needs of Hispanic ecommerce sellers.
+
 Status:
-Requires validation.
+Requires validation through beta users.
 
 ---
 
@@ -145,8 +224,21 @@ Examples under consideration:
 * One-time purchases
 * Local payment methods
 
+Potential future payment methods:
+
+* OXXO
+* SPEI
+* Credit/Debit Cards
+* Subscription plans
+* Pay-per-generation
+* Pay-per-export
+
+Principle:
+
+Reduce payment friction whenever possible.
+
 Status:
-Requires validation.
+Unvalidated hypothesis.
 
 ---
 
@@ -191,6 +283,22 @@ Implementation:
 
 METAPROM_MASTER.md
 
+Additional observations:
+
+* Repository memory is more reliable than chat memory.
+* METAPROM_MASTER.md is the primary source of institutional knowledge.
+
+---
+
+### June 2026
+
+Development Process
+
+* Small phased deployments reduce risk.
+* Preserve working systems while introducing new architecture.
+* Diagnose before implementing.
+* Validate before optimizing.
+
 ---
 
 ### June 2026
@@ -227,6 +335,16 @@ Biblioteca asset storage works correctly.
 
 ---
 
+### June 2026
+
+Biblioteca and Authentication
+
+* Database permissions and RLS can create hidden integration issues.
+* Working software should be protected during major architectural changes.
+* Authentication, ownership and security should be implemented as separate phases.
+
+---
+
 ## AI Development Workflow
 
 ### June 2026
@@ -256,3 +374,9 @@ Current workflow:
 Principle:
 
 Use the best tool for each stage of development rather than relying on a single AI system.
+
+Summary:
+
+* ChatGPT is strongest for strategy, architecture and business decisions.
+* Cursor is strongest for repository-wide understanding and implementation.
+* Different AI tools should be used according to their strengths.

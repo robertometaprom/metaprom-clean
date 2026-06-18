@@ -90,8 +90,12 @@ AI
 
 Development Environment
 
-* Cursor
+* Cursor (primary IDE and repository intelligence)
 * GitHub
+* ChatGPT (strategy, product and architecture)
+* Codex (targeted code generation)
+
+See **AI Development Workflow** for the multi-tool development approach.
 
 ---
 

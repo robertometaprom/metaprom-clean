@@ -42,6 +42,28 @@ Instead of asking users for prompts, models, aspect ratios or technical paramete
 * What are you trying to sell?
 * What result do you want?
 
+Additional Principle:
+
+Users care about outcomes more than AI.
+
+Implications:
+
+* Visual transformation is more important than AI terminology.
+* Business value should be emphasized over technical implementation.
+* Users should see improved results, not AI complexity.
+* AI should remain largely invisible whenever possible.
+
+Observation:
+
+The customer is not purchasing AI.
+
+The customer is purchasing:
+
+* Better product presentation
+* Better advertising assets
+* Increased perceived professionalism
+* Faster content creation
+
 ---
 
 ## Project Evolution
@@ -85,9 +107,10 @@ Completed
 * Asset storage
 * Asset preview
 * Supabase integration
-* Google OAuth authentication flow
-* Login, callback and sign-out routes
-* Supabase SSR session architecture
+* Google OAuth authentication flow (validated end-to-end)
+* Google user creation verified in Supabase Auth
+* Login, callback and sign-out routes (tested)
+* Supabase SSR session architecture (validated)
 
 Pending
 
@@ -150,9 +173,10 @@ Decision:
 
 Current status:
 
-* Google OAuth flow implemented.
-* Login, callback and sign-out routes implemented.
-* Session architecture implemented.
+* Google OAuth flow implemented and validated end-to-end.
+* Google user creation successfully verified in Supabase Auth.
+* Login, callback and sign-out routes implemented and tested.
+* Supabase SSR session architecture validated.
 * Ownership (user_id) and RLS still pending.
 
 ---
@@ -168,6 +192,8 @@ The objective is to attract and retain users through immediate value.
 Rationale:
 
 * Images create immediate value and encourage adoption.
+* Images generate sharing behavior and word-of-mouth distribution.
+* Images create emotional responses based on pride, ownership and professional presentation.
 
 Status:
 Active hypothesis.
@@ -184,10 +210,13 @@ Rationale:
 
 * Videos have significantly higher perceived business value.
 * Video generation may support premium pricing, pay-per-use pricing, or marketplace-specific offerings.
+* Images and video are complementary rather than competing features.
 
 Relationship to H1:
 
-Image enhancement is primarily an acquisition channel. Video generation is the most likely monetization engine.
+Image enhancement is primarily an acquisition channel.
+
+Video generation is currently considered the most likely monetization engine.
 
 Status:
 Hypothesis not yet validated.
@@ -242,6 +271,43 @@ Unvalidated hypothesis.
 
 ---
 
+### H5 - Transformation First Acquisition
+
+Traditional software onboarding may create unnecessary friction.
+
+A potentially stronger acquisition strategy is to demonstrate value before asking users to adopt the platform.
+
+Examples:
+
+* Marketplace listings
+* Product photos
+* Restaurant products
+* Flower shops
+* Artisan products
+* Small business advertising assets
+
+Potential workflow:
+
+Public asset
+↓
+Metaprom transformation
+↓
+Immediate visual impact
+↓
+Conversation
+↓
+Beta user
+
+Principle:
+
+Show value before asking for adoption.
+
+Status:
+
+Requires beta validation.
+
+---
+
 ## Localization Strategy
 
 Decision:
@@ -264,6 +330,34 @@ Initial languages:
 Reason:
 
 Low implementation cost today and high strategic flexibility in the future.
+
+---
+
+## Beta Strategy
+
+Current objective:
+
+Acquire the first 20 beta users.
+
+Priority:
+
+Feedback is more valuable than scale during the beta phase.
+
+Current acquisition experiments:
+
+* Direct business outreach.
+* Transformation-first demonstrations.
+* Marketplace prospecting.
+* Small business outreach.
+* Before/after visual demonstrations.
+
+Principle:
+
+A small number of highly engaged users is more valuable than a large number of passive signups.
+
+Target:
+
+20 active beta users.
 
 ---
 
@@ -342,6 +436,33 @@ Biblioteca and Authentication
 * Database permissions and RLS can create hidden integration issues.
 * Working software should be protected during major architectural changes.
 * Authentication, ownership and security should be implemented as separate phases.
+
+---
+
+### June 2026
+
+Google OAuth Validation
+
+Result:
+
+Google OAuth was successfully validated end-to-end.
+
+Verified components:
+
+* Google Cloud OAuth Client
+* Supabase Google Provider
+* OAuth callback configuration
+* User creation inside Supabase Auth
+* Session persistence
+
+Outcome:
+
+Checkpoint A completed.
+
+Remaining security work:
+
+* Ownership (user_id)
+* Row Level Security (RLS)
 
 ---
 

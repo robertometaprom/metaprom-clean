@@ -8,9 +8,11 @@ import {
   createBibliotecaProject,
   fetchBibliotecaAssets,
   saveBibliotecaAssets,
+  BibliotecaAuthError,
   type BibliotecaAsset,
   type BibliotecaProject,
 } from "../../lib/biblioteca";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Page() {
   const [selectedMode, setSelectedMode] = useState<Mode>("amazon");
@@ -47,8 +49,25 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    loadProjects();
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setProjectError("Please sign in to use Biblioteca.");
+        return;
+      }
+
+      loadProjects();
+    });
   }, []);
+
+  const getBibliotecaErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof BibliotecaAuthError) {
+      return "Please sign in to use Biblioteca.";
+    }
+
+    return fallback;
+  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files ?? []);
@@ -93,7 +112,7 @@ export default function Page() {
       }
     } catch (error) {
       console.error(error);
-      setProjectError("Unable to load Biblioteca projects.");
+      setProjectError(getBibliotecaErrorMessage(error, "Unable to load Biblioteca projects."));
     } finally {
       setProjectLoading(false);
     }
@@ -106,7 +125,7 @@ export default function Page() {
       setProjectAssets(assets);
     } catch (error) {
       console.error(error);
-      setProjectError("Unable to load assets for the selected project.");
+      setProjectError(getBibliotecaErrorMessage(error, "Unable to load assets for the selected project."));
     } finally {
       setProjectLoading(false);
     }
@@ -129,7 +148,7 @@ export default function Page() {
       setProjectAssets([]);
     } catch (error) {
       console.error(error);
-      setProjectError("Unable to create project.");
+      setProjectError(getBibliotecaErrorMessage(error, "Unable to create project."));
     } finally {
       setProjectLoading(false);
     }
@@ -199,7 +218,7 @@ export default function Page() {
           }
         } catch (saveError) {
           console.error(saveError);
-          alert("Unable to save assets to Biblioteca.");
+          alert(getBibliotecaErrorMessage(saveError, "Unable to save assets to Biblioteca."));
         } finally {
           setSavingAssets(false);
         }

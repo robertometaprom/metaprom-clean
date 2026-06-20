@@ -156,16 +156,16 @@ Completed
 * Asset storage
 * Asset preview
 * Supabase integration
-* Google OAuth authentication flow (validated end-to-end)
-* Google user creation verified in Supabase Auth
-* Login, callback and sign-out routes (tested)
-* Supabase SSR session architecture (validated)
-* Project ownership via projects.user_id (application layer)
-* User-scoped project visibility and asset access validation
+* Google OAuth authentication flow
+* Login, callback and sign-out routes
+* Supabase SSR session architecture
+* Ownership layer (projects.user_id)
+* Application-level project isolation
+* RLS migration preparation
 
 Pending
 
-* Row Level Security (RLS) policies
+* Row Level Security (RLS) activation
 * Asset deletion
 * Project deletion
 * Video generation workflow
@@ -231,10 +231,15 @@ Current status:
 * Google OAuth user identity linked to projects.user_id.
 * Project visibility filtered by user ownership.
 * Asset access validated through project ownership.
+* Authenticated Supabase client used for Biblioteca operations.
 
 Remaining security work:
 
-* Row Level Security (RLS)
+* Row Level Security (RLS) activation and validation
+
+Migration prepared:
+
+* supabase/migrations/20260620120000_biblioteca_rls.sql
 
 ---
 
@@ -605,10 +610,18 @@ Biblioteca projects are now associated with authenticated users through projects
 
 Implementation:
 
-* Google OAuth user identity is linked to project ownership.
-* Projects automatically store auth.users.id in user_id.
-* Project visibility is filtered by user ownership at the application layer.
-* Asset access is validated through project ownership.
+* Google OAuth identity is linked to project ownership.
+* New projects automatically store auth.users.id in projects.user_id.
+* Project visibility is restricted through user ownership filtering.
+* Asset ownership is inherited through the parent project.
+* Biblioteca operations now use the authenticated Supabase client.
+
+Validation:
+
+* Project creation successfully stores user_id.
+* Users only see their own projects.
+* Ownership was validated end-to-end through Google OAuth.
+* Legacy projects with user_id = NULL are excluded from user views.
 
 Status:
 
@@ -618,20 +631,103 @@ Remaining security work:
 
 * Row Level Security (RLS)
 
-Lessons Learned:
+---
 
-A schema drift was discovered between the repository schema and the live Supabase schema.
+### June 2026
+
+RLS Planning Completed
+
+Observation:
+
+Ownership must be established before RLS can be safely enabled.
+
+Result:
+
+A complete RLS rollout plan and migration script were prepared for:
+
+* public.projects
+* public.assets
+
+Ownership model:
+
+auth.users
+↓
+projects.user_id
+↓
+assets.project_id
+↓
+project ownership
+
+Planned enforcement:
+
+Projects:
+
+auth.uid() = user_id
+
+Assets:
+
+Ownership inherited through parent project.
+
+Migration:
+
+supabase/migrations/20260620120000_biblioteca_rls.sql
+
+Status:
+
+Migration prepared.
+
+Pending execution and validation.
+
+---
+
+### June 2026
+
+Schema Drift Discovered
+
+Observation:
+
+The repository schema and live Supabase schema are not fully aligned.
 
 Examples:
 
-* projects.description exists in repository schema but not in live database.
-* Repository schema should be periodically reconciled with the live database.
+* projects.description exists in repository schema but not in the live database.
+* projects.id differs between repository schema and live database.
+* Repository assumptions should not be considered authoritative without verification against the live database.
 
 Impact:
 
-No critical issue.
+A project creation failure occurred when the application attempted to insert a non-existent description column.
 
-Ownership functionality is working correctly.
+Resolution:
+
+Project creation now ignores description until the schema is reconciled.
+
+Lessons Learned:
+
+Repository schema should periodically be reconciled against the live database.
+
+Status:
+
+Known technical debt.
+
+Non-critical.
+
+---
+
+### June 2026
+
+Development Rule
+
+Before major database changes:
+
+1. Compare repository schema against live Supabase schema.
+2. Validate assumptions against the live database.
+3. Deploy schema changes through migrations whenever possible.
+4. Treat the live database as the source of truth when discrepancies exist.
+
+Reason:
+
+The ownership implementation exposed schema drift between the repository and the live Supabase environment.
 
 ---
 
@@ -670,6 +766,43 @@ Status:
 Early evidence is encouraging.
 
 Requires structured beta validation.
+
+---
+
+## Session Summary - June 2026
+
+Major milestone achieved:
+
+Metaprom AI transitioned from shared project visibility to authenticated user ownership.
+
+Current architecture:
+
+Google OAuth
+↓
+Supabase Auth
+↓
+auth.users.id
+↓
+projects.user_id
+↓
+Project Ownership
+↓
+Asset Ownership
+
+Result:
+
+Metaprom AI now understands who owns each project and restricts visibility accordingly.
+
+Next Objective:
+
+Execute and validate RLS for projects and assets.
+
+Post-RLS Priorities:
+
+1. Security checkpoint completion.
+2. Video workflow implementation.
+3. Beta acquisition (20 active users target).
+4. Validation of acquisition hypotheses (H5 and H6).
 
 ---
 

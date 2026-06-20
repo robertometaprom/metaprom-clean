@@ -160,10 +160,11 @@ Completed
 * Google user creation verified in Supabase Auth
 * Login, callback and sign-out routes (tested)
 * Supabase SSR session architecture (validated)
+* Project ownership via projects.user_id (application layer)
+* User-scoped project visibility and asset access validation
 
 Pending
 
-* User ownership (projects.user_id)
 * Row Level Security (RLS) policies
 * Asset deletion
 * Project deletion
@@ -226,7 +227,14 @@ Current status:
 * Google user creation successfully verified in Supabase Auth.
 * Login, callback and sign-out routes implemented and tested.
 * Supabase SSR session architecture validated.
-* Ownership (user_id) and RLS still pending.
+* Ownership complete at the application layer.
+* Google OAuth user identity linked to projects.user_id.
+* Project visibility filtered by user ownership.
+* Asset access validated through project ownership.
+
+Remaining security work:
+
+* Row Level Security (RLS)
 
 ---
 
@@ -583,8 +591,47 @@ Checkpoint A completed.
 
 Remaining security work:
 
-* Ownership (user_id)
 * Row Level Security (RLS)
+
+---
+
+### June 2026
+
+Ownership Layer Completed
+
+Result:
+
+Biblioteca projects are now associated with authenticated users through projects.user_id.
+
+Implementation:
+
+* Google OAuth user identity is linked to project ownership.
+* Projects automatically store auth.users.id in user_id.
+* Project visibility is filtered by user ownership at the application layer.
+* Asset access is validated through project ownership.
+
+Status:
+
+Ownership complete.
+
+Remaining security work:
+
+* Row Level Security (RLS)
+
+Lessons Learned:
+
+A schema drift was discovered between the repository schema and the live Supabase schema.
+
+Examples:
+
+* projects.description exists in repository schema but not in live database.
+* Repository schema should be periodically reconciled with the live database.
+
+Impact:
+
+No critical issue.
+
+Ownership functionality is working correctly.
 
 ---
 

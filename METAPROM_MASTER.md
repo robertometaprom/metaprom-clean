@@ -64,6 +64,55 @@ The customer is purchasing:
 * Increased perceived professionalism
 * Faster content creation
 
+Additional Principle:
+
+Metaprom should sell transformation, not AI.
+
+Users should primarily experience:
+
+* Better images
+* Better videos
+* Better marketing assets
+* Better business presentation
+
+AI is the enabling technology, not the product.
+
+Implications:
+
+* Marketing should emphasize outcomes.
+* Marketing should emphasize before/after transformation.
+* Technical AI terminology should remain secondary whenever possible.
+* Users should not need AI expertise to obtain value.
+
+Observation:
+
+Customers care far more about business outcomes than about the underlying AI technology.
+
+---
+
+## Strategic Positioning
+
+### June 2026
+
+Observation:
+
+Metaprom is increasingly positioned as a business transformation platform rather than an AI platform.
+
+Customers are expected to respond primarily to:
+
+* Better product presentation
+* Better marketing materials
+* Better visual assets
+* Increased professionalism
+
+rather than to AI itself.
+
+Working Principle:
+
+The customer buys the transformation.
+
+AI is simply the mechanism that delivers it.
+
 ---
 
 ## Project Evolution
@@ -308,6 +357,54 @@ Requires beta validation.
 
 ---
 
+### H6 - Pride Driven Sharing
+
+Small business owners may voluntarily share transformed assets because the transformation improves the perceived quality of their own business.
+
+The sharing behavior is driven by pride, ownership and professional presentation rather than by a desire to promote Metaprom.
+
+Examples:
+
+* Product catalogs
+* Restaurant assets
+* Flower shops
+* Marketplace listings
+* Small business advertising materials
+
+Potential effect:
+
+Transformation
+↓
+Pride
+↓
+Sharing
+↓
+Word-of-mouth
+↓
+New prospects
+
+Principle:
+
+People share assets that make them look more professional.
+
+Observation:
+
+The user is often not sharing Metaprom.
+
+The user is sharing their own improved business image.
+
+This distinction may be important to future acquisition strategy.
+
+Relationship to H1 and H5:
+
+Pride-driven sharing may amplify acquisition through images and transformation-first outreach.
+
+Status:
+
+Requires beta validation.
+
+---
+
 ## Localization Strategy
 
 Decision:
@@ -358,6 +455,31 @@ A small number of highly engaged users is more valuable than a large number of p
 Target:
 
 20 active beta users.
+
+Additional Observation:
+
+The objective of the beta is not only user acquisition.
+
+The beta should also measure:
+
+* Sharing behavior
+* Referral behavior
+* Repeat usage
+* Word-of-mouth effects
+* Perceived business value
+
+Potential Success Metrics:
+
+* Number of beta users
+* Number of active beta users
+* Number of repeat users
+* Number of referrals
+* Number of shared transformed assets
+* Number of businesses requesting additional transformations
+
+Principle:
+
+Engagement and sharing may be more valuable than raw signup volume during the beta phase.
 
 ---
 
@@ -463,6 +585,44 @@ Remaining security work:
 
 * Ownership (user_id)
 * Row Level Security (RLS)
+
+---
+
+### June 2026
+
+Transformation First Outreach
+
+Observation:
+
+Providing an unsolicited transformation of a prospect's existing product photo may create substantially more engagement than traditional software outreach.
+
+Potential workflow:
+
+Prospect photo
+↓
+Metaprom transformation
+↓
+Immediate visual impact
+↓
+Conversation
+↓
+Beta user
+
+Rationale:
+
+The prospect does not need to imagine the value.
+
+The value is demonstrated before adoption is requested.
+
+Relationship to H5:
+
+This outreach pattern operationalizes the transformation-first acquisition hypothesis.
+
+Status:
+
+Early evidence is encouraging.
+
+Requires structured beta validation.
 
 ---
 

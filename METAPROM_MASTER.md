@@ -4,9 +4,260 @@
 
 Metaprom is an AI-powered platform focused on creating, enhancing and managing advertising assets for ecommerce sellers and brands.
 
-The long-term vision is to provide the simplest and most accessible way for sellers to transform product photos into professional commercial content.
+The long-term vision is to provide the simplest and most accessible way for sellers and businesses to manufacture professional commercial advertising content — not merely improve product photos.
 
-The platform is designed to evolve beyond images into video, marketplace assets and future content workflows.
+The platform is designed to evolve from marketplace photo optimization into a fully automated commercial content factory: images, social creatives, and video.
+
+See **Strategic Pivot – Metaprom AI Evolution (June 2026)** for the June 2026 repositioning.
+
+---
+
+## Strategic Pivot – Metaprom AI Evolution (June 2026)
+
+### Important Strategic Realization
+
+A major shift occurred in the vision of Metaprom AI.
+
+The original concept was:
+
+> Improve ecommerce product photos.
+
+The new concept is:
+
+> Manufacture commercial advertising assets.
+
+This is not a cosmetic change. It changes the size of the opportunity, the target customer, the landing page, the beta strategy, and potentially the entire business model.
+
+---
+
+### Two Different Markets
+
+#### Market A – Marketplace Optimization
+
+Target:
+
+* Mercado Libre sellers
+* Amazon sellers
+* Shopify stores
+
+Problem:
+
+* Need compliant product photos.
+* Need better product presentation.
+* Need white backgrounds and cleaner listings.
+
+Value:
+
+* Easy entry point.
+* Good beta user source.
+* Large volume market.
+
+Limitation:
+
+The customer can often find alternative ways to improve photos.
+
+The pain is real but partially solved.
+
+This market should be viewed primarily as an **acquisition channel**.
+
+---
+
+#### Market B – Advertising Content Creation
+
+Target:
+
+* TikTok sellers
+* Instagram businesses
+* YouTube Shorts creators
+* Restaurants
+* Ecommerce brands
+* Real estate agents
+* Small businesses
+
+Problem:
+
+* Need content constantly.
+* Need videos.
+* Need social media assets.
+* Need marketing materials.
+
+Value:
+
+* Higher willingness to pay.
+* More recurring demand.
+* Less commoditized.
+* Larger long-term opportunity.
+
+Key realization:
+
+The user who needs content to sell is potentially more valuable than the user who simply needs a better marketplace photo.
+
+---
+
+### New Product Positioning
+
+Old positioning:
+
+> AI photo enhancement platform.
+
+New positioning:
+
+> AI-powered advertising content factory.
+
+Metaprom AI should generate:
+
+* Product photography
+* Lifestyle images
+* Promotional banners
+* Social media creatives
+* Reels
+* TikTok videos
+* YouTube Shorts
+* Marketing assets
+
+The business moves from:
+
+> Improving photos
+
+to
+
+> Producing marketing.
+
+---
+
+### Landing Page Discovery
+
+A critical insight emerged after viewing visual mockups.
+
+The current landing page communicates:
+
+> "I am an AI platform."
+
+The new desired landing page communicates:
+
+> "Look what we can create for you."
+
+This produced a strong emotional reaction from observers.
+
+People did not react to the technology.
+
+People reacted to the outcome.
+
+Important lesson:
+
+The product sells itself visually.
+
+It should be demonstrated, not explained.
+
+---
+
+### Future Landing Philosophy
+
+Metaprom AI should look less like:
+
+* SaaS software
+* AI platform
+* Technical product
+
+And more like:
+
+* Creative studio
+* Advertising factory
+* Content generation machine
+
+The website should immediately showcase:
+
+* Before / After transformations
+* Product advertising examples
+* Social media creatives
+* Video examples
+* Vertical content
+
+Core principle:
+
+Visual impact first.
+Technical explanation second.
+
+---
+
+### Video Becomes Strategic Priority
+
+Original focus:
+
+1. Ecommerce photo enhancement
+
+New focus:
+
+1. AI-generated marketing videos
+2. Visual landing page
+3. Asset library
+4. Beta program
+
+Reason:
+
+Videos create stronger emotional reactions and larger perceived value.
+
+Photos impress.
+
+Videos create "wow" moments.
+
+Hypothesis:
+
+Videos may become the strongest commercial differentiator of Metaprom AI.
+
+---
+
+### Competitive Insight
+
+The advantage may not be the AI itself.
+
+The advantage may be:
+
+* Spanish-first experience
+* Simplicity
+* Prepaid model
+* No subscriptions required
+* Accessibility for non-technical users
+
+Core belief:
+
+Users do not want to learn AI.
+
+Users want marketing assets.
+
+---
+
+### Key Philosophy
+
+Metaprom AI should not be viewed as:
+
+> A photo enhancement tool.
+
+Metaprom AI should be viewed as:
+
+> A fully automated commercial content factory.
+
+This shift dramatically increases the size of the opportunity and better aligns with long-term business ambitions.
+
+---
+
+### Founder Insight
+
+A defining moment occurred when a visual mockup generated an immediate emotional reaction from a viewer.
+
+The viewer did not care whether the platform was real.
+
+The viewer did not understand the technology.
+
+The viewer simply reacted to the perceived outcome.
+
+This reinforced an important principle:
+
+People buy results.
+
+Not technology.
+
+Metaprom AI should therefore market outcomes, not infrastructure.
 
 ---
 
@@ -22,6 +273,8 @@ The platform is designed to evolve beyond images into video, marketplace assets 
 ---
 
 ## Product Philosophy
+
+See also: **Strategic Pivot – Metaprom AI Evolution (June 2026)** — people buy results, not technology.
 
 Principle:
 
@@ -113,6 +366,16 @@ The customer buys the transformation.
 
 AI is simply the mechanism that delivers it.
 
+### June 2026 – Strategic Pivot
+
+Metaprom is repositioning from an AI photo enhancement platform to an **AI-powered advertising content factory**.
+
+Market A (marketplace optimization) serves primarily as acquisition.
+
+Market B (advertising content creation) represents the larger long-term opportunity.
+
+Landing and marketing should demonstrate outcomes visually — creative studio, not SaaS.
+
 ---
 
 ## Project Evolution
@@ -136,12 +399,20 @@ Initial concepts explored:
 * General AI marketing assets
 * Real estate content enhancement
 
-Current focus:
+Previous focus (pre-pivot):
 
 * Ecommerce sellers
 * Marketplace-ready content
 * Product photography enhancement
-* Video generation workflows
+
+Current focus (June 2026 pivot):
+
+* AI-powered advertising content factory
+* AI-generated marketing videos (strategic priority)
+* Visual outcome-first landing experience
+* Asset library (Biblioteca)
+* Multi-segment beta (marketplace + social + real estate)
+* Marketplace photo enhancement as acquisition channel (Market A)
 
 ---
 
@@ -276,12 +547,12 @@ Rationale:
 
 Relationship to H1:
 
-Image enhancement is primarily an acquisition channel.
+Image enhancement is primarily an acquisition channel (Market A).
 
-Video generation is currently considered the most likely monetization engine.
+Video generation is currently considered the most likely monetization engine and the strongest commercial differentiator (June 2026 strategic pivot).
 
 Status:
-Hypothesis not yet validated.
+Elevated to strategic priority (June 2026 pivot). Hypothesis not yet validated in beta.
 
 ---
 
@@ -452,6 +723,30 @@ Acquire the first 20 beta users.
 Priority:
 
 Feedback is more valuable than scale during the beta phase.
+
+Do not confuse easiest users to recruit with best customers.
+
+Recommended beta structure (June 2026 pivot):
+
+Group A – Marketplace sellers:
+
+* Mercado Libre, Amazon, Shopify sellers
+* Primary role: acquisition and volume feedback
+
+Group B – Social content creators:
+
+* TikTok creators, Reels creators, social sellers
+* Primary role: test willingness to pay for content
+
+Group C – Real estate professionals:
+
+* Primary role: test adjacent vertical demand
+
+Goal:
+
+Identify where willingness to pay is highest.
+
+Avoid recruiting only Mercado Libre users — marketplace sellers optimize photos; they are not necessarily the highest-value future customers.
 
 Current acquisition experiments:
 
@@ -769,7 +1064,34 @@ Requires structured beta validation.
 
 ---
 
+### June 2026
+
+Strategic Pivot – Advertising Content Factory
+
+Observation:
+
+Metaprom's vision shifted from improving ecommerce product photos to manufacturing commercial advertising assets.
+
+Impact:
+
+* Target customer expanded beyond marketplace sellers.
+* Landing page strategy must shift from AI platform to visual outcome demonstration.
+* Beta strategy revised to test multiple segments (marketplace, social, real estate).
+* Video elevated to primary strategic differentiator.
+
+Status:
+
+Active strategic direction.
+
+---
+
 ## Session Summary - June 2026
+
+### Strategic pivot (June 2026)
+
+Metaprom repositioned from ecommerce photo enhancement to an AI-powered advertising content factory. Market A (marketplace) is acquisition; Market B (content creation) is the long-term opportunity. Landing should demonstrate outcomes visually; video is the primary strategic differentiator. Beta split into Groups A, B, and C to test willingness to pay across segments.
+
+### Ownership milestone
 
 Major milestone achieved:
 
@@ -799,10 +1121,11 @@ Execute and validate RLS for projects and assets.
 
 Post-RLS Priorities:
 
-1. Security checkpoint completion.
-2. Video workflow implementation.
-3. Beta acquisition (20 active users target).
-4. Validation of acquisition hypotheses (H5 and H6).
+1. Security checkpoint completion (RLS activation).
+2. AI-generated marketing videos (strategic priority).
+3. Visual outcome-first landing page.
+4. Multi-segment beta program (Groups A, B, C).
+5. Validation of acquisition hypotheses (H5 and H6).
 
 ---
 

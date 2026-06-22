@@ -14,6 +14,96 @@ Core philosophy:
 
 See **Strategic Pivot – Metaprom AI Evolution (June 2026)** and **Video Strategy Discovery (June 2026)** for June 2026 repositioning and video economics.
 
+See **Continuity Context (June 2026)** for current project state and next objectives.
+
+---
+
+## Continuity Context (June 2026)
+
+*Handoff summary — consolidates current state, recent discoveries, and immediate next objective.*
+
+### Project State
+
+| Item | Value |
+|------|-------|
+| Project | Metaprom AI |
+| Domain | metaprom.com |
+| Stack | Next.js + TypeScript + Supabase + Vercel |
+| Initial product | Ecommerce photo enhancement |
+| Strategic evolution | Full advertising asset generation (image + video) |
+
+### Recent Discoveries
+
+#### UX (Kling analysis)
+
+Kling generates spectacular WOW but the experience becomes an aircraft cockpit — users get lost in menus, credits, and settings.
+
+Adopted principle:
+
+> "The user should not navigate Metaprom AI. Metaprom AI should navigate the user."
+
+Target experience: **Uber-like** — no models, parameters, credits, or technical complexity exposed.
+
+Guided path: Photo → Result → Purchase → Subscription.
+
+See **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
+
+#### Commercial Strategy
+
+Primary target market is **not AI experts**. Target:
+
+* Business owners, restaurants, real estate
+* Amazon and Mercado Libre sellers
+* SMBs (pymes)
+
+Conclusion:
+
+Experts buy technology. Businesses buy results.
+
+#### Video AI
+
+Google identified as primary provider candidate (investigate first, do not commit yet).
+
+Technologies under evaluation:
+
+* Google AI Studio
+* Gemini API
+* Veo 3.1
+* Nano Banana (image generation)
+
+Hypothesis: video may become Metaprom AI's flagship product — high perceived-value advertising videos from a single product photo.
+
+#### Conversion Philosophy
+
+No complex dashboards. No menu exploration after demo.
+
+After free video demo:
+
+> "Your video is ready." → "Download HD without watermark." → "$170 MXN" → **[ Buy Now ]**
+
+See **UX Philosophy — Kling Analysis Breakthrough (June 2026)** — Critical Sales Insight.
+
+#### Zoho Email Migration
+
+Completed successfully (June 2026).
+
+Issues resolved:
+
+* Incorrect SPF inherited from GoDaddy
+* Residual Outlook MX records
+* Email reception restored
+* Alias roberto@metaprom.com operational
+
+Lesson: do not confuse a completed internal process with value delivered to the end user.
+
+See **Infrastructure & Operations**.
+
+### Immediate Next Objective
+
+Evaluate **Veo 3.1 in depth** — quality, costs, and integration viability — to determine whether Metaprom AI can become a guided, extremely simple advertising content generation platform.
+
+Parallel: execute and validate RLS for projects and assets (security checkpoint).
+
 ---
 
 ## Strategic Pivot – Metaprom AI Evolution (June 2026)
@@ -73,10 +163,13 @@ Target:
 * TikTok sellers
 * Instagram businesses
 * YouTube Shorts creators
-* Restaurants
+* Restaurants and business owners (pymes)
 * Ecommerce brands
 * Real estate agents
+* Amazon and Mercado Libre sellers
 * Small businesses
+
+Primary audience is **not AI experts** — experts buy technology; businesses buy results.
 
 Problem:
 
@@ -537,6 +630,13 @@ Not specific AI models.
 
 Provisional leader: **Google Veo**
 
+Google technologies under evaluation:
+
+* Google AI Studio
+* Gemini API
+* Veo 3.1 (video — primary investigation target)
+* Nano Banana (image generation)
+
 Reasons:
 
 * Google ecosystem and enterprise credibility
@@ -973,9 +1073,18 @@ Pending
 
 ## Current Architecture
 
+Domain
+
+* metaprom.com (production)
+
 Frontend
 
 * Next.js
+* TypeScript
+
+Hosting
+
+* Vercel
 
 Database
 
@@ -983,7 +1092,8 @@ Database
 
 AI
 
-* OpenAI
+* OpenAI (current image enhancement)
+* Google Veo / Gemini API (under investigation for video)
 
 Authentication
 
@@ -1001,6 +1111,29 @@ Development Environment
 See **AI Development Workflow** for the multi-tool development approach.
 
 See **Authentication Architecture** for ownership and security model.
+
+---
+
+## Infrastructure & Operations
+
+### Email — Zoho Migration (June 2026)
+
+Status: completed successfully.
+
+Domain: metaprom.com
+
+Provider: Zoho Mail
+
+Issues resolved during migration:
+
+* Incorrect SPF record inherited from GoDaddy
+* Residual Outlook MX records blocking proper routing
+* Email reception restored after DNS cleanup
+* Alias roberto@metaprom.com confirmed operational
+
+Lesson:
+
+Internal infrastructure milestones (email migration, DNS fixes) do not equal product value delivered to users. Track separately from product progress.
 
 ---
 
@@ -1679,6 +1812,29 @@ Active product philosophy — applies to landing page, video flow, and conversio
 
 ---
 
+### June 2026
+
+Zoho Email Migration
+
+Observation:
+
+Email migration from prior provider to Zoho completed. DNS issues (SPF, residual MX) caused temporary reception failures before resolution.
+
+Impact:
+
+* roberto@metaprom.com alias operational
+* metaprom.com email infrastructure stable for business communications
+
+Lesson:
+
+Do not confuse completed internal process with user-facing value delivery.
+
+Status:
+
+Complete.
+
+---
+
 ## Session Summary - June 2026
 
 ### Strategic pivot (June 2026)
@@ -1692,6 +1848,10 @@ Video is a primary product candidate — single AI product video outperformed en
 ### UX philosophy breakthrough (June 2026)
 
 Kling analysis: competitive advantage may be guided UX, not better models. Design like Uber, not aircraft cockpit. Continue sales conversation after free demo (Buy Now + subscription upsell). Remove every obstacle between desire and purchase.
+
+### Infrastructure (June 2026)
+
+Zoho email migration complete. SPF and MX DNS issues resolved. roberto@metaprom.com operational.
 
 ### Ownership milestone
 
@@ -1719,7 +1879,8 @@ Metaprom AI now understands who owns each project and restricts visibility accor
 
 Next Objective:
 
-Execute and validate RLS for projects and assets.
+1. **Evaluate Veo 3.1 in depth** — quality, costs, integration viability (immediate product priority).
+2. Execute and validate RLS for projects and assets (security checkpoint).
 
 Post-RLS Priorities:
 

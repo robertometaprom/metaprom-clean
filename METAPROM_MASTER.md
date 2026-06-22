@@ -8,7 +8,11 @@ The long-term vision is to provide the simplest and most accessible way for sell
 
 The platform is designed to evolve from marketplace photo optimization into a fully automated commercial content factory: images, social creatives, and video.
 
-See **Strategic Pivot – Metaprom AI Evolution (June 2026)** for the June 2026 repositioning.
+Core philosophy:
+
+> Customers do not want AI. Customers want content that helps them sell.
+
+See **Strategic Pivot – Metaprom AI Evolution (June 2026)** and **Video Strategy Discovery (June 2026)** for June 2026 repositioning and video economics.
 
 ---
 
@@ -102,18 +106,19 @@ Old positioning:
 
 New positioning:
 
-> AI-powered advertising content factory.
+> AI-Powered Commercial Content Factory
+
+The goal is not to sell AI tools. The goal is to sell ready-to-use commercial assets.
 
 Metaprom AI should generate:
 
-* Product photography
-* Lifestyle images
-* Promotional banners
+* Product photography and marketplace photos
+* Advertising photos and product hero images
+* Lifestyle images and promotional banners
 * Social media creatives
-* Reels
-* TikTok videos
-* YouTube Shorts
-* Marketing assets
+* TikTok videos, Instagram Reels, Facebook Reels
+* Real estate promotional videos
+* YouTube Shorts and marketing assets
 
 The business moves from:
 
@@ -180,7 +185,7 @@ Technical explanation second.
 
 ---
 
-### Video Becomes Strategic Priority
+### Video as Primary Product Candidate
 
 Original focus:
 
@@ -188,7 +193,7 @@ Original focus:
 
 New focus:
 
-1. AI-generated marketing videos
+1. AI-generated marketing videos (primary product candidate, not future feature)
 2. Visual landing page
 3. Asset library
 4. Beta program
@@ -201,9 +206,13 @@ Photos impress.
 
 Videos create "wow" moments.
 
+June 2026 testing observation:
+
+A single AI-generated product video produced a stronger reaction than multiple enhanced images.
+
 Hypothesis:
 
-Videos may become the strongest commercial differentiator of Metaprom AI.
+Video should be treated as a primary product candidate rather than a future feature. Videos may become the strongest commercial differentiator of Metaprom AI.
 
 ---
 
@@ -259,6 +268,514 @@ Not technology.
 
 Metaprom AI should therefore market outcomes, not infrastructure.
 
+See **Video Strategy Discovery (June 2026)** for provider research, economics, and free-tier design.
+
+---
+
+## Video Strategy Discovery (June 2026)
+
+*Video, UX, economics, and market positioning — consolidated June 2026 research.*
+
+See also: **UX Philosophy — Kling Analysis Breakthrough (June 2026)** for guided-experience product principles.
+
+### Major Strategic Discovery
+
+Metaprom AI is no longer viewed primarily as an ecommerce photo enhancement platform.
+
+Current vision:
+
+**Metaprom AI = AI-Powered Commercial Content Factory**
+
+The strongest user reaction observed so far has come from AI-generated videos, not enhanced photos.
+
+Research and testing during June 2026 revealed that a single AI-generated product video produced a stronger reaction than multiple enhanced images.
+
+New hypothesis:
+
+Video should be treated as a **primary product candidate** rather than a future feature.
+
+Outputs may include:
+
+* Marketplace photos
+* Advertising photos and product hero images
+* TikTok videos, Instagram Reels, Facebook Reels
+* Product videos and real estate promotional videos
+* Social media content and promotional assets
+
+---
+
+### Competitive Research: Kling AI
+
+#### What Kling gets right
+
+Kling creates an exceptional first impression.
+
+The user immediately experiences:
+
+* Cinematic visuals and premium brand perception
+* Instant credibility
+* Powerful examples
+* Strong emotional reaction ("Wow")
+* Very low friction for first video generation
+
+This confirms Metaprom AI should evolve toward a **visually spectacular experience** rather than a purely minimalist SaaS interface.
+
+Future homepage direction:
+
+* Before/after transformations immediately visible
+* Multiple examples above the fold
+* Product photos transforming into professional advertising assets
+* Real videos in motion
+* Phone mockups displaying TikTok-style content
+* Visual proof before technical explanation
+
+The website should immediately communicate:
+
+> "This platform creates photos and videos that sell."
+
+Not:
+
+> "This is an AI platform."
+
+Show first. Explain second.
+
+---
+
+#### What Kling gets wrong
+
+Despite the excellent visual experience, the platform quickly becomes confusing.
+
+Observation:
+
+Even a reasonably technical user became lost navigating the menus. The experience begins feeling like an **aircraft cockpit**.
+
+Examples:
+
+* Multiple creation modes
+* Complex navigation
+* Credits system
+* Advanced settings
+* Unclear upgrade path
+* No obvious next step after generating a demo
+
+User reaction:
+
+> "What the hell is all this?"
+
+The average business owner, seller, restaurant owner, realtor, gym owner, or TikTok creator is even less technical.
+
+Critical insight:
+
+The biggest competitive advantage for Metaprom AI may not be a better AI model. It may be a dramatically simpler and more guided user experience.
+
+---
+
+### Critical UX Discovery
+
+Most AI platforms appear optimized for agencies, creators, power users, and technical users — then push users into credits, subscriptions, and technical learning after the WOW moment.
+
+Metaprom differentiation: minimize the distance between WOW moment and payment. See **UX Philosophy — Kling Analysis Breakthrough (June 2026)** for the guided-experience model.
+
+---
+
+### Hispanic Market Hypothesis
+
+Research suggests a potentially underserved segment: Spanish-speaking non-technical users.
+
+These users may not want to learn:
+
+* Prompts
+* Models
+* Credits
+* Tokens
+* AI workflows
+
+They simply want results.
+
+Potential user thought process:
+
+"I need a video." → "How much does it cost?" → "Where do I pay?"
+
+Research question:
+
+How many Hispanic non-technical users abandon after seeing subscriptions, credits, monthly plans, and payment complexity?
+
+Potential competitive advantage:
+
+Metaprom AI adapts to the user's mental model instead of forcing users to learn ours.
+
+This segment may be underserved. Must validate through beta users.
+
+---
+
+### Free Tier Strategy Discovery
+
+Important realization:
+
+The free tier exists to create trust. It does NOT exist to solve the customer's entire problem.
+
+Purpose:
+
+* Demonstrate capability
+* Generate a WOW moment and emotional impact
+* Create trust and curiosity
+* Encourage conversion
+
+The free tier is not a gift. It is a **customer acquisition expense**.
+
+---
+
+### Video Length Strategy
+
+Current hypothesis:
+
+#### Free
+
+5-second teaser video
+
+* Watermark
+* Standard quality
+* Limited usage
+* Designed for discovery
+
+Purpose:
+
+Generate the "WOW" moment. Not replace the paid product.
+
+---
+
+#### Paid
+
+20-30 second commercial video
+
+* No watermark
+* Commercial quality
+* Downloadable
+* Ready for marketing use
+
+Purpose:
+
+Generate a real business asset.
+
+---
+
+### Watermark Strategy
+
+Potential approach:
+
+Free videos contain:
+
+"Generated with Metaprom AI"
+
+or
+
+"metaprom.com"
+
+Requirements: elegant, small, non-intrusive.
+
+Paid assets: NO watermark.
+
+Goal:
+
+Free users become a distribution channel. Each shared asset becomes marketing for Metaprom AI.
+
+---
+
+### Business Risk Identified
+
+Major concern:
+
+Free users who never intend to become customers.
+
+Examples:
+
+* Multiple accounts
+* Repeated free usage
+* No purchase intent
+
+Future free-tier design must consider:
+
+* Conversion rates
+* Abuse rates
+* Cost per generated asset
+* Customer acquisition cost (CAC)
+* Real generation costs
+
+---
+
+### Provider Strategy
+
+Important architectural principle:
+
+Metaprom AI should NEVER depend on a single video provider.
+
+Architecture:
+
+```
+Metaprom AI
+|
++-- Google Veo
++-- Kling
++-- Runway
++-- Future providers
+```
+
+Customer should never care which engine generates the video.
+
+Metaprom sells:
+
+* Results
+* Simplicity
+* Commercial value
+* User experience
+
+Not specific AI models.
+
+---
+
+### Current Preferred Provider
+
+Provisional leader: **Google Veo**
+
+Reasons:
+
+* Google ecosystem and enterprise credibility
+* Strong long-term investment
+* Official API
+* Vertical video support
+* Image-to-video support
+* Better long-term stability than relying on a single experimental provider
+
+Decision status:
+
+**INVESTIGATE FIRST — DO NOT COMMIT YET**
+
+---
+
+### Preliminary Video Economics
+
+Official Google Veo pricing research (June 2026)
+
+#### Veo 3.1 Lite
+
+$0.05 USD / second
+
+Approximate costs:
+
+5s video ≈ $4.75 MXN
+
+10s video ≈ $9.50 MXN
+
+30s video ≈ $28.50 MXN
+
+---
+
+#### Veo 3.1 Fast
+
+$0.10 USD / second
+
+Approximate costs:
+
+5s video ≈ $9.50 MXN
+
+30s video ≈ $57 MXN
+
+---
+
+#### Veo 3.1 Standard
+
+$0.40 USD / second
+
+Approximate costs:
+
+30s video ≈ $228 MXN
+
+Not suitable for MVP testing.
+
+---
+
+### Preliminary Pricing Thoughts
+
+If actual generation costs are near Veo Fast estimates:
+
+Estimated cost: 30-second video ≈ $57 MXN
+
+Potential retail pricing (testing points only — not finalized):
+
+* $99 MXN (entry)
+* $149 MXN (recommended testing point)
+* $199 MXN (strong candidate)
+* $299 MXN+ (premium tiers)
+
+Important:
+
+Profitability depends not only on video cost but also on free users, abuse, CAC, and conversion rates.
+
+Do NOT finalize pricing until real Veo testing is completed.
+
+---
+
+### Critical Open Question
+
+Do NOT finalize pricing or free-tier strategy until real Veo testing is completed.
+
+Need real measurements:
+
+* Generation cost
+* Generation speed
+* Conversion rate
+* Abuse rate
+* Customer willingness to pay
+
+---
+
+### New Priority Investigation
+
+Before implementing Video MVP:
+
+Research:
+
+1. Google Veo
+2. Kling API
+3. Runway API
+4. Licensing terms
+5. Commercial usage rights
+6. Actual generation costs
+7. Conversion economics
+
+Goal:
+
+Build a complete Video Economics model before implementation.
+
+---
+
+### Most Important Insight
+
+The opportunity may not be "Better AI."
+
+The opportunity may be **better commercial adaptation for Spanish-speaking users**.
+
+Potential competitive advantages:
+
+* Spanish-first UX
+* Simplicity and commercial orientation
+* Marketplace users and small businesses
+* TikTok creators
+* Flexible payment methods
+* Reduced friction between WOW and payment
+
+The biggest insight from Kling was not video quality — it was that simplicity and guided UX may matter more than the model.
+
+The biggest opportunity may exist between the moment a user says "WOW" and the moment they successfully pay.
+
+Reducing that distance may become one of Metaprom AI's strongest competitive advantages.
+
+---
+
+## UX Philosophy — Kling Analysis Breakthrough (June 2026)
+
+### Critical Product Insight
+
+A major strategic realization emerged from analyzing Kling and other AI video platforms.
+
+The biggest competitive advantage for Metaprom AI may not be a better AI model.
+
+The biggest advantage may be a dramatically simpler and more guided user experience.
+
+---
+
+### Core Metaprom AI UX Philosophy
+
+Metaprom AI should not be designed as an aircraft cockpit.
+
+Metaprom AI should be designed like **Uber**.
+
+The user should not need to understand:
+
+* AI models
+* Credits
+* Advanced settings
+* Technical parameters
+* Prompt engineering
+
+The user should simply say:
+
+> "I want to sell this."
+
+And the system should guide everything else.
+
+Users do not want to learn AI. Users want to sell more.
+
+Most competitors sell AI. Metaprom AI should sell outcomes.
+
+---
+
+### Core Product Principle
+
+> "The user should not navigate Metaprom AI. Metaprom AI should navigate the user."
+
+This becomes a core product philosophy.
+
+Related principles:
+
+* "Adapt to the user's mental model, not vice versa."
+* "Do not force users to learn our system to obtain the result they want."
+
+---
+
+### Future Video Flow
+
+Instead of: choose model → choose duration → configure camera → configure motion → configure creativity → configure prompts.
+
+The flow should be:
+
+1. **Upload photo**
+2. **What are you selling?** (Restaurant, Real Estate, Fashion, Gym, Ecommerce, Other)
+3. **Describe it in one sentence**
+4. **Generate**
+5. **Wow moment**
+6. **Immediate purchase offer**
+
+---
+
+### Critical Sales Insight
+
+Most AI platforms stop after generation. The user receives the result but is not guided toward conversion.
+
+Metaprom AI should actively lead the user.
+
+Example after generating a free demo:
+
+> 🔥 Your video is ready.
+>
+> Download HD without watermark — $170 MXN [ Buy Now ]
+>
+> Need videos regularly? Plans from $499 MXN/month
+
+The platform should continue the sales conversation — not leave the user alone after the WOW moment.
+
+---
+
+### Strategic Positioning — UX Contrast
+
+| Competitors | Metaprom AI |
+|-------------|-------------|
+| "Learn our system." | "Get your result." |
+| "Understand credits." | "Buy the finished video." |
+| "Navigate the platform." | "Follow the guided path." |
+
+---
+
+### Long-Term Vision
+
+Future success may depend less on having the best AI model and more on creating the most intuitive path from:
+
+Product Photo → Wow Moment → Purchase → Subscription
+
+The goal is not to impress users with technology.
+
+The goal is to remove every obstacle between desire and purchase.
+
 ---
 
 ## Core Principles
@@ -274,7 +791,13 @@ Metaprom AI should therefore market outcomes, not infrastructure.
 
 ## Product Philosophy
 
-See also: **Strategic Pivot – Metaprom AI Evolution (June 2026)** — people buy results, not technology.
+See also: **Strategic Pivot – Metaprom AI Evolution (June 2026)** and **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
+
+Core principles:
+
+* People buy results, not technology.
+* The user should not navigate Metaprom AI — Metaprom AI should navigate the user.
+* Design like Uber, not an aircraft cockpit.
 
 Principle:
 
@@ -368,13 +891,17 @@ AI is simply the mechanism that delivers it.
 
 ### June 2026 – Strategic Pivot
 
-Metaprom is repositioning from an AI photo enhancement platform to an **AI-powered advertising content factory**.
+Metaprom is repositioning to an **AI-Powered Commercial Content Factory** — selling ready-to-use commercial assets, not AI tools.
 
 Market A (marketplace optimization) serves primarily as acquisition.
 
 Market B (advertising content creation) represents the larger long-term opportunity.
 
 Landing and marketing should demonstrate outcomes visually — creative studio, not SaaS.
+
+Video is a primary product candidate. Google Veo is provisional leader (investigate first, do not commit yet).
+
+UX philosophy: guided experience like Uber, not cockpit complexity like Kling post-demo. Metaprom navigates the user from WOW to purchase.
 
 ---
 
@@ -407,8 +934,8 @@ Previous focus (pre-pivot):
 
 Current focus (June 2026 pivot):
 
-* AI-powered advertising content factory
-* AI-generated marketing videos (strategic priority)
+* AI-Powered Commercial Content Factory
+* Video as primary product candidate (not future feature)
 * Visual outcome-first landing experience
 * Asset library (Biblioteca)
 * Multi-segment beta (marketplace + social + real estate)
@@ -533,14 +1060,15 @@ Active hypothesis.
 
 ---
 
-### H2 - Video as Primary Monetization
+### H2 - Video as Primary Product
 
 Demand for commercial video content is already proven.
 
-Metaprom may monetize primarily through video generation and other high-value services rather than basic image enhancement.
+Metaprom may treat video as a primary product candidate — not a future feature — and monetize primarily through video generation rather than basic image enhancement.
 
 Rationale:
 
+* Videos generate significantly stronger emotional response than photos (June 2026 testing).
 * Videos have significantly higher perceived business value.
 * Video generation may support premium pricing, pay-per-use pricing, or marketplace-specific offerings.
 * Images and video are complementary rather than competing features.
@@ -553,6 +1081,12 @@ Video generation is currently considered the most likely monetization engine and
 
 Status:
 Elevated to strategic priority (June 2026 pivot). Hypothesis not yet validated in beta.
+
+See **Video Strategy Discovery (June 2026)** for free-tier design, provider strategy, and Veo economics.
+
+Key insight (June 2026):
+
+The opportunity may be better commercial adaptation for Spanish-speaking users — reducing the distance between "WOW" and successful payment.
 
 ---
 
@@ -570,6 +1104,10 @@ The opportunity may come from:
 * Local payment preferences.
 * Better adaptation to the needs of Hispanic ecommerce sellers.
 
+Video-specific hypothesis (June 2026):
+
+Spanish-speaking non-technical users may not want to learn prompts, models, credits, tokens, or AI workflows. They may prefer: "I need a video" → "How much?" → "Where do I pay?" Metaprom should adapt to the user's mental model. Must validate through beta.
+
 Status:
 Requires validation through beta users.
 
@@ -586,6 +1124,19 @@ Examples under consideration:
 * One-time purchases
 * Local payment methods
 
+Video tier hypothesis (June 2026):
+
+* Free: 5-second teaser (watermarked, standard quality, discovery-only) — creates trust and WOW, not full solution. Treated as customer acquisition expense.
+* Paid: 20-30 second commercial (no watermark, commercial quality, downloadable, marketing-ready).
+
+Preliminary retail pricing (testing points only, if Veo Fast costs hold):
+
+* $99 / $149 / $199 / $299+ MXN for 30-second commercial.
+
+Principle:
+
+Do not force users to learn the business model before obtaining value. Adapt to the user's mental model.
+
 Potential future payment methods:
 
 * OXXO
@@ -600,7 +1151,7 @@ Principle:
 Reduce payment friction whenever possible.
 
 Status:
-Unvalidated hypothesis.
+Unvalidated hypothesis. Do not finalize pricing until real Veo testing completes (see Video Strategy Discovery).
 
 ---
 
@@ -1085,11 +1636,62 @@ Active strategic direction.
 
 ---
 
+### June 2026
+
+Video Strategy Discovery — Economics & Market Positioning
+
+Observation:
+
+Video elevated from strategic priority to primary product candidate. Strongest reaction from AI-generated product video vs enhanced images. Kling research: show transformation first; minimize WOW-to-payment distance. Hispanic non-technical users may prefer simple "how much / where do I pay" flow.
+
+Impact:
+
+* Google Veo provisional leader — **investigate first, do not commit yet**.
+* Free tier = customer acquisition expense (5s WOW teaser); paid = 20-30s commercial.
+* Preliminary pricing testing points: $99 / $149 / $199 / $299+ MXN (not finalized).
+* Complete Video Economics model required before Video MVP (includes CAC, abuse, conversion).
+
+Status:
+
+Investigation phase — provider research and economics modeling before implementation.
+
+---
+
+### June 2026
+
+UX Philosophy — Kling Analysis Breakthrough
+
+Observation:
+
+Kling excels at visual WOW but fails post-demo with cockpit complexity (credits, modes, unclear next steps). Even technical users get lost; business owners would fare worse.
+
+Impact:
+
+* Core principle: "Metaprom AI should navigate the user."
+* Design like Uber: upload → what are you selling → one sentence → generate → WOW → immediate purchase offer.
+* Homepage: visually spectacular (cinematic examples, phone mockups, videos in motion) — not minimalist SaaS.
+* Platform must continue sales conversation after generation, not stop at delivery.
+* Long-term path: Product Photo → WOW → Purchase → Subscription.
+
+Status:
+
+Active product philosophy — applies to landing page, video flow, and conversion UX.
+
+---
+
 ## Session Summary - June 2026
 
 ### Strategic pivot (June 2026)
 
-Metaprom repositioned from ecommerce photo enhancement to an AI-powered advertising content factory. Market A (marketplace) is acquisition; Market B (content creation) is the long-term opportunity. Landing should demonstrate outcomes visually; video is the primary strategic differentiator. Beta split into Groups A, B, and C to test willingness to pay across segments.
+Metaprom repositioned to an AI-Powered Commercial Content Factory — selling ready-to-use assets, not AI tools. Market A (marketplace) is acquisition; Market B (content creation) is the long-term opportunity. Video is a primary product candidate. Beta split into Groups A, B, and C to test willingness to pay across segments.
+
+### Video strategy discovery (June 2026)
+
+Video is a primary product candidate — single AI product video outperformed enhanced images emotionally. Kling-inspired UX: spectacular visuals first, then guided path (not cockpit). Core principle: Metaprom navigates the user — upload → category → one sentence → generate → WOW → buy. Hispanic market: adapt to user mental model. Google Veo provisional leader (investigate first). Preliminary pricing tests: $99–$299+ MXN; example conversion offer: $170 MXN HD unlock. Build complete Video Economics before Video MVP.
+
+### UX philosophy breakthrough (June 2026)
+
+Kling analysis: competitive advantage may be guided UX, not better models. Design like Uber, not aircraft cockpit. Continue sales conversation after free demo (Buy Now + subscription upsell). Remove every obstacle between desire and purchase.
 
 ### Ownership milestone
 
@@ -1122,10 +1724,13 @@ Execute and validate RLS for projects and assets.
 Post-RLS Priorities:
 
 1. Security checkpoint completion (RLS activation).
-2. AI-generated marketing videos (strategic priority).
-3. Visual outcome-first landing page.
-4. Multi-segment beta program (Groups A, B, C).
-5. Validation of acquisition hypotheses (H5 and H6).
+2. Video Economics model — provider research (Veo, Kling, Runway), licensing, real cost measurements.
+3. Real Veo testing before finalizing pricing or free-tier design.
+4. AI-generated marketing videos (Video MVP).
+5. Visual outcome-first landing page (Kling-inspired spectacle: transformations, mockups, videos in motion).
+6. Guided video UX flow — Metaprom navigates the user from WOW to purchase.
+7. Multi-segment beta program (Groups A, B, C).
+8. Validation of acquisition hypotheses (H5 and H6).
 
 ---
 

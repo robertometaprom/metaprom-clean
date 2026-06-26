@@ -95,28 +95,15 @@ export default function AuthButton() {
     <div className="flex items-center gap-4">
       <Link
         href="/login"
-        className="text-base text-white/70 transition hover:text-white"
+        className="hidden text-base text-white/70 transition hover:text-white sm:inline"
       >
-        Iniciar sesión
+        Sign in
       </Link>
       <Link
         href="/login"
-        className="
-          rounded-2xl
-          bg-gradient-to-r
-          from-cyan-500
-          to-blue-600
-          px-6
-          py-3
-          text-base
-          font-medium
-          text-white
-          shadow-[0_0_30px_rgba(59,130,246,0.35)]
-          transition
-          hover:scale-105
-        "
+        className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-6 py-3 text-base font-medium text-black transition hover:bg-white"
       >
-        Probar gratis
+        Start Free
       </Link>
     </div>
   );

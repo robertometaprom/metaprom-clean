@@ -12,9 +12,22 @@ Core philosophy:
 
 > Customers do not want AI. Customers want content that helps them sell.
 
-See **Strategic Pivot – Metaprom AI Evolution (June 2026)** and **Video Strategy Discovery (June 2026)** for June 2026 repositioning and video economics.
+Core mission (June 2026):
 
-See **Continuity Context (June 2026)** for current project state and next objectives.
+> Bring premium advertising creation to people who are not AI experts.
+
+Metaprom sells marketing results, not AI. Customers should never need to understand AI models, prompts, tokens, APIs, Veo, or Gemini.
+
+Platform scope:
+
+* Photo enhancement
+* Commercial image generation
+* Video generation
+* Marketing asset creation
+
+See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Video Generation — Validated (June 2026)**, and **Video Strategy Discovery (June 2026)**.
+
+See **Continuity Context (June 2026)** and **Roadmap** for current project state and priorities.
 
 ---
 
@@ -30,7 +43,9 @@ See **Continuity Context (June 2026)** for current project state and next object
 | Domain | metaprom.com |
 | Stack | Next.js + TypeScript + Supabase + Vercel |
 | Initial product | Ecommerce photo enhancement |
-| Strategic evolution | Full advertising asset generation (image + video) |
+| Strategic evolution | Marketing content generation platform (image + video + assets) |
+| Video (validated) | Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`) |
+| Paid project | Metaprom AI (Google AI Studio, Tier 1, prepaid balance) |
 
 ### Recent Discoveries
 
@@ -62,16 +77,11 @@ Experts buy technology. Businesses buy results.
 
 #### Video AI
 
-Google identified as primary provider candidate (investigate first, do not commit yet).
+**Status: VALIDATED (June 2026).** See **Video Generation — Validated (June 2026)** and **Economic Validation — Veo 3.1 Lite (June 2026)**.
 
-Technologies under evaluation:
+Integration completed: Image → Prompt → Veo 3.1 Lite → MP4 → Browser. Multiple real generations successful.
 
-* Google AI Studio
-* Gemini API
-* Veo 3.1
-* Nano Banana (image generation)
-
-Hypothesis: video may become Metaprom AI's flagship product — high perceived-value advertising videos from a single product photo.
+Earlier research (provider comparison, preliminary pricing) remains in **Video Strategy Discovery (June 2026)** — some items superseded by measured economics.
 
 #### Conversion Philosophy
 
@@ -100,9 +110,10 @@ See **Infrastructure & Operations**.
 
 ### Immediate Next Objective
 
-Evaluate **Veo 3.1 in depth** — quality, costs, and integration viability — to determine whether Metaprom AI can become a guided, extremely simple advertising content generation platform.
-
-Parallel: execute and validate RLS for projects and assets (security checkpoint).
+1. Execute and validate RLS for projects and assets (security checkpoint).
+2. Integrate validated video workflow into Biblioteca (Images + Videos unified library).
+3. Guided production UX — **NO BARRIERS. NO NONSENSE.** flow (see dedicated section).
+4. Beta validation with non-expert SMB customers.
 
 ---
 
@@ -369,6 +380,8 @@ See **Video Strategy Discovery (June 2026)** for provider research, economics, a
 
 *Video, UX, economics, and market positioning — consolidated June 2026 research.*
 
+**Update (June 2026):** Veo 3.1 Lite integration **validated**. Measured economics documented in **Economic Validation — Veo 3.1 Lite (June 2026)**. Content below includes historical research — items marked preliminary may be superseded.
+
 See also: **UX Philosophy — Kling Analysis Breakthrough (June 2026)** for guided-experience product principles.
 
 ### Major Strategic Discovery
@@ -628,9 +641,17 @@ Not specific AI models.
 
 ### Current Preferred Provider
 
-Provisional leader: **Google Veo**
+**Selected for POC/production testing: Google Veo 3.1 Lite**
 
-Google technologies under evaluation:
+Model: `veo-3.1-lite-generate-preview`
+
+Decision status (June 2026):
+
+**VALIDATED** — integrated and generating successfully on Metaprom AI paid project.
+
+Earlier status was *INVESTIGATE FIRST — DO NOT COMMIT YET* (see historical note below).
+
+Google technologies:
 
 * Google AI Studio
 * Gemini API
@@ -646,9 +667,9 @@ Reasons:
 * Image-to-video support
 * Better long-term stability than relying on a single experimental provider
 
-Decision status:
+Historical note (pre-validation, June 2026):
 
-**INVESTIGATE FIRST — DO NOT COMMIT YET**
+Previously documented as **INVESTIGATE FIRST — DO NOT COMMIT YET**. Superseded by successful Lite integration and measured economics.
 
 ---
 
@@ -717,15 +738,15 @@ Do NOT finalize pricing until real Veo testing is completed.
 
 ### Critical Open Question
 
-Do NOT finalize pricing or free-tier strategy until real Veo testing is completed.
+Initial Veo Lite testing **complete** (June 2026) — measured ~1.61 MXN/sec. Full pricing and free-tier strategy still subject to validation.
 
-Need real measurements:
+Need continued measurements:
 
-* Generation cost
+* Generation cost at scale
 * Generation speed
 * Conversion rate
 * Abuse rate
-* Customer willingness to pay
+* Customer willingness to pay (VIDEO PREMIUM at 149 MXN)
 
 ---
 
@@ -878,6 +899,252 @@ The goal is to remove every obstacle between desire and purchase.
 
 ---
 
+## Target Customer (June 2026 Update)
+
+Metaprom AI is evolving into a **marketing content generation platform** — not only an image enhancement tool.
+
+### Primary target
+
+People and businesses that need marketing content but are **not AI experts**.
+
+Examples:
+
+* Restaurants, taquerías, cafés
+* Dentists, beauty salons
+* Real estate agents
+* Small businesses and pymes
+* Mercado Libre, Amazon, Shopify, TikTok Shop sellers
+* Small content creators
+* Local businesses
+
+### Segmentation principle
+
+The segmentation is **not** "TikTok creators vs non-creators."
+
+The segmentation **is** "AI experts vs non-experts."
+
+Metaprom is initially optimized for **non-experts**.
+
+Experts buy technology. Businesses buy results.
+
+See **Market A / Market B** in Strategic Pivot for acquisition vs long-term opportunity framing.
+
+---
+
+## NO BARRIERS. NO NONSENSE.
+
+Core UX principle (June 2026).
+
+Ideal flow:
+
+1. Upload photo
+2. Describe product
+3. Generate
+4. Pay
+5. Download
+6. Publish
+
+Customers should not need to:
+
+* Learn prompting
+* Learn AI tools
+* Manage credits
+* Understand technical settings
+
+Goal: reduce complexity to the absolute minimum.
+
+Related principles:
+
+* "The user should not navigate Metaprom AI. Metaprom AI should navigate the user."
+* Design like Uber, not an aircraft cockpit.
+
+See **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
+
+---
+
+## Video Generation — Validated (June 2026)
+
+**STATUS: VALIDATED**
+
+Video generation is no longer a future roadmap item. It is a **working capability**.
+
+### Current implementation
+
+| Item | Value |
+|------|-------|
+| Provider | Google Gemini API |
+| Model | Veo 3.1 Lite — `veo-3.1-lite-generate-preview` |
+| Config | `VEO_MODEL` env var (fallback: `veo-3.1-lite-generate-preview`) |
+| API route | `POST /api/video` |
+| Test page | `/video-test` (POC) |
+| Paid project | Metaprom AI (Google AI Studio) |
+
+### Validated flow
+
+```
+Image → Prompt → Veo 3.1 Lite → MP4 → Browser
+```
+
+Multiple real generations completed successfully after billing activation and API key migration to the paid Metaprom AI project.
+
+### Technical notes
+
+* Polling via `getVideosOperation()` until operation completes
+* MP4 returned to browser via temp download from Gemini Files API
+* Not yet integrated: Biblioteca, Supabase video storage, payments, watermarks
+
+See **Current Architecture** and **Roadmap**.
+
+---
+
+## Economic Validation — Veo 3.1 Lite (June 2026)
+
+**STATUS: MEASURED (initial test)**
+
+Documented from a real 5-second commercial generation on the paid Metaprom AI project.
+
+### Observed test
+
+| Metric | Value |
+|--------|-------|
+| Clip length | 5 seconds |
+| Balance before | 500.00 MXN (Google prepaid) |
+| Balance after | 491.95 MXN |
+| **Observed cost** | **8.05 MXN** |
+| **Observed rate** | **~1.61 MXN / second** |
+
+### Approximate projections (observed rate)
+
+| Duration | Estimated cost |
+|----------|----------------|
+| 8 seconds | ~13 MXN |
+| 15 seconds | ~24 MXN |
+| 30 seconds | ~48 MXN |
+
+### Conclusion
+
+Economics appear **viable for SMB marketing content** at Veo 3.1 Lite pricing.
+
+Earlier preliminary estimates in **Video Strategy Discovery** used published USD/sec rates — **measured MXN costs take precedence** for product economics.
+
+Pricing and margin models remain subject to validation (CAC, abuse, conversion, revision costs).
+
+See **Video Product Concept — VIDEO PREMIUM**.
+
+---
+
+## Video Product Concept — VIDEO PREMIUM
+
+Initial product concept (June 2026). **Pricing subject to future validation.**
+
+### VIDEO PREMIUM
+
+Includes:
+
+* 3 initial proposals
+* 2 quick revisions
+* HD download
+
+Principles:
+
+* Clear limits
+* Clear expectations
+* Avoid unlimited iteration loops
+
+Initial reference price: **149 MXN**
+
+Aligns with preliminary testing point in **Video Strategy Discovery** and observed unit economics.
+
+---
+
+## Content Policy UX (Future)
+
+**STATUS: Future roadmap — not MVP.**
+
+### Problem discovered
+
+AI systems frequently replace restricted content **silently**.
+
+Examples observed:
+
+* Messi, Shakira (celebrities)
+* Supertramp (copyrighted music)
+* Other restricted IP
+
+### Metaprom principle
+
+**Never silently substitute.**
+
+Instead:
+
+1. Detect restricted content before generation
+2. Inform the user
+3. Offer compliant alternatives
+
+Examples:
+
+| User input | Compliant alternative |
+|------------|----------------------|
+| Messi | Professional elite football player |
+| Supertramp | Classic rock inspired soundtrack |
+
+### Future feature
+
+**Prompt Compliance Assistant** — pre-generation check with transparent user messaging.
+
+---
+
+## Competitive Positioning — Workflow Over Models (June 2026)
+
+**Strategic conclusion (validated):**
+
+Competitive advantage is **not** access to AI models. Anyone can buy access to Veo.
+
+Competitive advantage comes from:
+
+* Workflow
+* Simplicity
+* UX
+* Distribution
+* Customer acquisition
+* Niche understanding (Spanish-speaking non-expert SMBs)
+
+The value is moving from the **model** to the **workflow**.
+
+See **UX Philosophy**, **NO BARRIERS. NO NONSENSE.**, and **H2 - Video as Primary Product**.
+
+---
+
+## Video Library Strategy (Future)
+
+**STATUS: Future direction — preferred architecture.**
+
+Do **not** create separate video dashboards.
+
+Preferred structure:
+
+```
+Biblioteca (Library)
+├── Images
+└── Videos
+```
+
+Unified project history. Videos and images share the same project context.
+
+Current state: Biblioteca stores images only; video POC is isolated at `/video-test` and `/api/video`.
+
+---
+
+## Ad-Supported Future Model (Future Exploration)
+
+**STATUS: Not MVP. Future strategic option.**
+
+Potential concept: **sponsored generations** — users receive free generations funded by advertisers.
+
+Requires separate economics, compliance, and UX design. Document for long-term exploration only.
+
+---
+
 ## Core Principles
 
 1. Adoption before monetization.
@@ -891,7 +1158,7 @@ The goal is to remove every obstacle between desire and purchase.
 
 ## Product Philosophy
 
-See also: **Strategic Pivot – Metaprom AI Evolution (June 2026)** and **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
+See also: **NO BARRIERS. NO NONSENSE.**, **Target Customer (June 2026 Update)**, and **Competitive Positioning — Workflow Over Models (June 2026)**.
 
 Core principles:
 
@@ -999,9 +1266,9 @@ Market B (advertising content creation) represents the larger long-term opportun
 
 Landing and marketing should demonstrate outcomes visually — creative studio, not SaaS.
 
-Video is a primary product candidate. Google Veo is provisional leader (investigate first, do not commit yet).
+Video is a **validated capability** (Veo 3.1 Lite on Metaprom AI paid project). See **Video Generation — Validated (June 2026)**.
 
-UX philosophy: guided experience like Uber, not cockpit complexity like Kling post-demo. Metaprom navigates the user from WOW to purchase.
+UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom navigates the user from WOW to purchase. See **NO BARRIERS. NO NONSENSE.**
 
 ---
 
@@ -1032,12 +1299,13 @@ Previous focus (pre-pivot):
 * Marketplace-ready content
 * Product photography enhancement
 
-Current focus (June 2026 pivot):
+Current focus (June 2026 — post-video validation):
 
-* AI-Powered Commercial Content Factory
-* Video as primary product candidate (not future feature)
+* Marketing content generation platform (non-expert SMBs)
+* Veo 3.1 Lite video generation — **validated POC**
+* Guided UX — NO BARRIERS. NO NONSENSE.
+* Biblioteca extension — Images + Videos unified library
 * Visual outcome-first landing experience
-* Asset library (Biblioteca)
 * Multi-segment beta (marketplace + social + real estate)
 * Marketplace photo enhancement as acquisition channel (Market A)
 
@@ -1045,13 +1313,13 @@ Current focus (June 2026 pivot):
 
 ## Current Product Status
 
-Completed
+### Completed
 
 * OpenAI integration
 * Image enhancement workflow
-* Biblioteca module
+* Biblioteca module (images)
 * Project creation
-* Asset storage
+* Asset storage (images)
 * Asset preview
 * Supabase integration
 * Google OAuth authentication flow
@@ -1060,14 +1328,84 @@ Completed
 * Ownership layer (projects.user_id)
 * Application-level project isolation
 * RLS migration preparation
+* **Video generation POC — validated (June 2026)**
+  * Google Gemini API + Veo 3.1 Lite (`veo-3.1-lite-generate-preview`)
+  * `POST /api/video`, `/video-test`
+  * Image → Prompt → MP4 → Browser
+  * Paid Metaprom AI project + prepaid billing active
+  * Measured economics: ~1.61 MXN/sec (~8.05 MXN for 5s clip)
+* Zoho email migration (metaprom.com)
 
-Pending
+### Current (in progress)
 
-* Row Level Security (RLS) activation
-* Asset deletion
-* Project deletion
-* Video generation workflow
+* RLS activation and validation
+* Video economics validation (margin, pricing, VIDEO PREMIUM concept)
+* API key / billing alignment (Metaprom AI paid project)
+
+### Near-term
+
+* Biblioteca video integration (Images + Videos unified library)
+* Guided production UX (NO BARRIERS flow)
+* Visual outcome-first landing page
+* Multi-segment beta program (Groups A, B, C)
+* Prompt Compliance Assistant (design)
+* Asset deletion, project deletion
+
+### Future
+
+* Payments and VIDEO PREMIUM packaging (149 MXN reference)
+* Watermarks, free tier, conversion funnel
 * Marketplace-specific exports
+* Content Policy UX — never silently substitute restricted IP
+* Ad-supported / sponsored generations (exploration)
+* Multi-provider video architecture (Veo, Kling, Runway)
+
+---
+
+## Roadmap
+
+Structured view of product progress (June 2026).
+
+### Completed
+
+| Item | Status |
+|------|--------|
+| Image enhancement | Shipped |
+| Biblioteca (images) | Shipped |
+| Google OAuth + ownership | Shipped |
+| Veo 3.1 Lite video POC | **Validated** |
+| Video unit economics (initial) | **Measured** |
+| Strategic repositioning | Documented |
+| UX philosophy (Kling, NO BARRIERS) | Documented |
+
+### Current
+
+| Item | Status |
+|------|--------|
+| RLS security checkpoint | Migration prepared, pending execution |
+| Video → Biblioteca integration | Not started |
+| Production video UX | POC only (`/video-test`) |
+
+### Near-term
+
+| Item | Priority |
+|------|----------|
+| Unified library (Images + Videos) | High |
+| Guided non-expert UX flow | High |
+| VIDEO PREMIUM pricing validation | High |
+| Beta program (non-expert SMBs) | High |
+| Outcome-first landing page | Medium |
+| Prompt Compliance Assistant | Medium |
+
+### Future
+
+| Item | Notes |
+|------|-------|
+| Payments / subscriptions | After beta validation |
+| Free tier + watermark strategy | See Video Strategy Discovery |
+| Content policy UX | Never silent substitution |
+| Ad-supported generations | Exploration only |
+| Multi-provider video | Provider-agnostic architecture |
 
 ---
 
@@ -1092,8 +1430,9 @@ Database
 
 AI
 
-* OpenAI (current image enhancement)
-* Google Veo / Gemini API (under investigation for video)
+* OpenAI (image enhancement)
+* Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`, validated POC)
+* `GEMINI_API_KEY`, `VEO_MODEL` environment variables
 
 Authentication
 
@@ -1197,7 +1536,7 @@ Active hypothesis.
 
 Demand for commercial video content is already proven.
 
-Metaprom may treat video as a primary product candidate — not a future feature — and monetize primarily through video generation rather than basic image enhancement.
+Metaprom treats video as a **validated primary product** — Veo 3.1 Lite POC complete (June 2026).
 
 Rationale:
 
@@ -1213,13 +1552,11 @@ Image enhancement is primarily an acquisition channel (Market A).
 Video generation is currently considered the most likely monetization engine and the strongest commercial differentiator (June 2026 strategic pivot).
 
 Status:
-Elevated to strategic priority (June 2026 pivot). Hypothesis not yet validated in beta.
-
-See **Video Strategy Discovery (June 2026)** for free-tier design, provider strategy, and Veo economics.
+**Validated POC (June 2026).** Measured economics: ~1.61 MXN/sec. See **Economic Validation — Veo 3.1 Lite** and **Video Product Concept — VIDEO PREMIUM**.
 
 Key insight (June 2026):
 
-The opportunity may be better commercial adaptation for Spanish-speaking users — reducing the distance between "WOW" and successful payment.
+Competitive advantage is workflow and UX for non-experts — not model access.
 
 ---
 
@@ -1266,6 +1603,10 @@ Preliminary retail pricing (testing points only, if Veo Fast costs hold):
 
 * $99 / $149 / $199 / $299+ MXN for 30-second commercial.
 
+**VIDEO PREMIUM** initial reference: **149 MXN** (3 proposals, 2 revisions, HD download). See **Video Product Concept — VIDEO PREMIUM**.
+
+Observed Lite cost: ~1.61 MXN/sec — economics appear viable at 149 MXN price point (subject to revision/abuse/CAC validation).
+
 Principle:
 
 Do not force users to learn the business model before obtaining value. Adapt to the user's mental model.
@@ -1284,7 +1625,7 @@ Principle:
 Reduce payment friction whenever possible.
 
 Status:
-Unvalidated hypothesis. Do not finalize pricing until real Veo testing completes (see Video Strategy Discovery).
+Partially validated — unit economics measured on Lite; pay-per-result packaging (VIDEO PREMIUM) subject to beta validation.
 
 ---
 
@@ -1409,6 +1750,8 @@ Priority:
 Feedback is more valuable than scale during the beta phase.
 
 Do not confuse easiest users to recruit with best customers.
+
+Primary segmentation (June 2026): **AI experts vs non-experts**. Metaprom optimized for non-experts. See **Target Customer (June 2026 Update)**.
 
 Recommended beta structure (June 2026 pivot):
 
@@ -1788,6 +2131,8 @@ Status:
 
 Investigation phase — provider research and economics modeling before implementation.
 
+Historical note: Video POC and initial economics **validated June 2026**. See **Video Generation — Validated** and **Economic Validation — Veo 3.1 Lite**.
+
 ---
 
 ### June 2026
@@ -1835,7 +2180,69 @@ Complete.
 
 ---
 
+### June 2026
+
+Veo 3.1 Lite Integration — Validated
+
+Observation:
+
+Video generation POC completed using Google Gemini API and `veo-3.1-lite-generate-preview`. Flow validated: Image → Prompt → MP4 → Browser. Required paid Metaprom AI project, prepaid billing, and new API key after initial free-tier key returned 429.
+
+Impact:
+
+* Video moved from roadmap to validated capability
+* Lite selected as default model (`VEO_MODEL` env var)
+* Measured cost: ~8.05 MXN for 5s (~1.61 MXN/sec)
+
+Status:
+
+Validated — not yet in Biblioteca or production UX.
+
+---
+
+### June 2026
+
+API Key / Project Association
+
+Observation:
+
+Initial API key was tied to a different (free-tier) project. Veo returned 429 despite billing on Metaprom AI. New key created under paid Metaprom AI project resolved generation access.
+
+Lesson:
+
+Billing on project A does not apply to keys issued under project B. Always create keys explicitly under the paid project.
+
+Status:
+
+Resolved.
+
+---
+
+### June 2026
+
+Content Policy — Silent Substitution
+
+Observation:
+
+AI video/image systems may silently replace restricted content (celebrities, copyrighted music).
+
+Metaprom principle: never silently substitute. Future Prompt Compliance Assistant.
+
+Status:
+
+Future roadmap.
+
+---
+
 ## Session Summary - June 2026
+
+### Strategic update (June 2026 — post-video validation)
+
+Metaprom is a **marketing content generation platform** for **non-expert** SMBs. Core mission: bring premium advertising creation to people who are not AI experts. Metaprom sells results, not AI. Segmentation: AI experts vs non-experts (not creator vs non-creator). UX principle: **NO BARRIERS. NO NONSENSE.** — Upload → Describe → Generate → Pay → Download → Publish.
+
+### Video validated (June 2026)
+
+Veo 3.1 Lite integrated and validated. Model: `veo-3.1-lite-generate-preview`. Multiple real generations on Metaprom AI paid project. Measured economics: 5s clip = 8.05 MXN (~1.61 MXN/sec). VIDEO PREMIUM concept: 149 MXN (3 proposals, 2 revisions, HD). Competitive advantage = workflow/UX, not model access.
 
 ### Strategic pivot (June 2026)
 
@@ -1879,18 +2286,20 @@ Metaprom AI now understands who owns each project and restricts visibility accor
 
 Next Objective:
 
-1. **Evaluate Veo 3.1 in depth** — quality, costs, integration viability (immediate product priority).
-2. Execute and validate RLS for projects and assets (security checkpoint).
+1. Execute and validate RLS for projects and assets (security checkpoint).
+2. Integrate validated video into Biblioteca (Images + Videos unified library).
+3. Guided production UX — NO BARRIERS flow.
+4. VIDEO PREMIUM pricing and beta validation with non-expert SMBs.
 
 Post-RLS Priorities:
 
 1. Security checkpoint completion (RLS activation).
-2. Video Economics model — provider research (Veo, Kling, Runway), licensing, real cost measurements.
-3. Real Veo testing before finalizing pricing or free-tier design.
-4. AI-generated marketing videos (Video MVP).
-5. Visual outcome-first landing page (Kling-inspired spectacle: transformations, mockups, videos in motion).
-6. Guided video UX flow — Metaprom navigates the user from WOW to purchase.
-7. Multi-segment beta program (Groups A, B, C).
+2. Biblioteca video integration — unified Images + Videos library (no separate video dashboard).
+3. Guided non-expert UX flow (NO BARRIERS. NO NONSENSE.).
+4. VIDEO PREMIUM packaging validation (149 MXN reference).
+5. Visual outcome-first landing page.
+6. Multi-segment beta program — optimized for non-expert SMBs.
+7. Prompt Compliance Assistant (design phase).
 8. Validation of acquisition hypotheses (H5 and H6).
 
 ---

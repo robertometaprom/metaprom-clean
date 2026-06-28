@@ -11,7 +11,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") ?? "/dashboard";
+  const redirectTo = searchParams.get("redirect") ?? "/studio";
   const errorCode = searchParams.get("error");
   const errorMessage = errorCode ? ERROR_MESSAGES[errorCode] : null;
 
@@ -38,8 +38,8 @@ export default function LoginForm() {
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-cyan-500" />
             <h1 className="text-3xl font-bold tracking-tight">Metaprom AI</h1>
             <p className="mt-2 text-sm text-white/60">
-              Inicia sesión para acceder a tu Biblioteca y herramientas de
-              mejora de imágenes.
+              Inicia sesión y comienza a crear contenido premium para tu
+              negocio.
             </p>
           </div>
 

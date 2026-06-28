@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { Mode } from "../../lib/prompts";
 import {
@@ -15,7 +17,13 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 export default function Page() {
-  const [selectedMode, setSelectedMode] = useState<Mode>("amazon");
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("mode") as Mode | null;
+  const [selectedMode, setSelectedMode] = useState<Mode>(
+    initialMode && ["amazon", "mercado-libre", "premium", "social", "custom"].includes(initialMode)
+      ? initialMode
+      : "amazon",
+  );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [enhancedImages, setEnhancedImages] = useState<string[]>([]);
   const [aiInstructions, setAiInstructions] = useState<string>("");
@@ -327,11 +335,22 @@ export default function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
           >
-            <h1 className="text-5xl font-bold tracking-tight">
-              Metaprom AI Dashboard
-            </h1>
-            <p className="mt-2 text-white/60">Manage your photo enhancement credits</p>
+            <div>
+              <Link
+                href="/studio"
+                className="mb-4 inline-flex items-center gap-2 text-sm text-white/50 transition hover:text-white"
+              >
+                ← Volver al estudio
+              </Link>
+              <h1 className="text-5xl font-bold tracking-tight">
+                Mis proyectos
+              </h1>
+              <p className="mt-2 text-white/60">
+                Biblioteca, marketplace y herramientas avanzadas
+              </p>
+            </div>
           </motion.div>
         </div>
 

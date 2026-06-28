@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 function getSafeRedirectPath(next: string | null): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
+    return "/studio";
   }
 
   return next;

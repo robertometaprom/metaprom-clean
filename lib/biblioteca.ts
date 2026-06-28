@@ -22,6 +22,7 @@ export type BibliotecaAsset = {
   project_id: string;
   original_name?: string | null;
   image_url: string;
+  video_url?: string | null;
   mode: Mode;
   ai_instructions?: string | null;
   created_at?: string | null;
@@ -121,7 +122,9 @@ export async function fetchBibliotecaAssets(
 
   const { data, error } = await supabaseClient
     .from("assets")
-    .select("id, project_id, original_name, image_url, mode, ai_instructions, created_at")
+    .select(
+      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
+    )
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
 
@@ -162,11 +165,90 @@ export async function saveBibliotecaAssets(
   const { data, error } = await supabaseClient
     .from("assets")
     .insert(assets)
-    .select("id, project_id, original_name, image_url, mode, ai_instructions, created_at");
+    .select(
+      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
+    );
 
   if (error) {
     throw error;
   }
 
   return (data ?? []) as BibliotecaAsset[];
+}
+
+export async function updateBibliotecaAsset(
+  assetId: string,
+  updates: Partial<
+    Pick<BibliotecaAsset, "image_url" | "video_url" | "ai_instructions">
+  >,
+): Promise<BibliotecaAsset> {
+  const supabaseClient = getAuthenticatedClient();
+  const user = await requireUser();
+
+  const { data: asset, error: assetError } = await supabaseClient
+    .from("assets")
+    .select("id, project_id")
+    .eq("id", assetId)
+    .maybeSingle();
+
+  if (assetError) {
+    throw assetError;
+  }
+
+  if (!asset) {
+    throw new Error("Asset not found or access denied.");
+  }
+
+  const { data: project, error: projectError } = await supabaseClient
+    .from("projects")
+    .select("id")
+    .eq("id", asset.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (projectError) {
+    throw projectError;
+  }
+
+  if (!project) {
+    throw new Error("Project not found or access denied.");
+  }
+
+  const { data, error } = await supabaseClient
+    .from("assets")
+    .update(updates)
+    .eq("id", assetId)
+    .select(
+      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as BibliotecaAsset;
+}
+
+export function buildAutoProjectName(customerIntent: string): string {
+  const trimmed = customerIntent.trim();
+  if (trimmed) {
+    return trimmed.length > 48 ? `${trimmed.slice(0, 45)}...` : trimmed;
+  }
+
+  const date = new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date());
+
+  return `Comercial · ${date}`;
+}
+
+export async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read blob."));
+    reader.readAsDataURL(blob);
+  });
 }

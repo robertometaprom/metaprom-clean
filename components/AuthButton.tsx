@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import type { Messages } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 
-export default function AuthButton() {
+type AuthButtonProps = {
+  labels: Messages["nav"];
+};
+
+export default function AuthButton({ labels }: AuthButtonProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,8 +47,9 @@ export default function AuthButton() {
       user.user_metadata?.full_name ??
       user.user_metadata?.name ??
       user.email ??
-      "Usuario";
-    const avatarUrl = user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
+      labels.brand;
+    const avatarUrl =
+      user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
 
     return (
       <div className="flex items-center gap-4">
@@ -56,7 +62,7 @@ export default function AuthButton() {
               className="h-9 w-9 rounded-full border border-white/10 object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/20 text-sm font-medium text-cyan-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-medium text-white/80">
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -65,27 +71,16 @@ export default function AuthButton() {
           </span>
         </div>
         <Link
-          href="/dashboard"
+          href="/studio"
           className="text-base text-white/70 transition hover:text-white"
         >
-          Dashboard
+          {labels.dashboard}
         </Link>
         <Link
           href="/auth/signout"
-          className="
-            rounded-2xl
-            border
-            border-white/10
-            px-5
-            py-2.5
-            text-base
-            text-white/70
-            transition
-            hover:border-white/20
-            hover:text-white
-          "
+          className="rounded-full border border-white/15 px-5 py-2.5 text-base text-white/70 transition hover:border-white/30 hover:text-white"
         >
-          Cerrar sesión
+          {labels.signOut}
         </Link>
       </div>
     );
@@ -97,13 +92,13 @@ export default function AuthButton() {
         href="/login"
         className="hidden text-base text-white/70 transition hover:text-white sm:inline"
       >
-        Sign in
+        {labels.signIn}
       </Link>
       <Link
         href="/login"
         className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-6 py-3 text-base font-medium text-black transition hover:bg-white"
       >
-        Start Free
+        {labels.startFree}
       </Link>
     </div>
   );

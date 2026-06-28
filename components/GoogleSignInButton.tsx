@@ -10,7 +10,7 @@ type GoogleSignInButtonProps = {
 };
 
 export default function GoogleSignInButton({
-  redirectTo = "/dashboard",
+  redirectTo = "/studio",
   className = "",
   label = "Continuar con Google",
 }: GoogleSignInButtonProps) {

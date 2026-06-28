@@ -4,6 +4,8 @@ import OpenAI from "openai";
 import sharp from "sharp";
 import { buildPrompt, Mode } from "../../../lib/prompts";
 
+export const maxDuration = 300;
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });

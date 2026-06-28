@@ -21,3 +21,74 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+@keyframes placeholder-drift {
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.04) translate(-0.5%, -0.25%);
+  }
+}
+
+@keyframes placeholder-drift-slow {
+  0%,
+  100% {
+    transform: scale(1.02) translate(0.25%, 0);
+  }
+  50% {
+    transform: scale(1.06) translate(-0.25%, -0.5%);
+  }
+}
+
+@keyframes placeholder-light-sweep {
+  0% {
+    transform: translateX(-120%) rotate(20deg);
+  }
+  100% {
+    transform: translateX(120%) rotate(20deg);
+  }
+}
+
+@keyframes placeholder-play-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+.placeholder-drift {
+  animation: placeholder-drift 14s ease-in-out infinite;
+}
+
+.placeholder-drift-slow {
+  animation: placeholder-drift-slow 20s ease-in-out infinite;
+}
+
+.placeholder-light-sweep > div {
+  animation: placeholder-light-sweep 8s ease-in-out infinite;
+}
+
+.placeholder-play-pulse {
+  animation: placeholder-play-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes studio-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--studio-rotation, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--studio-rotation, 0deg));
+  }
+}
+
+.studio-float {
+  animation: studio-float 8s ease-in-out infinite;
+}

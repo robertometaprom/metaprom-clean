@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "brand": "Metaprom",
+    "signIn": "Iniciar sesión",
+    "startFree": "Crear el mío",
+    "dashboard": "Estudio",
+    "signOut": "Cerrar sesión"
+  },
+  "cinema": {
+    "headline": "TU NEGOCIO SE VERÁ ASÍ.",
+    "subheadline": "Todo comenzó con una foto común de celular.",
+    "primaryCta": "Crear el mío",
+    "secondaryCta": "Ver cómo funciona"
+  },
+  "priceConfidence": {
+    "label": "ESTE COMERCIAL CUESTA"
+  },
+  "reveal": {
+    "before": "Foto de celular",
+    "premium": "Imagen premium",
+    "commercial": "Video comercial"
+  },
+  "showcaseSection": {
+    "headline": "Más ejemplos."
+  },
+  "showcaseLabels": {
+    "before": "Antes",
+    "premium": "Premium",
+    "commercial": "Comercial",
+    "price": "Precio"
+  },
+  "showcase": {
+    "restaurant": {
+      "title": "Restaurante",
+      "description": "El primer bocado"
+    },
+    "coffee": {
+      "title": "Cafetería",
+      "description": "Una mañana tranquila"
+    },
+    "flower": {
+      "title": "Florería",
+      "description": "Un ramo sorpresa"
+    },
+    "living-room": {
+      "title": "Sala",
+      "description": "Familia disfrutando el hogar"
+    }
+  },
+  "steps": {
+    "items": {
+      "photo": {
+        "label": "Toma una foto"
+      },
+      "transform": {
+        "label": "La transformamos"
+      },
+      "download": {
+        "label": "Descarga"
+      },
+      "publish": {
+        "label": "Publica"
+      }
+    }
+  },
+  "testimonials": {
+    "headline": "Dueños de negocios reales.",
+    "items": {
+      "restaurant": {
+        "businessName": "Casa Luna",
+        "city": "Guadalajara",
+        "quote": "Subí una foto de mi celular. Al día siguiente tenía un comercial que parecía costar miles."
+      },
+      "coffee": {
+        "businessName": "Café Norte",
+        "city": "Monterrey",
+        "quote": "Mis clientes dejaron de hacer scroll. Eso era todo lo que necesitaba."
+      },
+      "flower": {
+        "businessName": "Flores del Valle",
+        "city": "CDMX",
+        "quote": "Nunca pensé que mi pequeña tienda se vería tan premium en Instagram."
+      },
+      "living-room": {
+        "businessName": "Interior Studio MX",
+        "city": "Querétaro",
+        "quote": "Una foto de una sala se convirtió en nuestro mejor anuncio del año."
+      }
+    }
+  },
+  "pricing": {
+    "headline": "Precios transparentes.",
+    "note": "Compra exactamente lo que necesitas. Una imagen. Un comercial. Sin suscripción.",
+    "products": {
+      "premium-image": {
+        "name": "Imagen premium",
+        "description": "Una foto común transformada en contenido de marketing premium."
+      },
+      "commercial-video": {
+        "name": "Video comercial",
+        "description": "Un comercial cinematográfico listo para publicar en redes."
+      },
+      "marketplace-image": {
+        "name": "Imagen marketplace",
+        "description": "Imagen profesional optimizada para Amazon, Mercado Libre y Shopify."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Marketing premium para tu negocio.",
+    "copyright": "© 2026 Metaprom"
+  }
+}

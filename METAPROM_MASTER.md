@@ -25,7 +25,7 @@ Platform scope:
 * Video generation
 * Marketing asset creation
 
-See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Video Generation — Validated (June 2026)**, and **Video Strategy Discovery (June 2026)**.
+See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — First Real Commercial Generated (June 28, 2026)**, **Video Generation — Validated (June 2026)**, and **Video Strategy Discovery (June 2026)**.
 
 See **Continuity Context (June 2026)** and **Roadmap** for current project state and priorities.
 
@@ -43,11 +43,25 @@ See **Continuity Context (June 2026)** and **Roadmap** for current project state
 | Domain | metaprom.com |
 | Stack | Next.js + TypeScript + Supabase + Vercel |
 | Initial product | Ecommerce photo enhancement |
-| Strategic evolution | Marketing content generation platform (image + video + assets) |
+| Strategic evolution | **AI Creative Studio** — commercial image + video generation (not photo enhancement) |
+| Studio | **Studio IS the product** — full customer journey lives in `/studio` |
 | Video (validated) | Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`) |
+| First customer WOW | **Validated (June 28, 2026)** — commercial image + cinematic video from cellphone photo |
 | Paid project | Metaprom AI (Google AI Studio, Tier 1, prepaid balance) |
 
 ### Recent Discoveries
+
+#### First Real Commercial — Customer WOW Validated (June 28, 2026)
+
+For the first time, Metaprom transformed a simple cellphone product photo into a commercial scene and generated a cinematic promotional video that produced a genuine **WOW** reaction in a real customer test.
+
+This validates the core product hypothesis:
+
+> Customers are not buying AI. Customers are buying the feeling of seeing their own product transformed into professional marketing.
+
+The biggest lesson was **experiential**, not technical. Metaprom is no longer an image enhancement platform — it is becoming an **AI Creative Studio**. The customer should feel they are working with a creative director, not operating software.
+
+See **Milestone — First Real Commercial Generated (June 28, 2026)**.
 
 #### UX (Kling analysis)
 
@@ -110,10 +124,142 @@ See **Infrastructure & Operations**.
 
 ### Immediate Next Objective
 
-1. Execute and validate RLS for projects and assets (security checkpoint).
-2. Integrate validated video workflow into Biblioteca (Images + Videos unified library).
-3. Guided production UX — **NO BARRIERS. NO NONSENSE.** flow (see dedicated section).
-4. Beta validation with non-expert SMB customers.
+Validate consistency across multiple industries — not whether AI works, but whether Metaprom **consistently creates commercials customers want to buy**:
+
+* Restaurant
+* Coffee
+* Flowers
+* Real Estate
+* Marketplace products
+
+Every sprint should end with a real customer test, not with completed code.
+
+See **Milestone — First Real Commercial Generated (June 28, 2026)** — Startup Mode Reinforced.
+
+---
+
+## Milestone — First Real Commercial Generated (June 28, 2026)
+
+Today marks one of the most important milestones in the project.
+
+For the first time, Metaprom successfully transformed a simple cellphone product photo into a commercial scene and generated a cinematic promotional video that produced a genuine WOW reaction.
+
+This validates the core product hypothesis:
+
+> Customers are not buying AI. Customers are buying the feeling of seeing their own product transformed into professional marketing.
+
+### Major Product Discovery
+
+The biggest lesson was not technical. It was experiential.
+
+The product is no longer an image enhancement platform. Metaprom is becoming an **AI Creative Studio**.
+
+The customer should feel they are working with a creative director, not operating software.
+
+### Studio Philosophy
+
+Studio is no longer a page. **Studio IS the product.**
+
+Everything happens inside Studio:
+
+Landing
+↓
+Login
+↓
+Studio
+↓
+Upload Photo
+↓
+Commercial Image
+↓
+Commercial Video
+↓
+Automatic Save
+↓
+Purchase HD
+↓
+Continue Creating
+
+No legacy workflows. No dashboard interruptions. No manual saving.
+
+### Product Principles (June 28, 2026)
+
+* The uploaded photo is the strongest signal of intent.
+* Intent classification enriches the experience but never blocks creation.
+* Saving is invisible.
+* The customer never loses work.
+* The customer should never adapt to the AI.
+* The AI adapts to the customer.
+
+### Creative Direction
+
+The objective is no longer to animate photos. The objective is to create **believable commercials**.
+
+Commercial Image
+↓
+Commercial Video
+
+The generated image becomes the visual foundation for the generated commercial.
+
+### Development Methodology Discovery
+
+A new product creation workflow has emerged:
+
+Vision
+↓
+Conversation
+↓
+ChatGPT Mockup
+↓
+Founder Review
+↓
+Cursor Implementation
+↓
+Customer Test
+↓
+Iteration
+
+This dramatically reduces the translation gap between product vision and implementation.
+
+Mockups are no longer presentation material. They are **implementation specifications**.
+
+See **AI Development Workflow**.
+
+### Startup Mode Reinforced
+
+Priority order:
+
+1. Launch sooner.
+2. Learn faster.
+3. Reduce customer friction.
+4. Improve architecture.
+5. Technical perfection.
+
+Every sprint should end with a real customer test — not with completed code.
+
+### Current Status (June 28, 2026)
+
+| Area | Status |
+|------|--------|
+| Landing | Functional |
+| Authentication | Functional |
+| Studio Experience | Functional |
+| Commercial Image | First validated |
+| Commercial Video | First validated |
+| Customer WOW | First validated |
+| Automatic Product Thinking | Emerging |
+
+### Next Objective
+
+Validate consistency across multiple industries:
+
+* Restaurant
+* Coffee
+* Flowers
+* Real Estate
+* Marketplace Products
+
+The goal is no longer proving that AI works. The goal is proving that Metaprom **consistently creates commercials customers want to buy**.
 
 ---
 
@@ -1220,6 +1366,17 @@ Users should primarily experience:
 
 AI is the enabling technology, not the product.
 
+### Studio Principles (June 28, 2026)
+
+See **Milestone — First Real Commercial Generated (June 28, 2026)**.
+
+* The uploaded photo is the strongest signal of intent.
+* Intent classification enriches the experience but never blocks creation.
+* Saving is invisible — the customer never loses work.
+* The customer should never adapt to the AI; the AI adapts to the customer.
+* The objective is believable commercials, not animated photos.
+* Commercial Image → Commercial Video: the generated image is the visual foundation for the commercial.
+
 Implications:
 
 * Marketing should emphasize outcomes.
@@ -1328,9 +1485,18 @@ Current focus (June 2026 — post-video validation):
 * Ownership layer (projects.user_id)
 * Application-level project isolation
 * RLS migration preparation
-* **Video generation POC — validated (June 2026)**
+* **Studio experience — functional (June 2026)**
+  * `/studio` — Creative Director flow (intent → upload → create → WOW → actions)
+  * Commercial image + video generation in single journey
+  * In-Studio library panel (no dashboard redirect)
+  * Automatic save on generation (images + video)
+  * Commercial-first prompt pipeline (`lib/studio-prompts.ts`)
+* **First real customer WOW — validated (June 28, 2026)**
+  * Cellphone photo → commercial scene → cinematic promotional video
+  * Core product hypothesis confirmed in live customer test
+* **Video generation — validated (June 2026)**
   * Google Gemini API + Veo 3.1 Lite (`veo-3.1-lite-generate-preview`)
-  * `POST /api/video`, `/video-test`
+  * `POST /api/video`, integrated in Studio
   * Image → Prompt → MP4 → Browser
   * Paid Metaprom AI project + prepaid billing active
   * Measured economics: ~1.61 MXN/sec (~8.05 MXN for 5s clip)
@@ -1338,12 +1504,16 @@ Current focus (June 2026 — post-video validation):
 
 ### Current (in progress)
 
+* Multi-industry consistency validation (restaurant, coffee, flowers, real estate, marketplace)
+* In-Studio HD purchase flow (payment integration pending)
 * RLS activation and validation
 * Video economics validation (margin, pricing, VIDEO PREMIUM concept)
 * API key / billing alignment (Metaprom AI paid project)
 
 ### Near-term
 
+* Multi-industry customer tests (restaurant, coffee, flowers, real estate, marketplace)
+* In-Studio payment / HD commercial purchase
 * Biblioteca video integration (Images + Videos unified library)
 * Guided production UX (NO BARRIERS flow)
 * Visual outcome-first landing page
@@ -1373,23 +1543,29 @@ Structured view of product progress (June 2026).
 | Image enhancement | Shipped |
 | Biblioteca (images) | Shipped |
 | Google OAuth + ownership | Shipped |
-| Veo 3.1 Lite video POC | **Validated** |
+| Studio experience (`/studio`) | **Functional** |
+| Commercial image + video in Studio | **First customer WOW validated (June 28, 2026)** |
+| Veo 3.1 Lite video | **Validated** |
 | Video unit economics (initial) | **Measured** |
 | Strategic repositioning | Documented |
 | UX philosophy (Kling, NO BARRIERS) | Documented |
+| Automatic save (Studio) | Shipped (emerging) |
 
 ### Current
 
 | Item | Status |
 |------|--------|
+| Multi-industry consistency validation | **Active priority** |
+| In-Studio HD purchase / payments | Not started |
 | RLS security checkpoint | Migration prepared, pending execution |
-| Video → Biblioteca integration | Not started |
-| Production video UX | POC only (`/video-test`) |
+| Legacy `/dashboard` retirement | Partial — Studio no longer redirects |
 
 ### Near-term
 
 | Item | Priority |
 |------|----------|
+| Multi-industry customer tests | **Highest** |
+| In-Studio payment / HD commercial | High |
 | Unified library (Images + Videos) | High |
 | Guided non-expert UX flow | High |
 | VIDEO PREMIUM pricing validation | High |
@@ -2306,6 +2482,30 @@ Post-RLS Priorities:
 
 ## AI Development Workflow
 
+### Product Creation Workflow (June 28, 2026)
+
+A new product creation workflow has emerged:
+
+Vision
+↓
+Conversation
+↓
+ChatGPT Mockup
+↓
+Founder Review
+↓
+Cursor Implementation
+↓
+Customer Test
+↓
+Iteration
+
+Mockups are no longer presentation material. They are **implementation specifications**.
+
+This dramatically reduces the translation gap between product vision and implementation.
+
+See **Milestone — First Real Commercial Generated (June 28, 2026)**.
+
 ### June 2026
 
 Observation:
@@ -2326,7 +2526,7 @@ Metaprom development will use a multi-tool AI workflow.
 
 Current workflow:
 
-* ChatGPT → strategy, architecture, product and business decisions.
+* ChatGPT → strategy, product design, mockups as implementation specs, architecture, business decisions.
 * Cursor → repository analysis, implementation, debugging and code modifications.
 * Codex → targeted code generation when appropriate.
 

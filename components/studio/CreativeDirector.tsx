@@ -22,26 +22,27 @@ import {
 } from "@/lib/product-catalog";
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
-  buildAutoProjectName,
   blobToDataUrl,
-  createBibliotecaProject,
-  saveBibliotecaAssets,
-  updateBibliotecaAsset,
+  getBibliotecaUserId,
   BibliotecaAuthError,
+  fetchBibliotecaAssetById,
 } from "@/lib/biblioteca";
+import { persistStudioCreation } from "@/lib/studio-persistence";
+import type { PaymentMethod } from "@/lib/payments/types";
 import { formatPriceMxn, getPriceById } from "@/lib/pricing";
 import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
 } from "@/lib/studio-prompts";
+import CinematicReveal from "@/components/studio/CinematicReveal";
 
 type Phase =
   | "welcome"
   | "unavailable"
   | "upload"
   | "creating"
-  | "wow"
-  | "next-actions"
+  | "cinematic-reveal"
+  | "premium-offer"
   | "purchase-hd";
 
 type CreationStep = "image" | "video" | "done";
@@ -77,8 +78,11 @@ export default function CreativeDirector({
   const [creationStep, setCreationStep] = useState<CreationStep>("image");
   const [creationMessage, setCreationMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showActions, setShowActions] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [premiumReady, setPremiumReady] = useState(false);
 
   const previewUrlRef = useRef<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
@@ -90,6 +94,13 @@ export default function CreativeDirector({
   const customerIntentRef = useRef("");
   const savedProjectIdRef = useRef<string | null>(null);
   const savedAssetIdRef = useRef<string | null>(null);
+  const imagePromptRef = useRef("");
+  const videoPromptRef = useRef("");
+  const projectMetadataRef = useRef<{
+    workflow_id?: string | null;
+    industry?: string | null;
+    intended_destination?: string | null;
+  }>({});
 
   useEffect(() => {
     selectedFileRef.current = selectedFile;
@@ -102,17 +113,18 @@ export default function CreativeDirector({
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-      if (videoUrlRef.current) URL.revokeObjectURL(videoUrlRef.current);
+      if (videoUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(videoUrlRef.current);
+      }
     };
   }, []);
 
-  useEffect(() => {
-    if (phase === "next-actions") {
-      const timer = window.setTimeout(() => setShowActions(true), 2000);
-      return () => window.clearTimeout(timer);
-    }
-    setShowActions(false);
-  }, [phase]);
+  const autoSaveMessage =
+    autoSaveStatus === "saved"
+      ? "Guardado automáticamente en tu biblioteca."
+      : autoSaveStatus === "local-only"
+        ? "Guardado en este dispositivo. Inicia sesión para conservarlo."
+        : null;
 
   const persistDraftLocally = useCallback(
     (draft: {
@@ -130,95 +142,56 @@ export default function CreativeDirector({
     [],
   );
 
-  const autoSaveImage = useCallback(
-    async (imageUrl: string) => {
+  const persistToLibrary = useCallback(
+    async (input: {
+      originalFile: File;
+      enhancedDataUrl: string;
+      teaserVideoBlob?: Blob;
+      imagePrompt: string;
+      videoPrompt: string;
+    }) => {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
-      const originalName = selectedFileRef.current?.name ?? "producto";
 
       setAutoSaveStatus("saving");
 
       try {
-        if (!savedProjectIdRef.current) {
-          const project = await createBibliotecaProject(
-            buildAutoProjectName(customerIntent),
-          );
-          savedProjectIdRef.current = project.id;
+        const userId = await getBibliotecaUserId();
+        const result = await persistStudioCreation({
+          userId,
+          originalFile: input.originalFile,
+          enhancedDataUrl: input.enhancedDataUrl,
+          teaserVideoBlob: input.teaserVideoBlob,
+          imagePrompt: input.imagePrompt,
+          videoPrompt: input.videoPrompt,
+          customerIntent,
+          mode: product.mode,
+          projectMetadata: {
+            ...projectMetadataRef.current,
+            workflow_id: product.id,
+            industry: product.industry ?? projectMetadataRef.current.industry,
+            intended_destination: product.destination,
+          },
+          existingProjectId: savedProjectIdRef.current,
+          existingAssetId: savedAssetIdRef.current,
+        });
 
-          const [asset] = await saveBibliotecaAssets([
-            {
-              project_id: project.id,
-              original_name: originalName,
-              image_url: imageUrl,
-              mode: product.mode,
-              ai_instructions: customerIntent || null,
-            },
-          ]);
-          savedAssetIdRef.current = asset.id;
-        } else if (savedAssetIdRef.current) {
-          await updateBibliotecaAsset(savedAssetIdRef.current, {
-            image_url: imageUrl,
-          });
-        } else {
-          const [asset] = await saveBibliotecaAssets([
-            {
-              project_id: savedProjectIdRef.current,
-              original_name: originalName,
-              image_url: imageUrl,
-              mode: product.mode,
-              ai_instructions: customerIntent || null,
-            },
-          ]);
-          savedAssetIdRef.current = asset.id;
-        }
-
+        savedProjectIdRef.current = result.projectId;
+        savedAssetIdRef.current = result.assetId;
         markStudioHasProjects();
         setAutoSaveStatus("saved");
       } catch (saveError) {
         if (saveError instanceof BibliotecaAuthError) {
           persistDraftLocally({
-            premiumImage: imageUrl,
+            premiumImage: input.enhancedDataUrl,
+            videoDataUrl: input.teaserVideoBlob
+              ? await blobToDataUrl(input.teaserVideoBlob)
+              : undefined,
             customerIntent,
           });
         } else {
           console.error(saveError);
           setAutoSaveStatus("idle");
-        }
-      }
-    },
-    [persistDraftLocally],
-  );
-
-  const autoSaveVideo = useCallback(
-    async (blob: Blob, imageUrl: string) => {
-      const customerIntent = customerIntentRef.current.trim();
-
-      try {
-        const videoDataUrl = await blobToDataUrl(blob);
-
-        if (savedAssetIdRef.current) {
-          await updateBibliotecaAsset(savedAssetIdRef.current, {
-            video_url: videoDataUrl,
-          });
-          markStudioHasProjects();
-          setAutoSaveStatus("saved");
-        } else {
-          persistDraftLocally({
-            premiumImage: imageUrl,
-            videoDataUrl,
-            customerIntent,
-          });
-        }
-      } catch (saveError) {
-        if (saveError instanceof BibliotecaAuthError) {
-          const videoDataUrl = await blobToDataUrl(blob);
-          persistDraftLocally({
-            premiumImage: imageUrl,
-            videoDataUrl,
-            customerIntent,
-          });
-        } else {
-          console.error(saveError);
         }
       }
     },
@@ -243,15 +216,16 @@ export default function CreativeDirector({
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
 
-    if (videoUrlRef.current) {
+    if (videoUrlRef.current?.startsWith("blob:")) {
       URL.revokeObjectURL(videoUrlRef.current);
-      videoUrlRef.current = null;
     }
+    videoUrlRef.current = null;
 
     try {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
       const imagePrompt = buildStudioImagePrompt(customerIntent, product.mode);
+      imagePromptRef.current = imagePrompt;
 
       const formData = new FormData();
       formData.append("image", file);
@@ -272,15 +246,16 @@ export default function CreativeDirector({
       }
 
       setPremiumImage(data.image);
-      void autoSaveImage(data.image);
 
       setCreationStep("video");
       setCreationMessage("Preparando tu comercial...");
 
-      const videoPrompt = buildStudioVideoPrompt(customerIntent);
+      const videoPrompt = buildStudioVideoPrompt(customerIntent, "teaser");
+      videoPromptRef.current = videoPrompt;
       const videoForm = new FormData();
       videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));
       videoForm.append("prompt", videoPrompt);
+      videoForm.append("tier", "teaser");
 
       const videoResponse = await fetch("/api/video", {
         method: "POST",
@@ -303,12 +278,17 @@ export default function CreativeDirector({
       const url = URL.createObjectURL(blob);
       videoUrlRef.current = url;
       setVideoUrl(url);
-      void autoSaveVideo(blob, data.image);
+
+      void persistToLibrary({
+        originalFile: file,
+        enhancedDataUrl: data.image,
+        teaserVideoBlob: blob,
+        imagePrompt,
+        videoPrompt,
+      });
 
       setCreationStep("done");
-      setPhase("wow");
-
-      setTimeout(() => setPhase("next-actions"), 2800);
+      setPhase("cinematic-reveal");
     } catch (createError) {
       console.error(createError);
       setError(
@@ -318,7 +298,7 @@ export default function CreativeDirector({
       );
       setPhase("upload");
     }
-  }, [autoSaveImage, autoSaveVideo]);
+  }, [persistToLibrary]);
 
   const handleIntentSubmit = useCallback(
     async (event: FormEvent) => {
@@ -349,6 +329,13 @@ export default function CreativeDirector({
       setMatchedProduct(resolution.product);
       matchedProductRef.current = resolution.product;
       customerIntentRef.current = trimmed;
+      projectMetadataRef.current = {
+        workflow_id: resolution.matchedExplicitly
+          ? resolution.productId
+          : resolution.product.id,
+        industry: resolution.industry,
+        intended_destination: resolution.intendedDestination,
+      };
       setError(null);
 
       if (hasPhoto) {
@@ -405,8 +392,112 @@ export default function CreativeDirector({
     if (!videoUrl) return;
     const link = document.createElement("a");
     link.href = videoUrl;
-    link.download = "metaprom-comercial-preview.mp4";
+    link.download = premiumReady
+      ? "metaprom-comercial-hd.mp4"
+      : "metaprom-comercial-preview.mp4";
     link.click();
+  };
+
+  const handlePurchaseHd = async () => {
+    if (!savedAssetIdRef.current) {
+      setCheckoutMessage("Inicia sesión para comprar tu comercial HD.");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    setCheckoutMessage(null);
+
+    try {
+      const checkoutResponse = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetId: savedAssetIdRef.current,
+          productId: "commercial-video",
+          paymentMethod,
+        }),
+      });
+
+      const checkoutData = (await checkoutResponse.json()) as {
+        error?: string;
+        sessionId?: string;
+        status?: string;
+        oxxoReference?: string;
+      };
+
+      if (!checkoutResponse.ok) {
+        throw new Error(checkoutData.error || "No pudimos iniciar el pago.");
+      }
+
+      if (checkoutData.status === "awaiting_payment" && checkoutData.sessionId) {
+        setCheckoutMessage(
+          checkoutData.oxxoReference
+            ? `Referencia OXXO: ${checkoutData.oxxoReference}. Confirma el pago para producir tu comercial HD.`
+            : "Esperando confirmación de pago...",
+        );
+
+        const poll = async () => {
+          const statusResponse = await fetch(
+            `/api/payments/checkout?sessionId=${encodeURIComponent(checkoutData.sessionId!)}`,
+          );
+          const statusData = (await statusResponse.json()) as {
+            status?: string;
+            error?: string;
+          };
+
+          if (statusData.status === "completed") {
+            await generatePremiumVideo();
+            return;
+          }
+
+          window.setTimeout(poll, 3000);
+        };
+
+        await poll();
+        return;
+      }
+
+      await generatePremiumVideo();
+    } catch (purchaseError) {
+      console.error(purchaseError);
+      setCheckoutMessage(
+        purchaseError instanceof Error
+          ? purchaseError.message
+          : "No pudimos completar la compra.",
+      );
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const generatePremiumVideo = async () => {
+    if (!savedAssetIdRef.current) return;
+
+    setCheckoutMessage("Produciendo tu comercial HD...");
+
+    const response = await fetch("/api/studio/premium-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assetId: savedAssetIdRef.current }),
+    });
+
+    const data = (await response.json()) as { error?: string; status?: string };
+
+    if (!response.ok) {
+      throw new Error(data.error || "No pudimos producir tu comercial HD.");
+    }
+
+    const asset = await fetchBibliotecaAssetById(savedAssetIdRef.current);
+
+    if (asset?.premium_video_url) {
+      if (videoUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(videoUrlRef.current);
+      }
+      videoUrlRef.current = null;
+      setVideoUrl(asset.premium_video_url);
+      setPremiumReady(true);
+      setCheckoutMessage("¡Listo! Tu comercial HD está disponible para descargar.");
+    }
   };
 
   const resetFlow = () => {
@@ -419,11 +510,21 @@ export default function CreativeDirector({
     setPremiumImage(null);
     setVideoUrl(null);
     setError(null);
-    setAutoSaveStatus("idle");
-    setShowActions(false);
+    setPremiumReady(false);
+    setCheckoutMessage(null);
+    setCheckoutLoading(false);
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
+    imagePromptRef.current = "";
+    videoPromptRef.current = "";
+    projectMetadataRef.current = {};
+    setAutoSaveStatus("idle");
     selectedFileRef.current = null;
+
+    if (videoUrlRef.current?.startsWith("blob:")) {
+      URL.revokeObjectURL(videoUrlRef.current);
+    }
+    videoUrlRef.current = null;
 
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
@@ -687,118 +788,19 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
-        {(phase === "wow" || phase === "next-actions") && (
-          <motion.div
-            key="wow"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: EASE }}
-            className="space-y-10 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
-          >
-            <div className="space-y-2 text-center">
-              <h2 className="text-2xl font-bold text-neutral-900 sm:text-3xl">
-                {phase === "wow" ? "Mira esto." : "¿Qué te gustaría hacer ahora?"}
-              </h2>
-              {autoSaveStatus === "saved" && (
-                <p className="text-sm text-green-600">
-                  Guardado automáticamente en tu biblioteca.
-                </p>
-              )}
-              {autoSaveStatus === "local-only" && (
-                <p className="text-sm text-amber-600">
-                  Guardado en este dispositivo. Inicia sesión para conservarlo en
-                  tu biblioteca.
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              {previewUrl && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.08em] text-neutral-400">
-                    Antes
-                  </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewUrl}
-                    alt="Foto original"
-                    className="w-full rounded-2xl border border-neutral-200 object-cover"
-                  />
-                </div>
-              )}
-              {premiumImage && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.08em] text-violet-600">
-                    Resultado
-                  </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={premiumImage}
-                    alt="Imagen premium"
-                    className="w-full rounded-2xl border border-violet-200 object-cover shadow-md shadow-violet-100"
-                  />
-                </div>
-              )}
-            </div>
-
-            {videoUrl && (
-              <div className="relative mx-auto max-w-xs overflow-hidden rounded-2xl border border-neutral-200 shadow-md">
-                <video
-                  src={videoUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="aspect-[9/16] w-full object-cover"
-                />
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <span className="rounded-lg bg-black/50 px-4 py-2 text-sm font-semibold tracking-widest text-white/80 backdrop-blur-sm">
-                    METAPROM
-                  </span>
-                </div>
-                <p className="bg-neutral-50 px-4 py-2 text-center text-xs text-neutral-500">
-                  Avance de video · HD disponible
-                </p>
-              </div>
-            )}
-
-            {phase === "next-actions" && showActions && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: EASE }}
-                className="space-y-6"
-              >
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <ActionButton onClick={handleDownloadImage}>
-                    Descargar imagen premium
-                  </ActionButton>
-                  {videoUrl && (
-                    <ActionButton onClick={handleDownloadVideo}>
-                      Descargar avance de video
-                    </ActionButton>
-                  )}
-                  <ActionButton
-                    onClick={() => setPhase("purchase-hd")}
-                    variant="secondary"
-                  >
-                    Comprar comercial HD
-                  </ActionButton>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={resetFlow}
-                    className="text-sm text-neutral-400 transition hover:text-neutral-700"
-                  >
-                    Crear algo nuevo
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        )}
+        {(phase === "cinematic-reveal" || phase === "premium-offer") &&
+          videoUrl && (
+            <CinematicReveal
+              videoUrl={videoUrl}
+              priceMxn={HD_COMMERCIAL_PRICE}
+              autoSaveMessage={autoSaveMessage}
+              initialStage={phase === "premium-offer" ? "offer" : "fade"}
+              onUnlock={() => setPhase("purchase-hd")}
+              onCreateNew={resetFlow}
+              onDownloadImage={premiumImage ? handleDownloadImage : undefined}
+              hasPremiumImage={Boolean(premiumImage)}
+            />
+          )}
 
         {phase === "purchase-hd" && (
           <motion.div
@@ -815,8 +817,8 @@ export default function CreativeDirector({
                 {formatPriceMxn(HD_COMMERCIAL_PRICE, "es")}
               </p>
               <p className="text-neutral-500">
-                Video comercial de 20–30 segundos, sin marca de agua, listo para
-                publicar en redes sociales.
+                Video comercial de 10–15 segundos en HD, sin marca de agua, listo
+                para publicar.
               </p>
             </div>
 
@@ -830,21 +832,84 @@ export default function CreativeDirector({
                   playsInline
                   className="aspect-[9/16] w-full object-cover"
                 />
+                {!premiumReady && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <span className="rounded-lg bg-black/50 px-3 py-1.5 text-xs font-semibold tracking-widest text-white/80 backdrop-blur-sm">
+                      METAPROM
+                    </span>
+                  </div>
+                )}
                 <p className="bg-neutral-50 px-4 py-2 text-center text-xs text-neutral-500">
-                  Avance actual · HD disponible
+                  {premiumReady
+                    ? "Comercial HD · sin marca de agua"
+                    : "Avance gratuito · compra HD para descargar sin marca"}
                 </p>
               </div>
             )}
 
             <div className="space-y-3">
-              <p className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-center text-sm text-violet-800">
-                Tu comercial HD se producirá aquí mismo en el estudio. Pronto
-                podrás completar tu compra sin salir de esta pantalla.
-              </p>
+              {!premiumReady && (
+                <>
+                  <p className="text-center text-sm text-neutral-600">
+                    Elige cómo quieres pagar
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
+                        paymentMethod === "card"
+                          ? "border-violet-500 bg-violet-50 text-violet-800"
+                          : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      Tarjeta
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("oxxo")}
+                      className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
+                        paymentMethod === "oxxo"
+                          ? "border-violet-500 bg-violet-50 text-violet-800"
+                          : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      OXXO
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handlePurchaseHd}
+                    disabled={checkoutLoading}
+                    className="w-full rounded-2xl bg-neutral-900 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {checkoutLoading
+                      ? "Procesando..."
+                      : "Desbloquea el comercial completo"}
+                  </button>
+                </>
+              )}
+
+              {premiumReady && videoUrl && (
+                <button
+                  type="button"
+                  onClick={handleDownloadVideo}
+                  className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+                >
+                  Descargar comercial HD
+                </button>
+              )}
+
+              {checkoutMessage && (
+                <p className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-center text-sm text-neutral-700">
+                  {checkoutMessage}
+                </p>
+              )}
+
               <button
                 type="button"
-                onClick={() => setPhase("next-actions")}
-                className="w-full rounded-2xl bg-neutral-900 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                onClick={() => setPhase("premium-offer")}
+                className="w-full rounded-2xl border border-neutral-200 py-3 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
               >
                 Volver
               </button>
@@ -855,31 +920,6 @@ export default function CreativeDirector({
         </div>
       )}
     </>
-  );
-}
-
-function ActionButton({
-  children,
-  onClick,
-  variant = "primary",
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  variant?: "primary" | "secondary";
-}) {
-  const classes =
-    variant === "primary"
-      ? "bg-neutral-900 text-white hover:bg-neutral-800"
-      : "border border-neutral-200 bg-neutral-50 text-neutral-800 hover:bg-neutral-100";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-2xl px-5 py-4 text-left text-sm font-semibold transition ${classes}`}
-    >
-      {children}
-    </button>
   );
 }
 

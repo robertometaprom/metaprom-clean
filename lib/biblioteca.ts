@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import { resolveLibraryUrl } from "@/lib/library-storage";
 import type { User } from "@supabase/supabase-js";
 import type { Mode } from "./prompts";
+import type { AssetPaymentStatus } from "./commercial/tiers";
 
 export class BibliotecaAuthError extends Error {
   constructor(message = "Authentication required to access Biblioteca.") {
@@ -14,6 +16,9 @@ export type BibliotecaProject = {
   name: string;
   user_id?: string | null;
   description?: string | null;
+  workflow_id?: string | null;
+  industry?: string | null;
+  intended_destination?: string | null;
   created_at?: string | null;
 };
 
@@ -21,12 +26,37 @@ export type BibliotecaAsset = {
   id: string;
   project_id: string;
   original_name?: string | null;
+  original_url?: string | null;
+  original_path?: string | null;
   image_url: string;
+  image_path?: string | null;
   video_url?: string | null;
+  teaser_video_url?: string | null;
+  teaser_video_path?: string | null;
+  premium_video_url?: string | null;
+  premium_video_path?: string | null;
+  image_prompt?: string | null;
+  video_prompt?: string | null;
   mode: Mode;
   ai_instructions?: string | null;
+  workflow_id?: string | null;
+  industry?: string | null;
+  payment_status?: AssetPaymentStatus;
   created_at?: string | null;
 };
+
+export type StudioProjectMetadata = {
+  workflow_id?: string | null;
+  industry?: string | null;
+  intended_destination?: string | null;
+};
+
+export type PersistStudioAssetInput = {
+  mode: Mode;
+};
+
+const ASSET_SELECT =
+  "id, project_id, original_name, original_url, original_path, image_url, image_path, video_url, teaser_video_url, teaser_video_path, premium_video_url, premium_video_path, image_prompt, video_prompt, mode, ai_instructions, workflow_id, industry, payment_status, created_at";
 
 function getAuthenticatedClient() {
   return createClient();
@@ -46,22 +76,41 @@ async function requireUser(): Promise<User> {
   return user;
 }
 
+async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset> {
+  const [originalUrl, imageUrl, teaserUrl, premiumUrl] = await Promise.all([
+    resolveLibraryUrl(asset.original_path, asset.original_url),
+    resolveLibraryUrl(asset.image_path, asset.image_url),
+    resolveLibraryUrl(
+      asset.teaser_video_path,
+      asset.teaser_video_url ?? asset.video_url,
+    ),
+    resolveLibraryUrl(asset.premium_video_path, asset.premium_video_url),
+  ]);
+
+  return {
+    ...asset,
+    original_url: originalUrl,
+    image_url: imageUrl ?? asset.image_url,
+    teaser_video_url: teaserUrl,
+    video_url: teaserUrl ?? asset.video_url,
+    premium_video_url: premiumUrl,
+  };
+}
+
 export async function fetchBibliotecaProjects(): Promise<BibliotecaProject[]> {
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
 
   const { data, error } = await supabaseClient
     .from("projects")
-    .select("id, name, user_id, created_at")
+    .select(
+      "id, name, user_id, workflow_id, industry, intended_destination, created_at",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("fetchBibliotecaProjects error", {
-      query: "select id, name, user_id, created_at where user_id = auth user",
-      table: "projects",
-      error,
-    });
+    console.error("fetchBibliotecaProjects error", { error });
     throw error;
   }
 
@@ -70,37 +119,65 @@ export async function fetchBibliotecaProjects(): Promise<BibliotecaProject[]> {
 
 export async function createBibliotecaProject(
   name: string,
-  _description?: string
+  metadataOrDescription?: StudioProjectMetadata | string,
 ): Promise<BibliotecaProject> {
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
 
+  const metadata: StudioProjectMetadata & { description?: string | null } =
+    typeof metadataOrDescription === "string"
+      ? { description: metadataOrDescription || null }
+      : (metadataOrDescription ?? {});
+
   const insertPayload = {
     name,
     user_id: user.id,
+    description: metadata.description ?? null,
+    workflow_id: metadata.workflow_id ?? null,
+    industry: metadata.industry ?? null,
+    intended_destination: metadata.intended_destination ?? null,
   };
 
   const { data, error } = await supabaseClient
     .from("projects")
     .insert(insertPayload)
-    .select("id, name, user_id, created_at")
+    .select(
+      "id, name, user_id, workflow_id, industry, intended_destination, created_at",
+    )
     .single();
 
   if (error) {
-    console.error("createBibliotecaProject error", {
-      query: "insert into projects (name, user_id)",
-      table: "projects",
-      insertPayload,
-      error,
-    });
+    console.error("createBibliotecaProject error", { insertPayload, error });
     throw error;
   }
 
   return data as BibliotecaProject;
 }
 
+export async function updateBibliotecaProject(
+  projectId: string,
+  metadata: StudioProjectMetadata,
+): Promise<void> {
+  const supabaseClient = getAuthenticatedClient();
+  const user = await requireUser();
+
+  const { error } = await supabaseClient
+    .from("projects")
+    .update({
+      workflow_id: metadata.workflow_id ?? null,
+      industry: metadata.industry ?? null,
+      intended_destination: metadata.intended_destination ?? null,
+    })
+    .eq("id", projectId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function fetchBibliotecaAssets(
-  projectId: string
+  projectId: string,
 ): Promise<BibliotecaAsset[]> {
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
@@ -122,9 +199,7 @@ export async function fetchBibliotecaAssets(
 
   const { data, error } = await supabaseClient
     .from("assets")
-    .select(
-      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
-    )
+    .select(ASSET_SELECT)
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
 
@@ -132,13 +207,48 @@ export async function fetchBibliotecaAssets(
     throw error;
   }
 
-  return (data ?? []) as BibliotecaAsset[];
+  const assets = (data ?? []) as BibliotecaAsset[];
+  return Promise.all(assets.map(hydrateAssetUrls));
+}
+
+export async function fetchBibliotecaAssetById(
+  assetId: string,
+): Promise<BibliotecaAsset | null> {
+  const supabaseClient = getAuthenticatedClient();
+  const user = await requireUser();
+
+  const { data, error } = await supabaseClient
+    .from("assets")
+    .select(ASSET_SELECT)
+    .eq("id", assetId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const { data: project } = await supabaseClient
+    .from("projects")
+    .select("id")
+    .eq("id", data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!project) {
+    return null;
+  }
+
+  return hydrateAssetUrls(data as BibliotecaAsset);
 }
 
 export async function saveBibliotecaAssets(
   assets: Array<
     Omit<BibliotecaAsset, "id" | "created_at"> & { project_id: string }
-  >
+  >,
 ): Promise<BibliotecaAsset[]> {
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
@@ -165,21 +275,35 @@ export async function saveBibliotecaAssets(
   const { data, error } = await supabaseClient
     .from("assets")
     .insert(assets)
-    .select(
-      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
-    );
+    .select(ASSET_SELECT);
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []) as BibliotecaAsset[];
+  const saved = (data ?? []) as BibliotecaAsset[];
+  return Promise.all(saved.map(hydrateAssetUrls));
 }
 
 export async function updateBibliotecaAsset(
   assetId: string,
   updates: Partial<
-    Pick<BibliotecaAsset, "image_url" | "video_url" | "ai_instructions">
+    Pick<
+      BibliotecaAsset,
+      | "image_url"
+      | "image_path"
+      | "video_url"
+      | "teaser_video_url"
+      | "teaser_video_path"
+      | "premium_video_url"
+      | "premium_video_path"
+      | "original_url"
+      | "original_path"
+      | "image_prompt"
+      | "video_prompt"
+      | "ai_instructions"
+      | "payment_status"
+    >
   >,
 ): Promise<BibliotecaAsset> {
   const supabaseClient = getAuthenticatedClient();
@@ -218,16 +342,14 @@ export async function updateBibliotecaAsset(
     .from("assets")
     .update(updates)
     .eq("id", assetId)
-    .select(
-      "id, project_id, original_name, image_url, video_url, mode, ai_instructions, created_at",
-    )
+    .select(ASSET_SELECT)
     .single();
 
   if (error) {
     throw error;
   }
 
-  return data as BibliotecaAsset;
+  return hydrateAssetUrls(data as BibliotecaAsset);
 }
 
 export function buildAutoProjectName(customerIntent: string): string {
@@ -251,4 +373,9 @@ export async function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read blob."));
     reader.readAsDataURL(blob);
   });
+}
+
+export async function getBibliotecaUserId(): Promise<string> {
+  const user = await requireUser();
+  return user.id;
 }

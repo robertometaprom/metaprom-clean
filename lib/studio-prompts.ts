@@ -44,18 +44,28 @@ The customer should immediately think: "Wow... this looks like a professional ad
 /**
  * Builds the video prompt for Studio — scene-based commercial, not photo animation.
  */
-export function buildStudioVideoPrompt(customerIntent: string): string {
+export function buildStudioVideoPrompt(
+  customerIntent: string,
+  tier: "teaser" | "premium" = "teaser",
+): string {
   const vision = customerIntent.trim();
+  const durationSeconds = tier === "premium" ? 12 : 5;
 
   const sceneBlock = vision
     ? `Scene to create:\n${vision}\n\nThe product from the reference image must appear naturally in this scene — worn, held, displayed, or used as appropriate.`
     : `Scene to create:\nA cinematic commercial showcasing the product in an aspirational real-world setting with human interaction or dynamic product use. The product from the reference image must be the hero of the scene.`;
 
-  return `Create a 5-second professional social media / TV commercial. This is NOT photo animation.
+  const qualityHint =
+    tier === "premium"
+      ? "Broadcast-quality HD commercial with rich detail and smooth motion."
+      : "Social teaser quality — punchy, scroll-stopping, medium fidelity.";
+
+  return `Create a ${durationSeconds}-second professional social media / TV commercial. This is NOT photo animation.
 
 ${sceneBlock}
 
 Requirements:
+- ${qualityHint}
 - Real advertising quality — like a commercial produced for Instagram, TikTok, or television
 - Show believable human action, environment, and context when appropriate
 - Cinematic camera movement (tracking shots, dolly, orbit — not a static zoom on a photo)

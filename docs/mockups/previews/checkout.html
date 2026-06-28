@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metaprom — Checkout Mockups</title>
+    <link rel="stylesheet" href="mockup-base.css" />
+    <style>
+      .checkout-card {
+        margin: 24px 20px;
+        padding: 32px 24px;
+      }
+      .checkout-headline {
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .checkout-price {
+        font-size: 30px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--violet-600);
+        margin-bottom: 8px;
+      }
+      .checkout-desc {
+        font-size: 14px;
+        text-align: center;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 24px;
+      }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .section-gap { margin-top: 16px; }
+      .oxxo-ref {
+        font-family: ui-monospace, monospace;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .progress-dots {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .progress-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--violet-500);
+        opacity: 0.3;
+      }
+      .progress-dots span:first-child { opacity: 1; animation: pulse 1s infinite; }
+      @keyframes pulse { 50% { opacity: 0.5; } }
+    </style>
+  </head>
+  <body>
+    <nav class="mockup-nav">
+      <a href="index.html">← All mockups</a>
+      <a href="library.html">Library mockup</a>
+    </nav>
+
+    <p class="section-title">Checkout — State 1: Default (Tarjeta selected)</p>
+    <div class="frame-row">
+      <div>
+        <p class="frame-label">390 × 844 · Figma frame: Checkout / Default</p>
+        <div class="phone-frame">
+          <div class="studio-header">
+            <div class="logo">meta<span>prom</span></div>
+            <span style="font-size:13px;color:#737373">Studio</span>
+          </div>
+          <div class="card checkout-card">
+            <h1 class="checkout-headline">Tu comercial HD está listo</h1>
+            <p class="checkout-price">$149 MXN</p>
+            <p class="checkout-desc">
+              Video comercial de 10–15 segundos en HD, sin marca de agua, listo para publicar.
+            </p>
+            <div class="video-preview">
+              <div style="width:100%;height:100%;background:linear-gradient(180deg,#3d2a1f,#1a100a)"></div>
+              <div class="watermark"><span>METAPROM</span></div>
+            </div>
+            <p class="video-caption">Avance gratuito · compra HD para descargar sin marca</p>
+            <div class="stack section-gap">
+              <p style="text-align:center;font-size:14px;color:#525252">Elige cómo quieres pagar</p>
+              <div class="chip-row">
+                <div class="chip chip--selected">Tarjeta</div>
+                <div class="chip">OXXO</div>
+              </div>
+              <button class="btn-primary">Comprar ahora</button>
+              <p class="trust-line">Pago seguro · Descarga inmediata</p>
+              <button class="btn-secondary">Volver</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Checkout — State 2: OXXO selected</p>
+    <div class="frame-row">
+      <div>
+        <p class="frame-label">390 × 844 · Figma frame: Checkout / OXXO</p>
+        <div class="phone-frame phone-frame--short">
+          <div class="studio-header">
+            <div class="logo">meta<span>prom</span></div>
+          </div>
+          <div class="card checkout-card">
+            <h1 class="checkout-headline">Tu comercial HD está listo</h1>
+            <p class="checkout-price">$149 MXN</p>
+            <div class="video-preview" style="margin-bottom:12px">
+              <div style="width:100%;height:100%;background:linear-gradient(180deg,#3d2a1f,#1a100a)"></div>
+              <div class="watermark"><span>METAPROM</span></div>
+            </div>
+            <div class="stack">
+              <div class="chip-row">
+                <div class="chip">Tarjeta</div>
+                <div class="chip chip--selected">OXXO</div>
+              </div>
+              <button class="btn-primary">Generar referencia OXXO</button>
+              <p class="trust-line">Paga en tienda · Válido 72 horas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Checkout — State 3: OXXO awaiting payment</p>
+    <div class="frame-row">
+      <div>
+        <p class="frame-label">390 × 844 · Figma frame: Checkout / OXXO Pending</p>
+        <div class="phone-frame phone-frame--short">
+          <div class="card checkout-card">
+            <h1 class="checkout-headline">Paga en OXXO</h1>
+            <div class="status-banner status-banner--info">
+              <p>Referencia</p>
+              <p class="oxxo-ref" style="margin-top:4px">OXXO-A1B2C3D4</p>
+              <p style="font-size:12px;margin-top:8px;opacity:0.8">Vence en 72 horas</p>
+            </div>
+            <p class="checkout-desc section-gap">
+              Cuando recibamos tu pago, produciremos tu comercial HD automáticamente.
+            </p>
+            <div class="status-banner status-banner--progress">
+              Esperando confirmación de pago…
+              <div class="progress-dots"><span></span><span></span><span></span></div>
+            </div>
+            <button class="btn-secondary section-gap">Volver</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Checkout — State 4: Producing HD</p>
+    <div class="frame-row">
+      <div>
+        <p class="frame-label">390 × 844 · Figma frame: Checkout / Processing</p>
+        <div class="phone-frame phone-frame--short">
+          <div class="card checkout-card">
+            <h1 class="checkout-headline">Produciendo tu comercial HD</h1>
+            <div class="video-preview" style="margin:24px auto">
+              <div style="width:100%;height:100%;background:#111;display:flex;align-items:center;justify-content:center">
+                <div style="width:48px;height:48px;border:3px solid #333;border-top-color:#8b5cf6;border-radius:50%"></div>
+              </div>
+            </div>
+            <div class="status-banner status-banner--progress">
+              Esto toma unos minutos. No cierres esta pantalla.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Checkout — State 5: Success</p>
+    <div class="frame-row">
+      <div>
+        <p class="frame-label">390 × 844 · Figma frame: Checkout / Success</p>
+        <div class="phone-frame phone-frame--short">
+          <div class="card checkout-card">
+            <h1 class="checkout-headline">¡Listo!</h1>
+            <p class="checkout-desc">Tu comercial HD está disponible para descargar.</p>
+            <div class="video-preview">
+              <div style="width:100%;height:100%;background:linear-gradient(180deg,#4a3728,#1a1510)"></div>
+            </div>
+            <p class="video-caption">Comercial HD · sin marca de agua</p>
+            <div class="stack section-gap">
+              <span class="badge badge--hd" style="align-self:center">HD desbloqueado</span>
+              <button class="btn-primary btn-violet">Descargar comercial HD</button>
+              <button class="btn-secondary">Crear algo nuevo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

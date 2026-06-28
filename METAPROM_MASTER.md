@@ -1,18 +1,53 @@
 # METAPROM MASTER
 
+## Executive Summary (June 28, 2026)
+
+**Metaprom has officially transitioned from building an AI engine to building a world-class commercial product experience.**
+
+The AI generation stack — commercial image transformation and cinematic video via Veo 3.1 Lite — is **mature enough for Beta**. First real customer WOW was validated on June 28, 2026. The product hypothesis is confirmed: customers buy the feeling of seeing their own product transformed into professional marketing, not AI.
+
+**The primary bottleneck is no longer generation quality.** It is UX, commercial flow, and customer conversion.
+
+| Era | Focus | Status |
+|-----|-------|--------|
+| Phase 1 — AI Engine | Image + video generation, prompts, APIs | **Complete** |
+| Phase 2 — Product Experience | Commercial MVP, Cinematic Reveal, checkout, library, Beta | **Active** |
+
+**Strategic change:**
+
+> Metaprom is no longer AI-first. Metaprom is **Product Experience First**.
+
+The objective is no longer improving AI generation. The objective is creating a **premium commercial experience** that converts — from first visit through purchase and download.
+
+**Current priorities (in order):**
+
+1. Complete commercial MVP
+2. Complete Studio workflow
+3. Automatic Library
+4. Premium checkout
+5. Membership system
+6. UX refinement
+7. Beta launch
+
+**Success metric:**
+
+> Customers say: *"WOW… I want this commercial."*
+
+See **Product Completion Roadmap (June 2026)**, **Cinematic Reveal**, **Commercial Product Journey**, **Product Philosophy**, **Official Development Workflow**, and **Team Roles**.
+
+---
+
 ## Project Vision
 
-Metaprom is an AI-powered platform focused on creating, enhancing and managing advertising assets for ecommerce sellers and brands.
+Metaprom is a commercial content platform focused on creating professional advertising assets for ecommerce sellers, restaurants, real estate, and SMBs — not merely improving product photos.
 
-The long-term vision is to provide the simplest and most accessible way for sellers and businesses to manufacture professional commercial advertising content — not merely improve product photos.
-
-The platform is designed to evolve from marketplace photo optimization into a fully automated commercial content factory: images, social creatives, and video.
+The long-term vision is the simplest way for businesses to manufacture professional commercial advertising content: images, social creatives, and video.
 
 Core philosophy:
 
 > Customers do not want AI. Customers want content that helps them sell.
 
-Core mission (June 2026):
+Core mission:
 
 > Bring premium advertising creation to people who are not AI experts.
 
@@ -20,14 +55,345 @@ Metaprom sells marketing results, not AI. Customers should never need to underst
 
 Platform scope:
 
-* Photo enhancement
 * Commercial image generation
-* Video generation
-* Marketing asset creation
+* Cinematic video generation
+* Automatic marketing asset library
+* Premium commercial purchase and download
 
-See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — First Real Commercial Generated (June 28, 2026)**, **Video Generation — Validated (June 2026)**, and **Video Strategy Discovery (June 2026)**.
+Historical scope (preserved): photo enhancement, marketplace optimization — now acquisition channels, not the product center.
 
-See **Continuity Context (June 2026)** and **Roadmap** for current project state and priorities.
+See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — First Real Commercial Generated (June 28, 2026)**, **Video Generation — Validated (June 2026)**, and **Session Summary — Strategic Transition (June 28, 2026)**.
+
+---
+
+## Product Completion Roadmap (June 2026)
+
+### Strategic direction
+
+**Metaprom is no longer AI-first. Metaprom is Product Experience First.**
+
+The AI engine is considered mature enough for Beta. The primary bottleneck is UX, commercial flow, and customer conversion.
+
+Objective:
+
+> Complete the commercial flow as one continuous premium experience.
+
+Success metric:
+
+> Customers say: *"WOW… I want this commercial."*
+
+### Current priorities (official — June 28, 2026)
+
+| # | Priority | Status |
+|---|----------|--------|
+| 1 | **Complete commercial MVP** | In progress — Sprint 1 + 2 shipped; polish + migration pending |
+| 2 | **Complete Studio workflow** | Functional — Cinematic Reveal integrated |
+| 3 | **Automatic Library** | Sprint 1 shipped — Supabase Storage + auto-persistence |
+| 4 | **Premium checkout** | Sprint 2 shipped — provider-agnostic payments (mock dev) |
+| 5 | **Membership system** | Not started — mockups required |
+| 6 | **UX refinement** | Active — Cinematic Reveal, mockup-first for major UI |
+| 7 | **Beta launch** | Pending — after commercial loop validated end-to-end |
+
+**The objective is no longer improving AI generation. The objective is creating a premium commercial experience.**
+
+### Product principles (non-negotiable)
+
+* The customer buys **results**, not AI.
+* Never expose prompts, models, or technical concepts.
+* AI adapts to the customer; the customer never adapts to AI.
+* Every screen must reduce friction.
+* **Product Experience First.**
+* **The WOW stays inside Metaprom** (see **Cinematic Reveal**).
+* Uploaded photo always takes precedence.
+* Saving is automatic — the customer never manages files.
+* Library is automatic — every creation appears without user action.
+* Checkout sells the **commercial**, not the payment.
+* Important screens require **approved mockups before implementation** (see **Product Review Process**).
+
+### Commercial tiers
+
+**Free (customer acquisition — teaser)**
+
+* 3–5 second teaser video
+* Metaprom watermark
+* Medium quality
+* Delivered via **Cinematic Reveal** — creates trust and WOW, not the full deliverable
+
+**Premium (paid)**
+
+* 10–15 second HD commercial
+* No watermark
+* Marketing-ready download
+* Unlocked after checkout inside Studio
+
+Reference price: **$149 MXN** (`commercial-video` in `lib/pricing.ts`).
+
+### Payment architecture
+
+Payment architecture must remain **provider-agnostic**. Never couple product architecture to a specific payment provider.
+
+Generic abstraction: `lib/payments/`
+
+| Method | Support |
+|--------|---------|
+| Cards | Interface + mock provider |
+| OXXO (Mexico) | Interface + mock provider |
+| Future providers | Mercado Pago, Stripe, etc. as plug-in implementations |
+
+Environment: `PAYMENT_PROVIDER` (default `mock` for development).
+
+See **Payments Architecture** and `lib/payments/README.md`.
+
+### Session deliverables (June 28, 2026)
+
+| Deliverable | Status |
+|-------------|--------|
+| Sprint 1 — auto-persistence (original, enhanced, video, prompts, metadata) | Shipped |
+| Supabase Storage bucket + migration | Migration prepared |
+| Sprint 2 — free teaser + premium + payment abstraction | Shipped |
+| Checkout + Library mockups (`docs/mockups/`) | Ready for review |
+| **Cinematic Reveal** — signature premiere experience | Shipped |
+| METAPROM_MASTER strategic transition | This update |
+
+---
+
+## Cinematic Reveal (June 2026)
+
+**Internal product name:** Cinematic Reveal
+
+**Priority:** One of the highest UX priorities. **The signature experience of Metaprom.**
+
+The emotional peak of the product must happen **before** the purchase decision — inside Metaprom, not after downloading the file.
+
+### Problem (obsolete flow — do not return to this)
+
+```
+Generation → small embedded preview → download → user watches fullscreen outside app → WOW
+```
+
+The WOW moment happened **outside** the product. Incorrect.
+
+### Signature flow (official)
+
+```
+Generation complete
+  ↓
+Fade to black
+  ↓
+Metaprom Infinity logo (~1 second)
+  ↓
+Automatic fullscreen playback
+  ↓
+Audio ON (by default)
+  ↓
+No controls during the opening seconds
+  ↓
+Premium Offer
+  · CTA: "Desbloquea el comercial completo"
+  ↓
+Checkout
+  ↓
+Library (automatic)
+  ↓
+Download Center
+```
+
+The user should feel like watching a **movie premiere**.
+
+### Objective
+
+> The objective is NOT showing a generated video.
+> The objective is creating an emotional WOW moment **inside** Metaprom.
+
+### Tiers
+
+| Tier | Spec | When |
+|------|------|------|
+| Free (teaser) | 3–5 s · watermark · medium quality | Cinematic Reveal playback |
+| Premium | 10–15 s · HD · no watermark | After checkout |
+
+### Implementation (shipped June 28, 2026)
+
+| Item | Location |
+|------|----------|
+| Premiere component | `components/studio/CinematicReveal.tsx` |
+| Infinity logo | `components/studio/MetapromInfinityLogo.tsx` |
+| Studio phases | `cinematic-reveal` → `premium-offer` → `purchase-hd` |
+| Video post-processing | `lib/video-processing.ts` (trim, watermark, tier) |
+| Brief | `docs/mockups/cinematic-reveal-brief.md` |
+
+**Rule:** Every future video experience must preserve this philosophy.
+
+---
+
+## UX Discoveries (June 28, 2026)
+
+Insights from first real customer WOW and the Product Experience transition:
+
+* The user remembers **emotional peaks** more than technical quality.
+* The WOW moment must happen **inside Metaprom** — not after download (see **Cinematic Reveal**).
+* Landing and Studio must become **visually continuous** — one premium surface, not two products.
+* Every transition must feel **cinematic** — fade, premiere, reveal; not page reloads or small embeds.
+* **Library is automatic** — the customer never manages files.
+* **Saving is automatic** — the customer never loses work.
+* **Checkout sells the commercial**, not the payment — copy and UI lead with the result, not the transaction.
+
+These discoveries supersede earlier priorities focused on multi-industry AI consistency testing as the primary sprint goal. Customer tests remain mandatory, but only **after the commercial loop is exercisable**.
+
+---
+
+## Commercial Product Journey (June 2026)
+
+The complete commercial journey — the product should feel like **one continuous premium experience**:
+
+```
+Landing
+  ↓
+Login
+  ↓
+Studio
+  ↓
+Upload
+  ↓
+Generation
+  ↓
+Cinematic Reveal
+  ↓
+Premium Offer
+  ↓
+Checkout
+  ↓
+Library
+  ↓
+Download Center
+```
+
+**Studio IS the product.** Everything between upload and purchase lives in `/studio`.
+
+Landing + Studio unification is **post–commercial MVP**, blocked on approved mockups (see `docs/mockups/landing-studio-brief.md`).
+
+---
+
+## Official Development Workflow (June 2026)
+
+The official Metaprom product development workflow:
+
+```
+Idea
+  ↓
+Strategic discussion
+  ↓
+UX / Product review
+  ↓
+Visual Mockups
+  ↓
+CEO approval
+  ↓
+Cursor implementation
+  ↓
+UX Review
+  ↓
+Iteration
+```
+
+**Permanent rule:** No major UI may be implemented before approved mockups.
+
+### Product Review Process
+
+Every important screen requires:
+
+1. **Mockup** — brief + visual in `docs/mockups/`
+2. **Product review** — UX and copy validated
+3. **Approval** — CEO sign-off documented in brief
+4. **Implementation** — Cursor builds to match approved mockup only
+
+### Applies to (mockup required)
+
+* Library (full redesign)
+* Checkout UI polish
+* Membership dashboard
+* Download center
+* Landing + Studio unified experience
+
+### Does not block
+
+* Backend persistence, storage, APIs
+* Payment abstraction and routes
+* Cinematic Reveal (product principle — shipped)
+* Minimal functional wiring to existing Studio surfaces
+
+### Mockup assets (June 28, 2026)
+
+| Screen | Preview |
+|--------|---------|
+| Checkout (5 states) | `docs/mockups/previews/checkout.html` |
+| Library (4 states) | `docs/mockups/previews/library.html` |
+| Design tokens | `docs/mockups/design-tokens.md` |
+| PNG exports | `docs/mockups/approvals/` |
+
+Status: **Ready for product review** — not yet approved for full UI implementation.
+
+See `docs/mockups/README.md`.
+
+---
+
+## Team Roles (June 2026)
+
+| Role | Person / Tool | Responsibility |
+|------|---------------|----------------|
+| **CEO** | Roberto | Vision, business, product strategy, final approval |
+| **Product Design** | ChatGPT | UX, product architecture, mockups, commercial experience |
+| **CTO / Engineering** | Cursor | Implementation, refactoring, technical architecture |
+
+### Roberto — CEO
+
+* Vision
+* Business
+* Product strategy
+* Mockup and feature approval
+
+### ChatGPT — Product Design
+
+* Product design
+* UX
+* Product architecture
+* Mockups as implementation specifications
+* Commercial experience design
+
+### Cursor — CTO / Engineering
+
+* Engineering
+* Implementation
+* Refactoring
+* Technical architecture
+* Repository intelligence
+
+See **AI Development Workflow** for multi-tool execution details.
+
+---
+
+## Payments Architecture (June 2026)
+
+Payment architecture must remain **provider-agnostic**. Never couple product architecture to Mercado Pago, Stripe, or any single provider.
+
+### Requirements
+
+* Support multiple payment methods: **cards**, **OXXO**, and future providers
+* Plug-in provider implementations behind a common interface
+* Product code references `lib/payments/` — not provider SDKs directly in UI
+
+### Implementation (shipped)
+
+| Item | Location |
+|------|----------|
+| Provider interface | `lib/payments/types.ts` |
+| Provider registry | `lib/payments/index.ts` |
+| Mock provider (dev) | `lib/payments/providers/mock.ts` |
+| Checkout API | `POST/GET /api/payments/checkout` |
+| Webhook API | `POST /api/payments/webhook` |
+| Purchases table | `supabase/migrations/20260628120000_library_storage_and_commercial.sql` |
+
+Environment: `PAYMENT_PROVIDER=mock` (development). Production provider TBD after Beta validation.
 
 ---
 
@@ -42,12 +408,14 @@ See **Continuity Context (June 2026)** and **Roadmap** for current project state
 | Project | Metaprom AI |
 | Domain | metaprom.com |
 | Stack | Next.js + TypeScript + Supabase + Vercel |
-| Initial product | Ecommerce photo enhancement |
-| Strategic evolution | **AI Creative Studio** — commercial image + video generation (not photo enhancement) |
-| Studio | **Studio IS the product** — full customer journey lives in `/studio` |
-| Video (validated) | Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`) |
-| First customer WOW | **Validated (June 28, 2026)** — commercial image + cinematic video from cellphone photo |
-| Paid project | Metaprom AI (Google AI Studio, Tier 1, prepaid balance) |
+| **Strategic mode** | **Product Experience First** — Beta preparation |
+| AI engine | **Mature enough for Beta** — image + Veo 3.1 Lite video validated |
+| Primary bottleneck | UX, commercial flow, customer conversion |
+| Studio | **Studio IS the product** — `/studio` |
+| Signature UX | **Cinematic Reveal** — shipped June 28, 2026 |
+| Video | Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`) |
+| First customer WOW | **Validated (June 28, 2026)** |
+| Commercial MVP | Sprint 1 + 2 shipped — migration + mockup approval pending |
 
 ### Recent Discoveries
 
@@ -124,17 +492,19 @@ See **Infrastructure & Operations**.
 
 ### Immediate Next Objective
 
-Validate consistency across multiple industries — not whether AI works, but whether Metaprom **consistently creates commercials customers want to buy**:
+**Complete the commercial MVP and prepare for Beta** — not more AI experimentation.
 
-* Restaurant
-* Coffee
-* Flowers
-* Real Estate
-* Marketplace products
+Active execution order:
 
-Every sprint should end with a real customer test, not with completed code.
+1. Apply Supabase migrations (Storage, purchases, RLS)
+2. Approve Checkout + Library mockups → implement redesigned UI
+3. Membership system (mockup → approval → build)
+4. Landing + Studio unified experience (mockup → approval → build)
+5. End-to-end customer test of full journey → Beta launch
 
-See **Milestone — First Real Commercial Generated (June 28, 2026)** — Startup Mode Reinforced.
+Every sprint ends with a real customer test when the commercial loop is exercisable.
+
+See **Product Completion Roadmap (June 2026)**, **Cinematic Reveal**, and **Session Summary — Strategic Transition (June 28, 2026)**.
 
 ---
 
@@ -1304,71 +1674,44 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Product Philosophy
 
-See also: **NO BARRIERS. NO NONSENSE.**, **Target Customer (June 2026 Update)**, and **Competitive Positioning — Workflow Over Models (June 2026)**.
+See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, and **Target Customer (June 2026 Update)**.
 
-Core principles:
+### Core principles (June 28, 2026 — official)
 
-* People buy results, not technology.
-* The user should not navigate Metaprom AI — Metaprom AI should navigate the user.
+* The customer buys **results**, not AI.
+* Never expose prompts, models, or technical concepts.
+* AI adapts to the customer; the customer never adapts to AI.
+* Every screen must reduce friction.
+* **Product Experience First.**
+* **The WOW stays inside Metaprom.**
+
+### Supporting principles (preserved)
+
+* The user should not navigate Metaprom — Metaprom navigates the user.
 * Design like Uber, not an aircraft cockpit.
+* Users choose outcomes, not AI settings.
+* Uploaded photo is the strongest signal of intent.
+* Saving is invisible — automatic.
+* Library is automatic — no file management.
+* Checkout sells the commercial, not the payment.
+* Simplicity is a competitive advantage.
 
 Principle:
 
-Users choose outcomes, not AI settings.
+> Users care about outcomes more than AI.
 
-Implications:
-
-* Users should select business goals and destinations.
-* Metaprom should hide unnecessary AI complexity.
-* Marketplace and platform workflows should be pre-configured whenever possible.
-* Simplicity is a competitive advantage.
-
-Examples:
-
-Instead of asking users for prompts, models, aspect ratios or technical parameters, Metaprom should ask:
-
-* Where will this be published?
-* What are you trying to sell?
-* What result do you want?
-
-Additional Principle:
-
-Users care about outcomes more than AI.
-
-Implications:
-
-* Visual transformation is more important than AI terminology.
-* Business value should be emphasized over technical implementation.
-* Users should see improved results, not AI complexity.
-* AI should remain largely invisible whenever possible.
-
-Observation:
-
-The customer is not purchasing AI.
-
-The customer is purchasing:
+The customer is not purchasing AI. The customer is purchasing:
 
 * Better product presentation
 * Better advertising assets
 * Increased perceived professionalism
-* Faster content creation
+* The emotional peak of seeing their product as a real commercial
 
-Additional Principle:
-
-Metaprom should sell transformation, not AI.
-
-Users should primarily experience:
-
-* Better images
-* Better videos
-* Better marketing assets
-* Better business presentation
-
-AI is the enabling technology, not the product.
+Metaprom sells **transformation**, not AI. AI is the enabling technology, not the product.
 
 ### Studio Principles (June 28, 2026)
 
-See **Milestone — First Real Commercial Generated (June 28, 2026)**.
+See **Milestone — First Real Commercial Generated (June 28, 2026)** and **Cinematic Reveal**.
 
 * The uploaded photo is the strongest signal of intent.
 * Intent classification enriches the experience but never blocks creation.
@@ -1376,15 +1719,7 @@ See **Milestone — First Real Commercial Generated (June 28, 2026)**.
 * The customer should never adapt to the AI; the AI adapts to the customer.
 * The objective is believable commercials, not animated photos.
 * Commercial Image → Commercial Video: the generated image is the visual foundation for the commercial.
-
-Implications:
-
-* Marketing should emphasize outcomes.
-* Marketing should emphasize before/after transformation.
-* Technical AI terminology should remain secondary whenever possible.
-* Users should not need AI expertise to obtain value.
-
-Observation:
+* The WOW moment happens inside Metaprom via **Cinematic Reveal** — before the purchase decision.
 
 Customers care far more about business outcomes than about the underlying AI technology.
 
@@ -1392,28 +1727,21 @@ Customers care far more about business outcomes than about the underlying AI tec
 
 ## Strategic Positioning
 
-### June 2026
+### June 2026 — Product Experience First (June 28, 2026 update)
 
-Observation:
+Metaprom is positioned as a **world-class commercial product experience** — not an AI platform.
 
-Metaprom is increasingly positioned as a business transformation platform rather than an AI platform.
+The AI engine is mature enough for Beta. Customers respond to **emotional peaks** and professional results, not AI terminology.
 
-Customers are expected to respond primarily to:
+Working principles:
 
-* Better product presentation
-* Better marketing materials
-* Better visual assets
-* Increased professionalism
+* The customer buys the transformation, not AI.
+* The WOW stays inside Metaprom (**Cinematic Reveal**).
+* Checkout sells the commercial, not the payment.
 
-rather than to AI itself.
+See **Executive Summary** and **UX Discoveries (June 28, 2026)**.
 
-Working Principle:
-
-The customer buys the transformation.
-
-AI is simply the mechanism that delivers it.
-
-### June 2026 – Strategic Pivot
+### June 2026 – Strategic Pivot (preserved)
 
 Metaprom is repositioning to an **AI-Powered Commercial Content Factory** — selling ready-to-use commercial assets, not AI tools.
 
@@ -1425,7 +1753,7 @@ Landing and marketing should demonstrate outcomes visually — creative studio, 
 
 Video is a **validated capability** (Veo 3.1 Lite on Metaprom AI paid project). See **Video Generation — Validated (June 2026)**.
 
-UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom navigates the user from WOW to purchase. See **NO BARRIERS. NO NONSENSE.**
+UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom navigates the user from **Cinematic Reveal** to premium offer to purchase. See **NO BARRIERS. NO NONSENSE.** and **Cinematic Reveal**.
 
 ---
 
@@ -1456,176 +1784,174 @@ Previous focus (pre-pivot):
 * Marketplace-ready content
 * Product photography enhancement
 
-Current focus (June 2026 — post-video validation):
+Current focus (June 28, 2026 — Product Experience First):
 
-* Marketing content generation platform (non-expert SMBs)
-* Veo 3.1 Lite video generation — **validated POC**
-* Guided UX — NO BARRIERS. NO NONSENSE.
-* Biblioteca extension — Images + Videos unified library
-* Visual outcome-first landing experience
-* Multi-segment beta (marketplace + social + real estate)
+* **Commercial MVP** — Studio → Cinematic Reveal → checkout → Library
+* **Product Experience First** — AI engine mature for Beta; UX is the bottleneck
+* Cinematic Reveal as signature premiere experience
+* Provider-agnostic payments (`lib/payments/`)
+* Automatic Library — Storage-backed persistence
+* Mockup-first workflow for all major UI
+* Landing + Studio visual continuity (post-MVP, mockups required)
+* Beta launch for non-expert SMBs
 * Marketplace photo enhancement as acquisition channel (Market A)
 
 ---
 
 ## Current Product Status
 
-### Completed
+### Completed (AI Engine — Phase 1)
 
-* OpenAI integration
-* Image enhancement workflow
-* Biblioteca module (images)
-* Project creation
-* Asset storage (images)
-* Asset preview
-* Supabase integration
-* Google OAuth authentication flow
-* Login, callback and sign-out routes
-* Supabase SSR session architecture
-* Ownership layer (projects.user_id)
-* Application-level project isolation
-* RLS migration preparation
-* **Studio experience — functional (June 2026)**
-  * `/studio` — Creative Director flow (intent → upload → create → WOW → actions)
-  * Commercial image + video generation in single journey
-  * In-Studio library panel (no dashboard redirect)
-  * Automatic save on generation (images + video)
-  * Commercial-first prompt pipeline (`lib/studio-prompts.ts`)
-* **First real customer WOW — validated (June 28, 2026)**
-  * Cellphone photo → commercial scene → cinematic promotional video
-  * Core product hypothesis confirmed in live customer test
-* **Video generation — validated (June 2026)**
-  * Google Gemini API + Veo 3.1 Lite (`veo-3.1-lite-generate-preview`)
-  * `POST /api/video`, integrated in Studio
-  * Image → Prompt → MP4 → Browser
-  * Paid Metaprom AI project + prepaid billing active
-  * Measured economics: ~1.61 MXN/sec (~8.05 MXN for 5s clip)
+* OpenAI integration — commercial image generation
+* Google Gemini + Veo 3.1 Lite — cinematic video (**validated**)
+* First real customer WOW (**June 28, 2026**)
+* Video economics measured (~1.61 MXN/sec)
+* Supabase + Google OAuth + ownership layer
+* RLS migration prepared
 * Zoho email migration (metaprom.com)
 
-### Current (in progress)
+### Completed (Product Experience — Phase 2, June 28, 2026)
 
-* Multi-industry consistency validation (restaurant, coffee, flowers, real estate, marketplace)
-* In-Studio HD purchase flow (payment integration pending)
-* RLS activation and validation
-* Video economics validation (margin, pricing, VIDEO PREMIUM concept)
-* API key / billing alignment (Metaprom AI paid project)
+* **Studio workflow** — intent → upload → generation → Cinematic Reveal → premium offer → checkout
+* **Cinematic Reveal** — fade → Infinity logo → fullscreen premiere → offer (`CinematicReveal.tsx`)
+* **Sprint 1** — automatic Library persistence (original, enhanced, video, prompts, metadata) via Supabase Storage
+* **Sprint 2** — free teaser (watermark, 3–5 s) + premium tier + provider-agnostic payments
+* Payment abstraction — `lib/payments/` + checkout/webhook APIs (mock provider)
+* Premium video generation — `POST /api/studio/premium-video`
+* Mockups — Checkout + Library HTML/PNG previews (`docs/mockups/`)
+* Strategic documentation — Product Experience First transition
 
-### Near-term
+### In progress
 
-* Multi-industry customer tests (restaurant, coffee, flowers, real estate, marketplace)
-* In-Studio payment / HD commercial purchase
-* Biblioteca video integration (Images + Videos unified library)
-* Guided production UX (NO BARRIERS flow)
-* Visual outcome-first landing page
-* Multi-segment beta program (Groups A, B, C)
-* Prompt Compliance Assistant (design)
-* Asset deletion, project deletion
+* Supabase migration execution (Storage bucket, purchases, RLS)
+* Mockup approval → Library + Checkout UI redesign
+* Membership system (mockup pending)
+* Landing + Studio visual continuity (mockup pending)
+* Download center (mockup pending)
 
-### Future
+### Near-term (Beta path)
 
-* Payments and VIDEO PREMIUM packaging (149 MXN reference)
-* Watermarks, free tier, conversion funnel
-* Marketplace-specific exports
-* Content Policy UX — never silently substitute restricted IP
-* Ad-supported / sponsored generations (exploration)
-* Multi-provider video architecture (Veo, Kling, Runway)
+1. Complete commercial MVP end-to-end validation
+2. Membership system
+3. UX refinement (approved mockups only)
+4. Beta launch
+
+### Obsolete priorities (superseded June 28, 2026)
+
+The following are **no longer primary sprint goals** — preserved for historical context only:
+
+* Multi-industry AI consistency as top priority (replaced by commercial MVP)
+* "Improve generation quality" as objective (AI engine mature for Beta)
+* In-Studio payment as "not started" (Sprint 2 shipped — provider integration pending)
+* Separate video dashboard (Library is automatic, unified)
 
 ---
 
 ## Roadmap
 
-Structured view of product progress (June 2026).
+Structured view of product progress (June 2026). **Product Experience First** — see **Executive Summary** and **Product Completion Roadmap (June 2026)**.
 
-### Completed
+### Completed — AI Engine (Phase 1)
 
 | Item | Status |
 |------|--------|
-| Image enhancement | Shipped |
-| Biblioteca (images) | Shipped |
-| Google OAuth + ownership | Shipped |
-| Studio experience (`/studio`) | **Functional** |
-| Commercial image + video in Studio | **First customer WOW validated (June 28, 2026)** |
+| Image + commercial generation (OpenAI) | Shipped |
 | Veo 3.1 Lite video | **Validated** |
-| Video unit economics (initial) | **Measured** |
+| First customer WOW | **Validated (June 28, 2026)** |
+| Video unit economics | Measured |
+| Google OAuth + ownership | Shipped |
 | Strategic repositioning | Documented |
-| UX philosophy (Kling, NO BARRIERS) | Documented |
-| Automatic save (Studio) | Shipped (emerging) |
 
-### Current
+### Completed — Product Experience (Phase 2, June 28, 2026)
 
 | Item | Status |
 |------|--------|
-| Multi-industry consistency validation | **Active priority** |
-| In-Studio HD purchase / payments | Not started |
-| RLS security checkpoint | Migration prepared, pending execution |
-| Legacy `/dashboard` retirement | Partial — Studio no longer redirects |
+| Studio workflow | **Functional** |
+| **Cinematic Reveal** | **Shipped** |
+| Sprint 1 — Library auto-persistence (Storage) | **Shipped** (apply migration) |
+| Sprint 2 — teaser + premium + payments | **Shipped** (mock provider) |
+| Payment abstraction | **Shipped** |
+| Checkout + Library mockups | Ready for review |
+| Product Experience pivot documented | **This session** |
 
-### Near-term
+### Current priorities (official)
 
-| Item | Priority |
-|------|----------|
-| Multi-industry customer tests | **Highest** |
-| In-Studio payment / HD commercial | High |
-| Unified library (Images + Videos) | High |
-| Guided non-expert UX flow | High |
-| VIDEO PREMIUM pricing validation | High |
-| Beta program (non-expert SMBs) | High |
-| Outcome-first landing page | Medium |
-| Prompt Compliance Assistant | Medium |
+| # | Priority | Status |
+|---|----------|--------|
+| 1 | Complete commercial MVP | In progress |
+| 2 | Complete Studio workflow | Shipped — refine |
+| 3 | Automatic Library | Shipped — UI redesign pending mockup |
+| 4 | Premium checkout | Shipped — production provider TBD |
+| 5 | Membership system | Not started |
+| 6 | UX refinement | Active |
+| 7 | Beta launch | Pending |
 
-### Future
+### Blocked on mockup approval
+
+| Item | Brief |
+|------|-------|
+| Library UI redesign | `docs/mockups/library-brief.md` |
+| Checkout UI polish | `docs/mockups/checkout-brief.md` |
+| Membership dashboard | `docs/mockups/membership-brief.md` |
+| Download center | `docs/mockups/download-center-brief.md` |
+| Landing + Studio unified | `docs/mockups/landing-studio-brief.md` |
+
+### Future (post-Beta)
 
 | Item | Notes |
 |------|-------|
-| Payments / subscriptions | After beta validation |
-| Free tier + watermark strategy | See Video Strategy Discovery |
-| Content policy UX | Never silent substitution |
-| Ad-supported generations | Exploration only |
+| Production payment provider (Mercado Pago, etc.) | Via `lib/payments/` |
+| Subscriptions | After one-time purchase validated |
+| Aspect ratio automation | Invisible to user |
 | Multi-provider video | Provider-agnostic architecture |
+| Content policy UX | Never silent substitution |
 
 ---
 
 ## Current Architecture
 
-Domain
+### Commercial product journey
 
-* metaprom.com (production)
+See **Commercial Product Journey**. The architecture serves one continuous premium experience:
 
-Frontend
+```
+Landing → Login → Studio → Upload → Generation
+  → Cinematic Reveal → Premium Offer → Checkout → Library → Download Center
+```
 
-* Next.js
-* TypeScript
+### Infrastructure
 
-Hosting
+| Layer | Technology |
+|-------|------------|
+| Domain | metaprom.com (production) |
+| Frontend | Next.js, TypeScript |
+| Hosting | Vercel |
+| Database | Supabase (Postgres + Storage + Auth) |
+| AI — Image | OpenAI (`/api/enhancement`) |
+| AI — Video | Google Gemini API — Veo 3.1 Lite (`/api/video`, `/api/studio/premium-video`) |
+| Video processing | `lib/video-processing.ts` (ffmpeg — tier, watermark, trim) |
+| Payments | `lib/payments/` — provider-agnostic (mock dev) |
+| Library persistence | `lib/studio-persistence.ts`, `lib/library-storage.ts` |
+| Signature UX | `components/studio/CinematicReveal.tsx` |
 
-* Vercel
+Environment variables: `GEMINI_API_KEY`, `VEO_MODEL`, `PAYMENT_PROVIDER`, Supabase keys.
 
-Database
+### Authentication
 
-* Supabase
+* Supabase Auth — Google OAuth (primary)
+* Supabase SSR session architecture
+* Ownership: `auth.users.id` → `projects.user_id` → `assets`
 
-AI
+### Development environment
 
-* OpenAI (image enhancement)
-* Google Gemini API — Veo 3.1 Lite (`veo-3.1-lite-generate-preview`, validated POC)
-* `GEMINI_API_KEY`, `VEO_MODEL` environment variables
+| Tool | Role |
+|------|------|
+| **Cursor** | CTO — implementation, refactoring, technical architecture |
+| **ChatGPT** | Product design — UX, mockups, commercial experience |
+| **GitHub** | Repository |
+| **Roberto** | CEO — vision, strategy, approval |
 
-Authentication
-
-* Supabase Auth
-* Google OAuth (primary sign-in method)
-* Supabase SSR (session architecture)
-
-Development Environment
-
-* Cursor (primary IDE and repository intelligence)
-* GitHub
-* ChatGPT (strategy, product and architecture)
-* Codex (targeted code generation)
-
-See **AI Development Workflow** for the multi-tool development approach.
-
-See **Authentication Architecture** for ownership and security model.
+See **Team Roles**, **Official Development Workflow**, and **Authentication Architecture**.
 
 ---
 
@@ -2410,9 +2736,64 @@ Future roadmap.
 
 ---
 
+## Session Summary — Strategic Transition (June 28, 2026)
+
+**This session marks a strategic transition for the project.**
+
+Metaprom officially moved from **AI-first** to **Product Experience First**. The AI engine is mature enough for Beta. All engineering and product effort now serves the commercial customer journey.
+
+### Strategic change
+
+| Before | After |
+|--------|-------|
+| Improve AI generation | Complete premium commercial experience |
+| WOW after download | WOW inside Metaprom (**Cinematic Reveal**) |
+| AI experimentation sprints | Commercial MVP → Beta |
+| Ad-hoc UI | Mockup → review → approval → implementation |
+
+### Shipped this session
+
+**Sprint 1 — Automatic Library**
+
+* Supabase Storage bucket (`library`) + migration
+* Auto-persistence: original, enhanced, video, prompts, project metadata
+* `lib/studio-persistence.ts`, `lib/library-storage.ts`
+
+**Sprint 2 — Commercial flow**
+
+* Free teaser: 3–5 s, watermark, medium quality (`lib/video-processing.ts`)
+* Premium: 10–15 s HD, no watermark (`/api/studio/premium-video`)
+* Provider-agnostic payments: `lib/payments/` + checkout/webhook APIs
+* Purchases table + asset tier fields
+
+**Cinematic Reveal — signature UX**
+
+* Fade → Metaprom Infinity logo → fullscreen playback (audio on) → premium offer
+* `CinematicReveal.tsx`, `MetapromInfinityLogo.tsx`
+* Replaced small embedded preview flow
+
+**Mockups + workflow**
+
+* Checkout (5 states) + Library (4 states) HTML previews
+* Design tokens, briefs, approval process
+* Official development workflow documented
+
+**Documentation**
+
+* METAPROM_MASTER rewritten — Executive Summary, priorities, philosophy, roles, journey
+
+### Next
+
+1. Apply Supabase migrations
+2. CEO approval of Checkout + Library mockups
+3. Membership + Landing/Studio mockups
+4. End-to-end customer test → Beta
+
+---
+
 ## Session Summary - June 2026
 
-### Strategic update (June 2026 — post-video validation)
+*Historical context — preserved. Superseded by **Session Summary — Strategic Transition (June 28, 2026)** for current priorities.*
 
 Metaprom is a **marketing content generation platform** for **non-expert** SMBs. Core mission: bring premium advertising creation to people who are not AI experts. Metaprom sells results, not AI. Segmentation: AI experts vs non-experts (not creator vs non-creator). UX principle: **NO BARRIERS. NO NONSENSE.** — Upload → Describe → Generate → Pay → Download → Publish.
 
@@ -2460,82 +2841,72 @@ Result:
 
 Metaprom AI now understands who owns each project and restricts visibility accordingly.
 
-Next Objective:
+Next Objective (historical — superseded June 28, 2026):
+
+See **Executive Summary** and **Session Summary — Strategic Transition (June 28, 2026)** for current priorities.
+
+Previous objectives (preserved):
 
 1. Execute and validate RLS for projects and assets (security checkpoint).
-2. Integrate validated video into Biblioteca (Images + Videos unified library).
-3. Guided production UX — NO BARRIERS flow.
-4. VIDEO PREMIUM pricing and beta validation with non-expert SMBs.
+2. Integrate validated video into Biblioteca — **completed via Sprint 1**.
+3. Guided production UX — **evolved into Cinematic Reveal + commercial MVP**.
+4. VIDEO PREMIUM packaging — **shipped Sprint 2** (149 MXN, mock payments).
 
-Post-RLS Priorities:
+Post-RLS Priorities (historical — superseded):
 
-1. Security checkpoint completion (RLS activation).
-2. Biblioteca video integration — unified Images + Videos library (no separate video dashboard).
-3. Guided non-expert UX flow (NO BARRIERS. NO NONSENSE.).
-4. VIDEO PREMIUM packaging validation (149 MXN reference).
-5. Visual outcome-first landing page.
-6. Multi-segment beta program — optimized for non-expert SMBs.
-7. Prompt Compliance Assistant (design phase).
-8. Validation of acquisition hypotheses (H5 and H6).
+1. Security checkpoint (RLS) — still pending migration execution
+2. Biblioteca video integration — **shipped**
+3. Guided UX / Cinematic Reveal — **shipped**
+4. VIDEO PREMIUM + payments — **shipped** (production provider TBD)
+5. Visual outcome-first landing — **blocked on mockup**
+6. Beta program — **next milestone**
+7. Prompt Compliance Assistant — future
+8. Acquisition hypotheses (H5, H6) — ongoing research
 
 ---
 
 ## AI Development Workflow
 
-### Product Creation Workflow (June 28, 2026)
+### Official Product Development Workflow (June 28, 2026)
 
-A new product creation workflow has emerged:
+See **Official Development Workflow** and **Product Review Process**.
 
-Vision
-↓
-Conversation
-↓
-ChatGPT Mockup
-↓
-Founder Review
-↓
-Cursor Implementation
-↓
-Customer Test
-↓
-Iteration
+```
+Idea → Strategic discussion → UX / Product review → Visual Mockups
+  → CEO approval → Cursor implementation → UX Review → Iteration
+```
 
-Mockups are no longer presentation material. They are **implementation specifications**.
+Mockups are **implementation specifications**, not presentation material.
 
-This dramatically reduces the translation gap between product vision and implementation.
+### Team roles
 
-See **Milestone — First Real Commercial Generated (June 28, 2026)**.
+| Role | Owner |
+|------|-------|
+| CEO — vision, business, strategy, approval | Roberto |
+| Product design — UX, mockups, commercial experience | ChatGPT |
+| CTO — engineering, implementation, architecture | Cursor |
 
-### June 2026
+See **Team Roles**.
 
-Observation:
+### Multi-tool execution (preserved)
 
-Different AI tools excel at different stages of development.
+* **ChatGPT** — strategy, product design, UX, mockups, architecture, commercial experience
+* **Cursor** — repository analysis, implementation, debugging, refactoring, technical architecture
+* **Codex** — targeted code generation when appropriate
 
-Lessons Learned:
+Principle: use the best tool for each stage.
 
-* ChatGPT is primarily used for strategy, product design, business modeling, architecture discussions and project planning.
-* Cursor is the primary development environment and repository intelligence tool.
-* Cursor is considered essential for understanding, modifying and maintaining the Metaprom codebase.
-* Codex can accelerate code generation but may lose context on larger multi-file implementations.
-* Biblioteca implementation demonstrated the importance of repository-aware AI tools. Cursor successfully diagnosed and resolved issues that were difficult to solve through code generation alone.
+Historical note: Biblioteca implementation demonstrated that repository-aware tools (Cursor) are essential for multi-file diagnosis — code generation alone loses context.
 
-Decision:
+### Product Creation Workflow (June 28, 2026 — superseded by Official Workflow above)
 
-Metaprom development will use a multi-tool AI workflow.
+Earlier emergent workflow (preserved for history):
 
-Current workflow:
+```
+Vision → Conversation → ChatGPT Mockup → Founder Review
+  → Cursor Implementation → Customer Test → Iteration
+```
 
-* ChatGPT → strategy, product design, mockups as implementation specs, architecture, business decisions.
-* Cursor → repository analysis, implementation, debugging and code modifications.
-* Codex → targeted code generation when appropriate.
+This is now formalized as the **Official Development Workflow** with CEO approval and UX review gates.
 
-Principle:
-
-Use the best tool for each stage of development rather than relying on a single AI system.
-
-Summary:
-
-* ChatGPT is strongest for strategy, architecture and business decisions.
-* Cursor is strongest for repository-wide understanding and implementation.
-* Different AI tools should be used according to their strengths.
+---

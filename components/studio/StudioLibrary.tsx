@@ -145,20 +145,36 @@ export default function StudioLibrary({ open, onClose }: StudioLibraryProps) {
 
                   {isExpanded && (
                     <div className="space-y-3 border-t border-neutral-100 bg-neutral-50/50 p-4">
-                      {assets.map((asset) => (
+                      {assets.map((asset) => {
+                        const previewImage =
+                          asset.image_url || asset.original_url || "";
+                        const previewVideo =
+                          asset.teaser_video_url ?? asset.video_url ?? undefined;
+
+                        return (
                         <div
                           key={asset.id}
                           className="overflow-hidden rounded-xl border border-neutral-200 bg-white"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={asset.image_url}
-                            alt={asset.original_name ?? "Creación"}
-                            className="aspect-square w-full object-cover"
-                          />
-                          {asset.video_url && (
+                          {asset.original_url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={asset.original_url}
+                              alt="Foto original"
+                              className="aspect-square w-full object-cover opacity-90"
+                            />
+                          )}
+                          {previewImage && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={previewImage}
+                              alt={asset.original_name ?? "Creación"}
+                              className="aspect-square w-full object-cover"
+                            />
+                          )}
+                          {previewVideo && (
                             <video
-                              src={asset.video_url}
+                              src={previewVideo}
                               controls
                               playsInline
                               className="aspect-[9/16] w-full object-cover"
@@ -166,24 +182,33 @@ export default function StudioLibrary({ open, onClose }: StudioLibraryProps) {
                           )}
                           <div className="flex gap-2 px-3 py-2">
                             <a
-                              href={asset.image_url}
+                              href={previewImage}
                               download={`metaprom-${asset.id}.jpg`}
                               className="flex-1 rounded-lg bg-neutral-900 py-2 text-center text-xs font-semibold text-white transition hover:bg-neutral-800"
                             >
                               Descargar imagen
                             </a>
-                            {asset.video_url && (
+                            {previewVideo && (
                               <a
-                                href={asset.video_url}
+                                href={previewVideo}
                                 download={`metaprom-${asset.id}.mp4`}
                                 className="flex-1 rounded-lg border border-neutral-200 py-2 text-center text-xs font-semibold text-neutral-700 transition hover:bg-neutral-50"
                               >
                                 Descargar video
                               </a>
                             )}
+                            {asset.premium_video_url && (
+                              <a
+                                href={asset.premium_video_url}
+                                download={`metaprom-${asset.id}-hd.mp4`}
+                                className="flex-1 rounded-lg border border-violet-200 bg-violet-50 py-2 text-center text-xs font-semibold text-violet-800 transition hover:bg-violet-100"
+                              >
+                                HD
+                              </a>
+                            )}
                           </div>
                         </div>
-                      ))}
+                      );})}
                     </div>
                   )}
                 </div>

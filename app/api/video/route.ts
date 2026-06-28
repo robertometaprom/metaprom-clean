@@ -3,6 +3,8 @@ import { mkdtemp, readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import sharp from "sharp";
+import type { CommercialTier } from "@/lib/commercial/tiers";
+import { processCommercialVideo } from "@/lib/video-processing";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -72,6 +74,8 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const uploadedFile = formData.get("image") as File | null;
     const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
+    const rawTier = (formData.get("tier") as string | null)?.trim() ?? "teaser";
+    const tier: CommercialTier = rawTier === "premium" ? "premium" : "teaser";
 
     if (!uploadedFile) {
       return jsonError("No image uploaded.", 400);
@@ -151,13 +155,19 @@ export async function POST(req: Request) {
     });
 
     const videoBuffer = await readFile(downloadPath);
+    const { buffer: processedBuffer, processed } = await processCommercialVideo({
+      buffer: videoBuffer,
+      tier,
+    });
 
-    return new Response(videoBuffer, {
+    return new Response(new Uint8Array(processedBuffer), {
       status: 200,
       headers: {
         "Content-Type": "video/mp4",
-        "Content-Length": String(videoBuffer.length),
+        "Content-Length": String(processedBuffer.length),
         "Cache-Control": "no-store",
+        "X-Metaprom-Tier": tier,
+        "X-Metaprom-Processed": processed ? "true" : "false",
       },
     });
   } catch (error) {

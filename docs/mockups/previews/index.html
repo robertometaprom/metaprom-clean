@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metaprom — UI Mockups</title>
+    <link rel="stylesheet" href="mockup-base.css" />
+    <style>
+      .hero {
+        max-width: 720px;
+        margin: 0 auto 48px;
+        text-align: center;
+        color: #fff;
+      }
+      .hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+      .hero p { color: #aaa; line-height: 1.6; font-size: 16px; }
+      .cards {
+        max-width: 720px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+      .link-card {
+        display: block;
+        padding: 28px 32px;
+        background: #262626;
+        border: 1px solid #404040;
+        border-radius: 20px;
+        text-decoration: none;
+        color: #fff;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .link-card:hover {
+        border-color: #8b5cf6;
+        background: #2a2a2a;
+      }
+      .link-card h2 { font-size: 20px; margin-bottom: 8px; }
+      .link-card p { color: #999; font-size: 14px; line-height: 1.5; }
+      .link-card .tag {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #f5f3ff;
+        color: #5b21b6;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .instructions {
+        max-width: 720px;
+        margin: 48px auto 0;
+        padding: 24px;
+        border: 1px dashed #444;
+        border-radius: 16px;
+        color: #888;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+      .instructions strong { color: #ccc; }
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <h1>Metaprom UI Mockups</h1>
+      <p>
+        Figma-ready static previews. Open each file in a browser, screenshot frames at labeled dimensions,
+        or rebuild in Figma using <a href="../design-tokens.md" style="color:#a78bfa">design-tokens.md</a>.
+      </p>
+    </div>
+
+    <div class="cards">
+      <a class="link-card" href="checkout.html">
+        <h2>Checkout</h2>
+        <p>
+          5 states: default (Tarjeta), OXXO selected, OXXO pending, producing HD, success + download.
+        </p>
+        <span class="tag">5 frames · 390×844</span>
+      </a>
+      <a class="link-card" href="library.html">
+        <h2>Library (Mi biblioteca)</h2>
+        <p>
+          Desktop overlay, mobile panel, empty, loading. Original → enhanced → video strip per asset.
+        </p>
+        <span class="tag">4 frames · 420×844 + 900×560</span>
+      </a>
+    </div>
+
+    <div class="instructions">
+      <strong>Import to Figma</strong><br />
+      1. Open HTML file in Chrome at 100% zoom.<br />
+      2. Screenshot each labeled frame (or use a capture extension).<br />
+      3. Place images in Figma frames at listed dimensions.<br />
+      4. Replace placeholders with real Metaprom content during implementation.<br />
+      5. Mark briefs approved in <code>docs/mockups/*-brief.md</code> after product review.
+    </div>
+  </body>
+</html>

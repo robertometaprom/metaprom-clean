@@ -95,7 +95,7 @@ export default function AuthButton({ labels }: AuthButtonProps) {
         {labels.signIn}
       </Link>
       <Link
-        href="/login"
+        href="/experience"
         className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-6 py-3 text-base font-medium text-black transition hover:bg-white"
       >
         {labels.startFree}

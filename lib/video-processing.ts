@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import { existsSync } from "fs";
 import ffmpegStatic from "ffmpeg-static";
 import { mkdtemp, readFile, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
@@ -20,7 +21,18 @@ type ProcessVideoResult = {
 };
 
 function getFfmpegPath(): string | null {
-  return ffmpegStatic ?? null;
+  if (ffmpegStatic && existsSync(ffmpegStatic)) {
+    return ffmpegStatic;
+  }
+
+  const binary = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  const fallback = join(process.cwd(), "node_modules", "ffmpeg-static", binary);
+
+  if (existsSync(fallback)) {
+    return fallback;
+  }
+
+  return null;
 }
 
 function runFfmpeg(args: string[]): Promise<void> {

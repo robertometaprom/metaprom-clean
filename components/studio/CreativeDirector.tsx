@@ -22,19 +22,18 @@ import {
 } from "@/lib/product-catalog";
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
-  blobToDataUrl,
-  getBibliotecaUserId,
-  BibliotecaAuthError,
-  fetchBibliotecaAssetById,
-} from "@/lib/biblioteca";
-import { persistStudioCreation } from "@/lib/studio-persistence";
+  createCommercialAssets,
+  getAutoSaveMessage,
+  persistCreationToLibrary,
+  purchaseHdCommercial,
+  type AutoSaveStatus,
+  type CreationStep,
+} from "@/lib/studio-creation";
 import type { PaymentMethod } from "@/lib/payments/types";
 import { formatPriceMxn, getPriceById } from "@/lib/pricing";
-import {
-  buildStudioImagePrompt,
-  buildStudioVideoPrompt,
-} from "@/lib/studio-prompts";
 import CinematicReveal from "@/components/studio/CinematicReveal";
+
+const STUDIO_DRAFT_KEY = "metaprom_studio_draft";
 
 type Phase =
   | "welcome"
@@ -44,12 +43,6 @@ type Phase =
   | "cinematic-reveal"
   | "premium-offer"
   | "purchase-hd";
-
-type CreationStep = "image" | "video" | "done";
-
-type AutoSaveStatus = "idle" | "saving" | "saved" | "local-only";
-
-const STUDIO_DRAFT_KEY = "metaprom_studio_draft";
 
 const OFF_TOPIC_MESSAGE =
   "Solo puedo ayudarte a crear contenido de marketing — imágenes, videos y material para vender mejor. ¿Qué te gustaría crear hoy?";
@@ -119,28 +112,7 @@ export default function CreativeDirector({
     };
   }, []);
 
-  const autoSaveMessage =
-    autoSaveStatus === "saved"
-      ? "Guardado automáticamente en tu biblioteca."
-      : autoSaveStatus === "local-only"
-        ? "Guardado en este dispositivo. Inicia sesión para conservarlo."
-        : null;
-
-  const persistDraftLocally = useCallback(
-    (draft: {
-      premiumImage: string;
-      videoDataUrl?: string;
-      customerIntent: string;
-    }) => {
-      try {
-        sessionStorage.setItem(STUDIO_DRAFT_KEY, JSON.stringify(draft));
-        setAutoSaveStatus("local-only");
-      } catch {
-        // ignore storage errors
-      }
-    },
-    [],
-  );
+  const autoSaveMessage = getAutoSaveMessage(autoSaveStatus);
 
   const persistToLibrary = useCallback(
     async (input: {
@@ -155,47 +127,31 @@ export default function CreativeDirector({
 
       setAutoSaveStatus("saving");
 
-      try {
-        const userId = await getBibliotecaUserId();
-        const result = await persistStudioCreation({
-          userId,
-          originalFile: input.originalFile,
-          enhancedDataUrl: input.enhancedDataUrl,
-          teaserVideoBlob: input.teaserVideoBlob,
-          imagePrompt: input.imagePrompt,
-          videoPrompt: input.videoPrompt,
-          customerIntent,
-          mode: product.mode,
-          projectMetadata: {
-            ...projectMetadataRef.current,
-            workflow_id: product.id,
-            industry: product.industry ?? projectMetadataRef.current.industry,
-            intended_destination: product.destination,
-          },
-          existingProjectId: savedProjectIdRef.current,
-          existingAssetId: savedAssetIdRef.current,
-        });
+      const result = await persistCreationToLibrary({
+        originalFile: input.originalFile,
+        enhancedDataUrl: input.enhancedDataUrl,
+        teaserVideoBlob: input.teaserVideoBlob,
+        imagePrompt: input.imagePrompt,
+        videoPrompt: input.videoPrompt,
+        customerIntent,
+        mode: product.mode,
+        projectMetadata: {
+          ...projectMetadataRef.current,
+          workflow_id: product.id,
+          industry: product.industry ?? projectMetadataRef.current.industry,
+          intended_destination: product.destination,
+        },
+        existingProjectId: savedProjectIdRef.current,
+        existingAssetId: savedAssetIdRef.current,
+        localDraftKey: STUDIO_DRAFT_KEY,
+      });
 
-        savedProjectIdRef.current = result.projectId;
-        savedAssetIdRef.current = result.assetId;
-        markStudioHasProjects();
-        setAutoSaveStatus("saved");
-      } catch (saveError) {
-        if (saveError instanceof BibliotecaAuthError) {
-          persistDraftLocally({
-            premiumImage: input.enhancedDataUrl,
-            videoDataUrl: input.teaserVideoBlob
-              ? await blobToDataUrl(input.teaserVideoBlob)
-              : undefined,
-            customerIntent,
-          });
-        } else {
-          console.error(saveError);
-          setAutoSaveStatus("idle");
-        }
-      }
+      if (result.projectId) savedProjectIdRef.current = result.projectId;
+      if (result.assetId) savedAssetIdRef.current = result.assetId;
+      if (result.status === "saved") markStudioHasProjects();
+      setAutoSaveStatus(result.status);
     },
-    [persistDraftLocally],
+    [],
   );
 
   const runCreation = useCallback(async () => {
@@ -224,70 +180,31 @@ export default function CreativeDirector({
     try {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
-      const imagePrompt = buildStudioImagePrompt(customerIntent, product.mode);
-      imagePromptRef.current = imagePrompt;
 
-      const formData = new FormData();
-      formData.append("image", file);
-      formData.append("mode", "custom");
-      formData.append("aiInstructions", imagePrompt);
-
-      const response = await fetch("/api/enhancement", {
-        method: "POST",
-        body: formData,
+      const result = await createCommercialAssets({
+        file,
+        customerIntent,
+        productMode: product.mode,
+        onStep: (step, message) => {
+          setCreationStep(step);
+          setCreationMessage(message);
+        },
       });
 
-      const data = await parseJsonResponse(response);
-
-      if (!response.ok || !data.image) {
-        throw new Error(
-          mapCreationError(data.error) || "No pudimos crear tu imagen.",
-        );
-      }
-
-      setPremiumImage(data.image);
-
-      setCreationStep("video");
-      setCreationMessage("Preparando tu comercial...");
-
-      const videoPrompt = buildStudioVideoPrompt(customerIntent, "teaser");
-      videoPromptRef.current = videoPrompt;
-      const videoForm = new FormData();
-      videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));
-      videoForm.append("prompt", videoPrompt);
-      videoForm.append("tier", "teaser");
-
-      const videoResponse = await fetch("/api/video", {
-        method: "POST",
-        body: videoForm,
-      });
-
-      if (!videoResponse.ok) {
-        const videoData = await parseJsonResponse(videoResponse);
-        throw new Error(
-          mapCreationError(videoData.error) ||
-            "No pudimos crear tu comercial.",
-        );
-      }
-
-      const blob = await videoResponse.blob();
-      if (blob.size === 0) {
-        throw new Error("No pudimos crear tu comercial.");
-      }
-
-      const url = URL.createObjectURL(blob);
-      videoUrlRef.current = url;
-      setVideoUrl(url);
+      imagePromptRef.current = result.imagePrompt;
+      videoPromptRef.current = result.videoPrompt;
+      setPremiumImage(result.premiumImage);
+      videoUrlRef.current = result.videoUrl;
+      setVideoUrl(result.videoUrl);
 
       void persistToLibrary({
         originalFile: file,
-        enhancedDataUrl: data.image,
-        teaserVideoBlob: blob,
-        imagePrompt,
-        videoPrompt,
+        enhancedDataUrl: result.premiumImage,
+        teaserVideoBlob: result.videoBlob,
+        imagePrompt: result.imagePrompt,
+        videoPrompt: result.videoPrompt,
       });
 
-      setCreationStep("done");
       setPhase("cinematic-reveal");
     } catch (createError) {
       console.error(createError);
@@ -408,56 +325,22 @@ export default function CreativeDirector({
     setCheckoutMessage(null);
 
     try {
-      const checkoutResponse = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assetId: savedAssetIdRef.current,
-          productId: "commercial-video",
-          paymentMethod,
-        }),
+      const result = await purchaseHdCommercial({
+        assetId: savedAssetIdRef.current,
+        paymentMethod,
+        onStatus: setCheckoutMessage,
       });
 
-      const checkoutData = (await checkoutResponse.json()) as {
-        error?: string;
-        sessionId?: string;
-        status?: string;
-        oxxoReference?: string;
-      };
-
-      if (!checkoutResponse.ok) {
-        throw new Error(checkoutData.error || "No pudimos iniciar el pago.");
+      if (result.premiumVideoUrl) {
+        if (videoUrlRef.current?.startsWith("blob:")) {
+          URL.revokeObjectURL(videoUrlRef.current);
+        }
+        videoUrlRef.current = null;
+        setVideoUrl(result.premiumVideoUrl);
+        setPremiumReady(true);
       }
 
-      if (checkoutData.status === "awaiting_payment" && checkoutData.sessionId) {
-        setCheckoutMessage(
-          checkoutData.oxxoReference
-            ? `Referencia OXXO: ${checkoutData.oxxoReference}. Confirma el pago para producir tu comercial HD.`
-            : "Esperando confirmación de pago...",
-        );
-
-        const poll = async () => {
-          const statusResponse = await fetch(
-            `/api/payments/checkout?sessionId=${encodeURIComponent(checkoutData.sessionId!)}`,
-          );
-          const statusData = (await statusResponse.json()) as {
-            status?: string;
-            error?: string;
-          };
-
-          if (statusData.status === "completed") {
-            await generatePremiumVideo();
-            return;
-          }
-
-          window.setTimeout(poll, 3000);
-        };
-
-        await poll();
-        return;
-      }
-
-      await generatePremiumVideo();
+      setCheckoutMessage(result.message);
     } catch (purchaseError) {
       console.error(purchaseError);
       setCheckoutMessage(
@@ -467,36 +350,6 @@ export default function CreativeDirector({
       );
     } finally {
       setCheckoutLoading(false);
-    }
-  };
-
-  const generatePremiumVideo = async () => {
-    if (!savedAssetIdRef.current) return;
-
-    setCheckoutMessage("Produciendo tu comercial HD...");
-
-    const response = await fetch("/api/studio/premium-video", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assetId: savedAssetIdRef.current }),
-    });
-
-    const data = (await response.json()) as { error?: string; status?: string };
-
-    if (!response.ok) {
-      throw new Error(data.error || "No pudimos producir tu comercial HD.");
-    }
-
-    const asset = await fetchBibliotecaAssetById(savedAssetIdRef.current);
-
-    if (asset?.premium_video_url) {
-      if (videoUrlRef.current?.startsWith("blob:")) {
-        URL.revokeObjectURL(videoUrlRef.current);
-      }
-      videoUrlRef.current = null;
-      setVideoUrl(asset.premium_video_url);
-      setPremiumReady(true);
-      setCheckoutMessage("¡Listo! Tu comercial HD está disponible para descargar.");
     }
   };
 
@@ -923,19 +776,6 @@ export default function CreativeDirector({
   );
 }
 
-function dataUrlToFile(dataUrl: string, filename: string): File {
-  const [header, base64] = dataUrl.split(",");
-  const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-
-  return new File([bytes], filename, { type: mime });
-}
-
 function getUploadMessage(product: CatalogProduct): string {
   switch (product.id) {
     case "amazon-optimization":
@@ -947,33 +787,4 @@ function getUploadMessage(product: CatalogProduct): string {
     default:
       return "Sube una foto de lo que vendes.";
   }
-}
-
-async function parseJsonResponse(
-  response: Response,
-): Promise<{ image?: string; error?: string }> {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (!contentType.includes("application/json")) {
-    return { error: `Error del servidor (${response.status}).` };
-  }
-
-  try {
-    return (await response.json()) as { image?: string; error?: string };
-  } catch {
-    return { error: "Respuesta inválida del servidor." };
-  }
-}
-
-function mapCreationError(message?: string): string | undefined {
-  if (!message) return undefined;
-
-  const normalized: Record<string, string> = {
-    "Enhancement failed": "No pudimos crear tu imagen.",
-    "No image uploaded": "Sube una foto para continuar.",
-    "No image generated": "No pudimos crear tu imagen.",
-    "Video generation failed.": "No pudimos crear tu comercial.",
-  };
-
-  return normalized[message] ?? message;
 }

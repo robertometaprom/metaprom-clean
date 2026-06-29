@@ -1,16 +1,112 @@
 # METAPROM MASTER
 
-## Executive Summary (June 28, 2026)
+## MASTER UPDATE — June 29, 2026
+
+### Product phase transition
+
+Metaprom has officially transitioned from **AI Development** to **Product Experience**.
+
+The AI engine is considered mature enough for MVP completion. Future work prioritizes customer journey, conversion, and product experience over new AI capabilities.
+
+### Canonical product flow — `/experience`
+
+Route **`/experience`** is now the **canonical commercial journey**.
+
+It is **no longer a simulation**. It orchestrates the same production services used by Studio:
+
+* `/api/enhancement`, `/api/video`, checkout, library persistence
+* Shared logic in `lib/studio-creation.ts` — no duplicated AI pipelines, checkout, or persistence
+
+See **Commercial Product Journey** and `docs/experience-v1.md`.
+
+### Reliability Sprint — complete
+
+Root cause of intermittent image failures identified: OpenAI occasionally returned `status: completed` with text-only output instead of invoking `image_generation`.
+
+**Shipped:**
+
+* Forced `image_generation` tool selection (`tool_choice`)
+* Prompt hardening
+* Response validation
+* Bounded retry strategy (up to 3 attempts)
+* Structured logging (`lib/enhancement.ts`)
+
+**Measured result:** 20/20 successful image generations during reliability testing. **Reliability Sprint considered complete.**
+
+### Infrastructure findings
+
+Google AI Studio billing investigated:
+
+| Item | Value |
+|------|-------|
+| Prepaid credit remaining | ~MXN 427 |
+| Current monthly usage | ~MXN 72 |
+| Billing issue | **None** |
+
+`429 RESOURCE_EXHAUSTED` was caused by **Veo quota exhaustion**, not cost or billing sync.
+
+| Item | Value |
+|------|-------|
+| Current model | `veo-3.1-lite-generate-preview` |
+| Current Veo 3 Lite quota | **10 video generations / day** (Tier 1, per project) |
+| Production scaling | Research initiated — see **Veo Capacity Planning (June 29, 2026)** |
+
+### Product discovery — Instant Capture
+
+Working name: **Instant Capture**
+
+Instead of requiring users to upload an existing image, Metaprom should allow:
+
+```
+📸 Take Photo → Generate Commercial
+```
+
+This removes preparation friction and enables instant product demonstrations.
+
+**Priority:** High — candidate for implementation immediately before Beta, after CEO Review and UX Polish.
+
+### Current roadmap
+
+| Phase | Status |
+|-------|--------|
+| AI Engine | **Complete** |
+| Shared Architecture | **Complete** |
+| Reliability Sprint | **Complete** |
+| CEO Product Review | **Next** |
+| UX Polish | Pending |
+| Instant Capture | Pending (pre-Beta) |
+| Beta | Pending |
+
+**Rule:** No new AI features unless they directly improve the commercial journey.
+
+---
+
+## Metaprom Experience v1 (June 28, 2026 — updated June 29, 2026)
+
+**Product decision:** Do not build isolated screen mockups anymore.
+
+Build **one interactive product surface** — **Metaprom Experience v1** at `/experience` — that defines the complete customer journey. Landing and Studio are visually one product: dark, minimal, elegant, cinematic.
+
+**June 29 update:** `/experience` is the **canonical commercial journey**, wired to production APIs via shared services — not a simulation.
+
+This remains the **master specification** for the commercial MVP. Future implementations must follow it, not individual static mockups.
+
+See `docs/experience-v1.md`.
+
+---
+
+## Executive Summary (June 29, 2026)
 
 **Metaprom has officially transitioned from building an AI engine to building a world-class commercial product experience.**
 
 The AI generation stack — commercial image transformation and cinematic video via Veo 3.1 Lite — is **mature enough for Beta**. First real customer WOW was validated on June 28, 2026. The product hypothesis is confirmed: customers buy the feeling of seeing their own product transformed into professional marketing, not AI.
 
-**The primary bottleneck is no longer generation quality.** It is UX, commercial flow, and customer conversion.
+**The primary bottleneck is no longer generation quality or image reliability.** It is UX, commercial flow, customer conversion, and **Veo daily quota capacity** for video at Beta scale.
 
 | Era | Focus | Status |
 |-----|-------|--------|
 | Phase 1 — AI Engine | Image + video generation, prompts, APIs | **Complete** |
+| Phase 1b — Reliability Sprint | Image generation reliability (OpenAI tool invocation) | **Complete (June 29, 2026)** |
 | Phase 2 — Product Experience | Commercial MVP, Cinematic Reveal, checkout, library, Beta | **Active** |
 
 **Strategic change:**
@@ -19,15 +115,18 @@ The AI generation stack — commercial image transformation and cinematic video 
 
 The objective is no longer improving AI generation. The objective is creating a **premium commercial experience** that converts — from first visit through purchase and download.
 
-**Current priorities (in order):**
+**Current priorities (in order — June 29, 2026):**
 
-1. Complete commercial MVP
-2. Complete Studio workflow
-3. Automatic Library
-4. Premium checkout
-5. Membership system
-6. UX refinement
-7. Beta launch
+1. **CEO Product Review** — walk `/experience` end-to-end
+2. **UX Polish** — conversion and journey friction
+3. **Instant Capture** — camera-first flow (pre-Beta)
+4. **Beta launch** — after journey validated + Veo capacity plan in place
+5. Complete commercial MVP (ongoing)
+6. Automatic Library
+7. Premium checkout (production provider)
+8. Membership system
+
+**Deferred:** New AI capabilities unless they directly improve the commercial journey.
 
 **Success metric:**
 
@@ -82,17 +181,21 @@ Success metric:
 
 > Customers say: *"WOW… I want this commercial."*
 
-### Current priorities (official — June 28, 2026)
+### Current priorities (official — June 29, 2026)
 
 | # | Priority | Status |
 |---|----------|--------|
-| 1 | **Complete commercial MVP** | In progress — Sprint 1 + 2 shipped; polish + migration pending |
-| 2 | **Complete Studio workflow** | Functional — Cinematic Reveal integrated |
-| 3 | **Automatic Library** | Sprint 1 shipped — Supabase Storage + auto-persistence |
-| 4 | **Premium checkout** | Sprint 2 shipped — provider-agnostic payments (mock dev) |
-| 5 | **Membership system** | Not started — mockups required |
-| 6 | **UX refinement** | Active — Cinematic Reveal, mockup-first for major UI |
-| 7 | **Beta launch** | Pending — after commercial loop validated end-to-end |
+| 1 | **CEO Product Review** | **Next** |
+| 2 | **UX Polish** | Pending |
+| 3 | **Instant Capture** | Discovery — pre-Beta |
+| 4 | **Beta launch** | Pending — blocked on journey + Veo capacity |
+| 5 | Complete commercial MVP | In progress — `/experience` canonical |
+| 6 | Complete Studio workflow | Functional — shared services with Experience |
+| 7 | Automatic Library | Sprint 1 shipped — UI polish pending |
+| 8 | Premium checkout | Sprint 2 shipped — production provider TBD |
+| 9 | Membership system | Not started — mockups required |
+
+**Completed since June 28:** Reliability Sprint (image generation 20/20), `/experience` wired to production services, shared `lib/studio-creation.ts` architecture.
 
 **The objective is no longer improving AI generation. The objective is creating a premium commercial experience.**
 
@@ -226,7 +329,7 @@ The user should feel like watching a **movie premiere**.
 
 ---
 
-## UX Discoveries (June 28, 2026)
+## UX Discoveries (June 28–29, 2026)
 
 Insights from first real customer WOW and the Product Experience transition:
 
@@ -237,6 +340,14 @@ Insights from first real customer WOW and the Product Experience transition:
 * **Library is automatic** — the customer never manages files.
 * **Saving is automatic** — the customer never loses work.
 * **Checkout sells the commercial**, not the payment — copy and UI lead with the result, not the transaction.
+
+### Instant Capture (June 29, 2026 — high priority)
+
+**Working name:** Instant Capture
+
+Instead of upload-only, allow **Take Photo → Generate Commercial** in one flow. Removes preparation friction; enables live demos and impulse creation.
+
+Candidate for implementation **after CEO Review and UX Polish**, immediately before Beta.
 
 These discoveries supersede earlier priorities focused on multi-industry AI consistency testing as the primary sprint goal. Customer tests remain mandatory, but only **after the commercial loop is exercisable**.
 
@@ -249,13 +360,15 @@ The complete commercial journey — the product should feel like **one continuou
 ```
 Landing
   ↓
-Login
-  ↓
-Studio
-  ↓
 Upload
   ↓
-Generation
+Intent
+  ↓
+Generate
+  ↓
+Google Login (only when the project needs to be saved)
+  ↓
+Generating
   ↓
 Cinematic Reveal
   ↓
@@ -266,11 +379,13 @@ Checkout
 Library
   ↓
 Download Center
+  ↓
+Create Another Commercial
 ```
 
-**Studio IS the product.** Everything between upload and purchase lives in `/studio`.
+**Master specification:** [Metaprom Experience v1](./docs/experience-v1.md) at **`/experience`** (canonical production journey).
 
-Landing + Studio unification is **post–commercial MVP**, blocked on approved mockups (see `docs/mockups/landing-studio-brief.md`).
+Landing + Studio unification is **shipped** — `/experience` orchestrates production APIs; Studio uses the same shared services (`lib/studio-creation.ts`).
 
 ---
 
@@ -283,20 +398,20 @@ Idea
   ↓
 Strategic discussion
   ↓
-UX / Product review
-  ↓
-Visual Mockups
+Metaprom Experience v1 (interactive prototype)
   ↓
 CEO approval
   ↓
-Cursor implementation
+Cursor implementation (match prototype)
   ↓
 UX Review
   ↓
 Iteration
 ```
 
-**Permanent rule:** No major UI may be implemented before approved mockups.
+**Permanent rule:** No major UI may be implemented before the Experience v1 prototype (or its approved iteration) defines the journey.
+
+Isolated static mockups are deprecated for journey design — see **Metaprom Experience v1**.
 
 ### Product Review Process
 
@@ -313,7 +428,7 @@ Every important screen requires:
 * Checkout UI polish
 * Membership dashboard
 * Download center
-* Landing + Studio unified experience
+* Landing + Studio unified experience — **Experience v1 prototype** at `/experience`
 
 ### Does not block
 
@@ -334,6 +449,12 @@ Every important screen requires:
 Status: **Ready for product review** — not yet approved for full UI implementation.
 
 See `docs/mockups/README.md`.
+
+### Product Review Backlog
+
+| Priority | Item | Notes |
+|----------|------|-------|
+| **P1 UX** | Hide internal generation prompts during creating/generating | Customer must never see AI prompt text above the upload/generating area. Replace with customer-facing copy (e.g. "Preparing your commercial..." / "Our creative director is producing your video..."). Aligns with Product Philosophy — never expose prompts. |
 
 ---
 
@@ -607,29 +728,28 @@ Priority order:
 
 Every sprint should end with a real customer test — not with completed code.
 
-### Current Status (June 28, 2026)
+### Current Status (June 29, 2026)
 
 | Area | Status |
 |------|--------|
 | Landing | Functional |
+| **`/experience` (canonical journey)** | **Production-wired** |
 | Authentication | Functional |
-| Studio Experience | Functional |
-| Commercial Image | First validated |
-| Commercial Video | First validated |
+| Studio Experience | Functional — shared services with Experience |
+| Commercial Image | **Reliability Sprint complete (20/20)** |
+| Commercial Video | Validated — **10 Veo Lite gens/day quota** |
 | Customer WOW | First validated |
-| Automatic Product Thinking | Emerging |
+| Google AI billing | Active — ~MXN 427 prepaid remaining |
+| Automatic Product Thinking | Emerging — **Instant Capture** discovery |
 
-### Next Objective
+### Next Objective (June 29, 2026)
 
-Validate consistency across multiple industries:
+1. **CEO Product Review** — validate `/experience` commercial journey end-to-end
+2. **UX Polish** — conversion and friction removal
+3. **Veo capacity planning** — scale beyond 10 video gens/day for Beta
+4. **Instant Capture** — pre-Beta implementation candidate
 
-* Restaurant
-* Coffee
-* Flowers
-* Real Estate
-* Marketplace Products
-
-The goal is no longer proving that AI works. The goal is proving that Metaprom **consistently creates commercials customers want to buy**.
+The goal is no longer proving that AI works. The goal is proving that Metaprom **consistently delivers a commercial journey customers want to buy** — at Beta scale.
 
 ---
 
@@ -1511,6 +1631,79 @@ Multiple real generations completed successfully after billing activation and AP
 
 See **Current Architecture** and **Roadmap**.
 
+### Quota and billing (June 29, 2026)
+
+| Item | Value |
+|------|-------|
+| Billing | Active — prepaid ~MXN 427 remaining |
+| Monthly usage | ~MXN 72 |
+| Veo 3 Lite RPD (Tier 1) | **10 requests/day per project** |
+| Beta blocker | Video quota — not cost |
+| Scaling path | See **Veo Capacity Planning (June 29, 2026)** |
+
+Official references:
+
+* [Gemini API rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+* [Gemini API pricing — Veo 3.1](https://ai.google.dev/gemini-api/docs/pricing)
+* [Vertex AI Veo 3.1 quotas](https://cloud.google.com/vertex-ai/generative-ai/docs/models/veo/3-1-generate)
+
+---
+
+## Reliability Sprint — Image Generation (June 29, 2026)
+
+**Status: COMPLETE**
+
+### Problem
+
+Intermittent `500 "No image generated"` during commercial journey (~56% success in acceptance testing).
+
+### Root cause
+
+OpenAI `responses.create` returned `status: completed` with **text-only `message` output** — no `image_generation_call`. Same prompt and image; failures in ~4–7 s vs successes in ~40–60 s. Not upload errors, rate limits, content policy, or parsing bugs.
+
+### Fix (`lib/enhancement.ts`)
+
+* `tool_choice: { type: "image_generation" }` — force tool invocation
+* Prompt directive against text-only creative replies
+* Response validation (`text_only`, `tool_failed`, `empty_result`)
+* Bounded retry (up to 3 attempts, backoff)
+* Structured logging per attempt
+
+### Measured result
+
+**20/20** successful generations post-fix. Beta target (95%) met.
+
+---
+
+## Veo Capacity Planning (June 29, 2026)
+
+**Status: RESEARCH IN PROGRESS**
+
+### Current constraint
+
+Metaprom uses **`veo-3.1-lite-generate-preview`** via Gemini API (Google AI Studio). Tier 1 paid projects show **~10 RPD (requests per day)** for Veo preview models. This is a **quota** limit, not a billing/credit issue.
+
+### Key findings
+
+| Question | Answer |
+|----------|--------|
+| Fixed for Tier 1? | **Yes for preview models** — low RPD is documented behavior; exact limits are project-specific in AI Studio |
+| Can it increase? | **Yes** — via tier upgrade, rate limit increase request, or migrate to Vertex AI |
+| Through AI Studio? | View limits in AI Studio → Rate limits; [request increase form](https://ai.google.dev/gemini-api/docs/rate-limits) |
+| Through Google Cloud? | **Vertex AI** — GA models (`veo-3.1-lite-generate-001`) at **50 RPM** fixed quota; Provisioned Throughput for higher volume |
+| By upgrading tier? | Tier 2/3 unlock higher limits automatically over time; Veo preview limits remain restrictive |
+
+### Beta recommendation (100+ videos/day)
+
+| Path | Notes |
+|------|-------|
+| **Short term** | Request Gemini API rate limit increase in AI Studio; monitor RPD in dashboard |
+| **Production** | **Vertex AI Veo 3.1** (`veo-3.1-lite-generate-001` or `veo-3.1-fast-generate-001`) — 50 RPM, no 10/day RPD cap |
+| **High volume** | Vertex **Provisioned Throughput** (GSUs) — required for predictable 100+ daily at scale |
+| **Architecture** | Queue + async job processing; never block UX on synchronous Veo poll; multi-project only as last resort |
+
+**Do not assume credits alone unlock capacity.** Quota and spend-based limits are separate from prepaid balance.
+
 ---
 
 ## Economic Validation — Veo 3.1 Lite (June 2026)
@@ -1856,13 +2049,16 @@ Structured view of product progress (June 2026). **Product Experience First** �
 | Item | Status |
 |------|--------|
 | Image + commercial generation (OpenAI) | Shipped |
-| Veo 3.1 Lite video | **Validated** |
+| **Image reliability sprint** | **Complete (June 29, 2026 — 20/20)** |
+| Veo 3.1 Lite video | **Validated** — 10/day quota on Tier 1 |
 | First customer WOW | **Validated (June 28, 2026)** |
 | Video unit economics | Measured |
 | Google OAuth + ownership | Shipped |
 | Strategic repositioning | Documented |
+| **`/experience` canonical flow** | **Shipped (June 29, 2026)** |
+| Shared production services (`lib/studio-creation.ts`) | **Shipped** |
 
-### Completed — Product Experience (Phase 2, June 28, 2026)
+### Completed — Product Experience (Phase 2)
 
 | Item | Status |
 |------|--------|
@@ -1872,19 +2068,20 @@ Structured view of product progress (June 2026). **Product Experience First** �
 | Sprint 2 — teaser + premium + payments | **Shipped** (mock provider) |
 | Payment abstraction | **Shipped** |
 | Checkout + Library mockups | Ready for review |
-| Product Experience pivot documented | **This session** |
+| Product Experience pivot documented | June 28, 2026 |
+| Reliability Sprint (`lib/enhancement.ts`) | **June 29, 2026** |
 
-### Current priorities (official)
+### Current priorities (official — June 29, 2026)
 
 | # | Priority | Status |
 |---|----------|--------|
-| 1 | Complete commercial MVP | In progress |
-| 2 | Complete Studio workflow | Shipped — refine |
-| 3 | Automatic Library | Shipped — UI redesign pending mockup |
-| 4 | Premium checkout | Shipped — production provider TBD |
-| 5 | Membership system | Not started |
-| 6 | UX refinement | Active |
-| 7 | Beta launch | Pending |
+| 1 | **CEO Product Review** | **Next** |
+| 2 | **UX Polish** | Pending |
+| 3 | **Instant Capture** | Discovery — pre-Beta |
+| 4 | **Beta launch** | Pending |
+| 5 | Complete commercial MVP | In progress |
+| 6 | Veo capacity for Beta (100+ videos/day) | Research in progress |
+| 7 | Membership system | Not started |
 
 ### Blocked on mockup approval
 
@@ -1927,8 +2124,9 @@ Landing → Login → Studio → Upload → Generation
 | Frontend | Next.js, TypeScript |
 | Hosting | Vercel |
 | Database | Supabase (Postgres + Storage + Auth) |
-| AI — Image | OpenAI (`/api/enhancement`) |
+| AI — Image | OpenAI (`/api/enhancement` → `lib/enhancement.ts`) |
 | AI — Video | Google Gemini API — Veo 3.1 Lite (`/api/video`, `/api/studio/premium-video`) |
+| Shared journey services | `lib/studio-creation.ts` (Experience + Studio) |
 | Video processing | `lib/video-processing.ts` (ffmpeg — tier, watermark, trim) |
 | Payments | `lib/payments/` — provider-agnostic (mock dev) |
 | Library persistence | `lib/studio-persistence.ts`, `lib/library-storage.ts` |
@@ -2782,18 +2980,43 @@ Metaprom officially moved from **AI-first** to **Product Experience First**. The
 
 * METAPROM_MASTER rewritten — Executive Summary, priorities, philosophy, roles, journey
 
-### Next
+### Next (superseded June 29, 2026)
 
 1. Apply Supabase migrations
 2. CEO approval of Checkout + Library mockups
 3. Membership + Landing/Studio mockups
 4. End-to-end customer test → Beta
 
+See **Session Summary — June 29, 2026** for current next steps.
+
+---
+
+## Session Summary — June 29, 2026
+
+### Shipped / validated
+
+* **Reliability Sprint** — image generation 20/20; `lib/enhancement.ts`
+* **`/experience` canonical** — production-wired via `lib/studio-creation.ts`
+* **Infrastructure diagnosis** — billing OK (~MXN 427 prepaid); Veo 10/day quota is Beta blocker for video scale
+
+### Product decisions
+
+* Phase transition: **AI Development → Product Experience** (official)
+* **Instant Capture** discovery — high priority pre-Beta
+* Roadmap: CEO Review → UX Polish → Instant Capture → Beta
+
+### Next
+
+1. CEO Product Review — `/experience` end-to-end
+2. UX Polish
+3. Veo capacity plan for Beta (100+ videos/day)
+4. Instant Capture (pre-Beta)
+
 ---
 
 ## Session Summary - June 2026
 
-*Historical context — preserved. Superseded by **Session Summary — Strategic Transition (June 28, 2026)** for current priorities.*
+*Historical context — preserved. Superseded by **Session Summary — June 29, 2026** for current priorities.*
 
 Metaprom is a **marketing content generation platform** for **non-expert** SMBs. Core mission: bring premium advertising creation to people who are not AI experts. Metaprom sells results, not AI. Segmentation: AI experts vs non-experts (not creator vs non-creator). UX principle: **NO BARRIERS. NO NONSENSE.** — Upload → Describe → Generate → Pay → Download → Publish.
 

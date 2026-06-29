@@ -1,14 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import OpenAI from "openai";
 import sharp from "sharp";
-import { buildPrompt, Mode } from "../../../lib/prompts";
+import { generateEnhancedImage } from "@/lib/enhancement";
+import type { Mode } from "@/lib/prompts";
 
 export const maxDuration = 300;
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const supportedImageTypes = new Set([
   "image/jpeg",
@@ -21,16 +15,12 @@ const supportedImageTypes = new Set([
 
 export async function POST(req: Request) {
   try {
-
     const formData = await req.formData();
 
     const uploadedFile = formData.get("image") as File;
 
     if (!uploadedFile) {
-      return Response.json(
-        { error: "No image uploaded" },
-        { status: 400 }
-      );
+      return Response.json({ error: "No image uploaded" }, { status: 400 });
     }
 
     const mimeType = uploadedFile.type;
@@ -40,7 +30,7 @@ export async function POST(req: Request) {
           error:
             "Unsupported image format. Please upload JPEG, PNG, WEBP, HEIC, or HEIF.",
         },
-        { status: 415 }
+        { status: 415 },
       );
     }
 
@@ -52,9 +42,7 @@ export async function POST(req: Request) {
 
     if (mode === "custom" && aiInstructions.trim().length === 0) {
       return Response.json(
-        {
-          error: "Custom mode requires AI Instructions.",
-        },
+        { error: "Custom mode requires AI Instructions." },
         { status: 400 },
       );
     }
@@ -73,73 +61,31 @@ export async function POST(req: Request) {
           error:
             "Unable to normalize the uploaded image. Please try a different photo.",
         },
-        { status: 415 }
+        { status: 415 },
       );
     }
 
-    const base64Image = normalizedBuffer.toString("base64");
-
-    const promptText = buildPrompt(mode, aiInstructions);
-
-    const response = await openai.responses.create({
-      model: "gpt-4.1",
-
-      tools: [
-        {
-          type: "image_generation",
-        },
-      ],
-
-      input: [
-        {
-          role: "user",
-            content: [
-            {
-              type: "input_text",
-              text: promptText,
-            },
-            {
-              type: "input_image",
-              image_url: `data:image/jpeg;base64,${base64Image}`,
-              detail: "low",
-            },
-          ],
-        },
-      ],
+    const result = await generateEnhancedImage({
+      normalizedJpegBuffer: normalizedBuffer,
+      mode,
+      aiInstructions,
     });
-
-    const imageData = response.output
-      ?.filter(
-        (item: any) =>
-          item.type === "image_generation_call"
-      )
-      ?.flatMap((item: any) => item.result);
-
-    if (!imageData || !imageData[0]) {
-      return Response.json(
-        { error: "No image generated" },
-        { status: 500 }
-      );
-    }
 
     return Response.json({
-      image: `data:image/png;base64,${imageData[0]}`,
+      image: `data:image/png;base64,${result.imageBase64}`,
     });
-
   } catch (error) {
-
     console.error(
-      "API ERROR FULL:",
-      JSON.stringify(error, null, 2)
+      "Enhancement route error:",
+      error instanceof Error ? error.message : error,
     );
 
+    const message =
+      error instanceof Error ? error.message : "Enhancement failed";
+
     return Response.json(
-      {
-        error: "Enhancement failed",
-      },
-      {
-        status: 500,
-      }
+      { error: message === "OPENAI_API_KEY is not configured." ? "Enhancement failed" : message },
+      { status: 500 },
     );
   }
 }

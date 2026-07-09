@@ -70,12 +70,34 @@ export async function resolveLibraryUrl(
   if (path) {
     try {
       return await createSignedLibraryUrl(path);
-    } catch {
-      return fallbackUrl ?? null;
+    } catch (error) {
+      console.error("resolveLibraryUrl: signed URL failed", { path, error });
+      if (fallbackUrl && !fallbackUrl.startsWith("blob:")) {
+        return fallbackUrl;
+      }
+      return null;
     }
   }
 
   return fallbackUrl ?? null;
+}
+
+export async function downloadFromUrl(
+  url: string,
+  filename: string,
+): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status}).`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {

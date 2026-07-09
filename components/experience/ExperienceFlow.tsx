@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 import CommercialVideo from "@/components/landing/CommercialVideo";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import ExperienceShell from "@/components/experience/ExperienceShell";
@@ -22,7 +23,10 @@ import {
   StepLayout,
 } from "@/components/experience/ExperienceUI";
 import CinematicReveal from "@/components/studio/CinematicReveal";
+import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
+import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import { markStudioHasProjects } from "@/components/studio/StudioShell";
+import { buildBibliotecaStudioUrl } from "@/lib/biblioteca-routing";
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
   PRODUCT_CATALOG,
@@ -32,6 +36,7 @@ import {
 import {
   createCommercialAssets,
   getAutoSaveMessage,
+  mapCreationError,
   persistCreationToLibrary,
   purchaseHdCommercial,
   type AutoSaveStatus,
@@ -58,6 +63,7 @@ const OFF_TOPIC_MESSAGE =
   "Solo puedo ayudarte a crear contenido de marketing — imágenes, videos y material para vender mejor. ¿Qué quieres promocionar?";
 
 export default function ExperienceFlow({ content }: ExperienceFlowProps) {
+  const router = useRouter();
   const [phase, setPhase] = useState<ExperiencePhase>("landing");
   const [intent, setIntent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -68,7 +74,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [generationMessage, setGenerationMessage] = useState(
-    "Creando tu imagen premium...",
+    "Preparando tu escena comercial...",
   );
   const [creationStep, setCreationStep] = useState<CreationStep>("image");
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
@@ -115,6 +121,15 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
   const goTo = useCallback((next: ExperiencePhase) => {
     setPhase(next);
   }, []);
+
+  const handleOpenLibrary = useCallback(() => {
+    router.push(
+      buildBibliotecaStudioUrl({
+        projectId: savedProjectIdRef.current ?? undefined,
+        assetId: savedAssetIdRef.current ?? undefined,
+      }),
+    );
+  }, [router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -172,26 +187,33 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
     return () => window.clearInterval(timer);
   }, [heroVideos.length]);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+  const applySelectedFile = useCallback(
+    (file: File, options?: { autoContinue?: boolean }) => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
 
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
-    }
+      setSelectedFile(file);
+      selectedFileRef.current = file;
+      setError(null);
 
-    setSelectedFile(file);
-    selectedFileRef.current = file;
-
-    if (file) {
       const url = URL.createObjectURL(file);
       previewUrlRef.current = url;
       setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
 
+      if (options?.autoContinue && phase === "upload") {
+        goTo("intent");
+      }
+    },
+    [goTo, phase],
+  );
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
     event.target.value = "";
+    if (!file) return;
+    applySelectedFile(file, { autoContinue: phase === "upload" });
   };
 
   const runProductionGeneration = useCallback(async () => {
@@ -202,9 +224,11 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
       return;
     }
 
+    primeCinematicFullscreen();
+
     setPhase("generating");
     setCreationStep("image");
-    setGenerationMessage("Creando tu imagen premium...");
+    setGenerationMessage("Preparando tu escena comercial...");
     setError(null);
     setPremiumImage(null);
     setVideoUrl(null);
@@ -267,9 +291,9 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
     } catch (createError) {
       console.error(createError);
       setError(
-        createError instanceof Error
-          ? createError.message
-          : "Algo salió mal. Intenta de nuevo.",
+        mapCreationError(
+          createError instanceof Error ? createError.message : undefined,
+        ) || "Algo salió mal. Intenta de nuevo.",
       );
       goTo("generate");
     }
@@ -319,9 +343,9 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
     } catch (purchaseError) {
       console.error(purchaseError);
       setCheckoutMessage(
-        purchaseError instanceof Error
-          ? purchaseError.message
-          : "No pudimos completar la compra.",
+        mapCreationError(
+          purchaseError instanceof Error ? purchaseError.message : undefined,
+        ) || "No pudimos completar la compra.",
       );
     } finally {
       setCheckoutLoading(false);
@@ -451,16 +475,23 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
         {phase === "upload" && (
           <StepLayout
             eyebrow="Paso 1"
-            title="Sube tu foto"
-            subtitle="Una foto de celular es suficiente. Metaprom hace el resto."
+            title="Tu foto"
+            subtitle="Toma una foto o elige de galería — Metaprom produce tu comercial."
           >
             <ExperiencePanel>
+              <InstantCaptureButtons
+                variant="dark"
+                onFileSelected={(file) =>
+                  applySelectedFile(file, { autoContinue: true })
+                }
+              />
+
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="group block w-full"
+                className="group mt-4 block w-full"
               >
-                <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] px-6 py-10 transition group-hover:border-white/30 group-hover:bg-white/[0.04]">
+                <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] px-6 py-8 transition group-hover:border-white/30 group-hover:bg-white/[0.04]">
                   {previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -469,29 +500,9 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                       className="max-h-72 rounded-xl object-contain"
                     />
                   ) : (
-                    <>
-                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                        <svg
-                          className="h-7 w-7 text-white/60"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1.5}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-base font-medium text-white/80">
-                        Toca para subir
-                      </p>
-                      <p className="mt-2 text-sm text-white/40">
-                        JPG, PNG · hasta 20MB
-                      </p>
-                    </>
+                    <p className="text-sm text-white/40">
+                      o arrastra tu foto aquí · JPG, PNG hasta 20MB
+                    </p>
                   )}
                 </div>
               </button>
@@ -575,7 +586,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                   Continuar
                 </PrimaryButton>
                 {error && (
-                  <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                     {error}
                   </p>
                 )}
@@ -619,7 +630,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 Generar mi comercial
               </AccentButton>
               {error && (
-                <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {error}
                 </p>
               )}
@@ -679,10 +690,10 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 <p className="text-2xl font-semibold">{generationMessage}</p>
                 <p className="text-sm text-white/45">
                   {creationStep === "image"
-                    ? "Esto toma unos segundos..."
+                    ? "Preparando la escena de tu comercial..."
                     : creationStep === "video"
-                      ? "Tu comercial está en camino..."
-                      : "Metaprom está produciendo tu comercial..."}
+                      ? "Produciendo tu comercial..."
+                      : "Metaprom está finalizando tu comercial..."}
                 </p>
               </div>
               <div className="mx-auto h-1 w-48 overflow-hidden rounded-full bg-white/10">
@@ -714,12 +725,13 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 ? "Guardando en tu biblioteca..."
                 : "Inicia sesión para conservar este comercial.")
             }
+            onAutoSaveClick={handleOpenLibrary}
             initialStage={revealFromOffer ? "offer" : "fade"}
             onUnlock={() => goTo("checkout")}
             onCreateNew={() => goTo("create-another")}
             onDownloadImage={
               premiumImage
-                ? () => downloadAsset(premiumImage, "metaprom-premium.jpg")
+                ? () => downloadAsset(premiumImage, "metaprom-imagen-apoyo.jpg")
                 : undefined
             }
             hasPremiumImage={Boolean(premiumImage)}
@@ -814,11 +826,11 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={premiumImage}
-                      alt="Imagen premium"
+                      alt="Escena comercial"
                       className="aspect-square w-full object-cover"
                     />
                     <p className="px-4 py-2 text-xs text-white/40">
-                      Imagen premium
+                      Imagen de apoyo
                     </p>
                   </div>
                 )}
@@ -853,44 +865,41 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
           <StepLayout
             eyebrow="Centro de descargas"
             title="Tus archivos listos"
-            subtitle="Descarga en la calidad que compraste."
+            subtitle="Descarga en la calidad que compraste. El comercial HD es tu producto final."
           >
             <ExperiencePanel className="space-y-4">
+              {purchased && videoUrl && (
+                <DownloadRow
+                  label="Comercial HD · sin marca de agua"
+                  badge="HD"
+                  onDownload={() =>
+                    downloadAsset(videoUrl, "metaprom-comercial-hd.mp4")
+                  }
+                />
+              )}
               {premiumImage && (
                 <DownloadRow
-                  label="Imagen premium"
+                  label="Imagen de apoyo"
                   badge="Incluido"
                   onDownload={() =>
-                    downloadAsset(premiumImage, "metaprom-premium.jpg")
+                    downloadAsset(premiumImage, "metaprom-imagen-apoyo.jpg")
                   }
                 />
               )}
-              {videoUrl && (
-                <DownloadRow
-                  label={
-                    purchased
-                      ? "Comercial HD · sin marca de agua"
-                      : "Avance gratuito · con marca"
-                  }
-                  badge={purchased ? "HD" : "Preview"}
-                  onDownload={() =>
-                    downloadAsset(
-                      videoUrl,
-                      purchased
-                        ? "metaprom-comercial-hd.mp4"
-                        : "metaprom-comercial-preview.mp4",
-                    )
-                  }
-                />
-              )}
-              {!purchased && (
-                <button
-                  type="button"
-                  onClick={() => goTo("checkout")}
-                  className="mt-4 w-full text-center text-sm text-violet-300/80 transition hover:text-violet-200"
-                >
-                  Desbloquear versión HD →
-                </button>
+              {!purchased && videoUrl && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-center">
+                  <p className="text-sm text-white/55">
+                    El avance gratuito es solo para ver en pantalla. Desbloquea
+                    el comercial HD para descargar tu video final.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => goTo("checkout")}
+                    className="mt-3 text-sm font-semibold text-violet-300 transition hover:text-violet-200"
+                  >
+                    Desbloquear comercial HD →
+                  </button>
+                </div>
               )}
               <div className="pt-4">
                 <PrimaryButton onClick={() => goTo("create-another")}>
@@ -911,8 +920,8 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 Crea otro comercial
               </h1>
               <p className="mx-auto mt-6 max-w-md text-lg text-white/55">
-                El mismo flujo premium. Sube una nueva foto y Metaprom hará el
-                resto.
+                El mismo flujo premium. Toma una foto y Metaprom produce tu
+                comercial.
               </p>
               <div className="mt-10 space-y-3">
                 <PrimaryButton onClick={resetForNewCommercial}>

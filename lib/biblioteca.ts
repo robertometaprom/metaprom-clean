@@ -3,6 +3,7 @@ import { resolveLibraryUrl } from "@/lib/library-storage";
 import type { User } from "@supabase/supabase-js";
 import type { Mode } from "./prompts";
 import type { AssetPaymentStatus } from "./commercial/tiers";
+import type { StudioDestination } from "./studio-destination";
 
 export class BibliotecaAuthError extends Error {
   constructor(message = "Authentication required to access Biblioteca.") {
@@ -19,6 +20,7 @@ export type BibliotecaProject = {
   workflow_id?: string | null;
   industry?: string | null;
   intended_destination?: string | null;
+  destination?: StudioDestination | null;
   created_at?: string | null;
 };
 
@@ -49,6 +51,7 @@ export type StudioProjectMetadata = {
   workflow_id?: string | null;
   industry?: string | null;
   intended_destination?: string | null;
+  destination?: StudioDestination | null;
 };
 
 export type PersistStudioAssetInput = {
@@ -104,7 +107,7 @@ export async function fetchBibliotecaProjects(): Promise<BibliotecaProject[]> {
   const { data, error } = await supabaseClient
     .from("projects")
     .select(
-      "id, name, user_id, workflow_id, industry, intended_destination, created_at",
+      "id, name, user_id, workflow_id, industry, intended_destination, destination, created_at",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -136,13 +139,14 @@ export async function createBibliotecaProject(
     workflow_id: metadata.workflow_id ?? null,
     industry: metadata.industry ?? null,
     intended_destination: metadata.intended_destination ?? null,
+    destination: metadata.destination ?? null,
   };
 
   const { data, error } = await supabaseClient
     .from("projects")
     .insert(insertPayload)
     .select(
-      "id, name, user_id, workflow_id, industry, intended_destination, created_at",
+      "id, name, user_id, workflow_id, industry, intended_destination, destination, created_at",
     )
     .single();
 
@@ -167,6 +171,7 @@ export async function updateBibliotecaProject(
       workflow_id: metadata.workflow_id ?? null,
       industry: metadata.industry ?? null,
       intended_destination: metadata.intended_destination ?? null,
+      destination: metadata.destination ?? null,
     })
     .eq("id", projectId)
     .eq("user_id", user.id);
@@ -378,4 +383,60 @@ export async function blobToDataUrl(blob: Blob): Promise<string> {
 export async function getBibliotecaUserId(): Promise<string> {
   const user = await requireUser();
   return user.id;
+}
+
+export function assetHasTeaser(asset: BibliotecaAsset): boolean {
+  return Boolean(
+    asset.teaser_video_path ||
+      asset.teaser_video_url ||
+      asset.video_url,
+  );
+}
+
+export function getTeaserPlaybackUrl(asset: BibliotecaAsset): string | null {
+  return asset.teaser_video_url ?? asset.video_url ?? null;
+}
+
+export function getCommercialStatusLabel(
+  asset: BibliotecaAsset,
+): { label: string; tone: "free" | "pending" | "paid" } {
+  if (asset.payment_status === "paid") {
+    return { label: "HD comprado", tone: "paid" };
+  }
+  if (asset.payment_status === "pending") {
+    return { label: "Pago pendiente", tone: "pending" };
+  }
+  return { label: "Avance gratis", tone: "free" };
+}
+
+export async function refreshAssetTeaserUrl(
+  asset: BibliotecaAsset,
+): Promise<string | null> {
+  if (!asset.teaser_video_path) {
+    return getTeaserPlaybackUrl(asset);
+  }
+
+  const { createSignedLibraryUrl } = await import("@/lib/library-storage");
+  try {
+    return await createSignedLibraryUrl(asset.teaser_video_path);
+  } catch (error) {
+    console.error("refreshAssetTeaserUrl failed", { assetId: asset.id, error });
+    return getTeaserPlaybackUrl(asset);
+  }
+}
+
+export async function refreshAssetPremiumUrl(
+  asset: BibliotecaAsset,
+): Promise<string | null> {
+  if (!asset.premium_video_path) {
+    return asset.premium_video_url ?? null;
+  }
+
+  const { createSignedLibraryUrl } = await import("@/lib/library-storage");
+  try {
+    return await createSignedLibraryUrl(asset.premium_video_path);
+  } catch (error) {
+    console.error("refreshAssetPremiumUrl failed", { assetId: asset.id, error });
+    return asset.premium_video_url ?? null;
+  }
 }

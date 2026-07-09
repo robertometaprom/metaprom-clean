@@ -1,3 +1,5 @@
+import { buildDestinationImagePromptBlock, buildDestinationVideoPromptBlock } from "./destination-generation";
+import type { StudioDestination } from "./studio-destination";
 import type { Mode } from "./prompts";
 
 const DEFAULT_COMMERCIAL_VISION =
@@ -9,8 +11,10 @@ const DEFAULT_COMMERCIAL_VISION =
 export function buildStudioImagePrompt(
   customerIntent: string,
   mode: Mode,
+  destination?: StudioDestination | null,
 ): string {
   const vision = customerIntent.trim() || DEFAULT_COMMERCIAL_VISION;
+  const destinationBlock = buildDestinationImagePromptBlock(destination);
 
   const modeHint =
     mode === "amazon" || mode === "mercado-libre"
@@ -27,7 +31,7 @@ This is NOT a photo enhancement task. The customer uploaded a casual phone photo
 
 Creative direction from the customer:
 ${vision}
-
+${destinationBlock ? `\n${destinationBlock}\n` : ""}
 Requirements:
 - Create a dramatic, aspirational advertising scene around the product
 - Professional commercial lighting, depth, and composition
@@ -47,9 +51,11 @@ The customer should immediately think: "Wow... this looks like a professional ad
 export function buildStudioVideoPrompt(
   customerIntent: string,
   tier: "teaser" | "premium" = "teaser",
+  destination?: StudioDestination | null,
 ): string {
   const vision = customerIntent.trim();
   const durationSeconds = tier === "premium" ? 12 : 5;
+  const destinationBlock = buildDestinationVideoPromptBlock(destination);
 
   const sceneBlock = vision
     ? `Scene to create:\n${vision}\n\nThe product from the reference image must appear naturally in this scene — worn, held, displayed, or used as appropriate.`
@@ -63,7 +69,7 @@ export function buildStudioVideoPrompt(
   return `Create a ${durationSeconds}-second professional social media / TV commercial. This is NOT photo animation.
 
 ${sceneBlock}
-
+${destinationBlock ? `\n${destinationBlock}\n` : ""}
 Requirements:
 - ${qualityHint}
 - Real advertising quality — like a commercial produced for Instagram, TikTok, or television

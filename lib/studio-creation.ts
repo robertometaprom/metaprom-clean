@@ -5,8 +5,11 @@ import {
   getBibliotecaUserId,
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
+import { mapCreationError } from "@/lib/creation-errors";
 import type { PaymentMethod } from "@/lib/payments/types";
 import type { Mode } from "@/lib/prompts";
+import { toDestinationGenerationPayload } from "@/lib/destination-generation";
+import type { StudioDestination } from "@/lib/studio-destination";
 import { persistStudioCreation } from "@/lib/studio-persistence";
 import {
   buildStudioImagePrompt,
@@ -21,6 +24,7 @@ export type CreateCommercialInput = {
   file: File;
   customerIntent: string;
   productMode: Mode;
+  destination?: StudioDestination | null;
   onStep?: (step: CreationStep, message: string) => void;
 };
 
@@ -92,31 +96,31 @@ export async function parseJsonResponse(
   }
 }
 
-export function mapCreationError(message?: string): string | undefined {
-  if (!message) return undefined;
-
-  const normalized: Record<string, string> = {
-    "Enhancement failed": "No pudimos crear tu imagen.",
-    "No image uploaded": "Sube una foto para continuar.",
-    "No image generated": "No pudimos crear tu imagen.",
-    "Video generation failed.": "No pudimos crear tu comercial.",
-  };
-
-  return normalized[message] ?? message;
-}
+export { mapCreationError } from "@/lib/creation-errors";
 
 export async function createCommercialAssets(
   input: CreateCommercialInput,
 ): Promise<CreateCommercialResult> {
   const customerIntent = input.customerIntent.trim();
-  const imagePrompt = buildStudioImagePrompt(customerIntent, input.productMode);
+  const destination = input.destination ?? null;
+  const imagePrompt = buildStudioImagePrompt(
+    customerIntent,
+    input.productMode,
+    destination,
+  );
 
-  input.onStep?.("image", "Creando tu imagen premium...");
+  input.onStep?.("image", "Preparando tu escena comercial...");
 
   const formData = new FormData();
   formData.append("image", input.file);
   formData.append("mode", "custom");
   formData.append("aiInstructions", imagePrompt);
+  if (destination) {
+    formData.append(
+      "destination",
+      JSON.stringify(toDestinationGenerationPayload(destination).destination),
+    );
+  }
 
   const response = await fetch("/api/enhancement", {
     method: "POST",
@@ -126,16 +130,24 @@ export async function createCommercialAssets(
   const data = await parseJsonResponse(response);
 
   if (!response.ok || !data.image) {
-    throw new Error(mapCreationError(data.error) || "No pudimos crear tu imagen.");
+    throw new Error(
+      mapCreationError(data.error) || "No pudimos preparar tu escena comercial.",
+    );
   }
 
   input.onStep?.("video", "Preparando tu comercial...");
 
-  const videoPrompt = buildStudioVideoPrompt(customerIntent, "teaser");
+  const videoPrompt = buildStudioVideoPrompt(customerIntent, "teaser", destination);
   const videoForm = new FormData();
   videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));
   videoForm.append("prompt", videoPrompt);
   videoForm.append("tier", "teaser");
+  if (destination) {
+    videoForm.append(
+      "destination",
+      JSON.stringify(toDestinationGenerationPayload(destination).destination),
+    );
+  }
 
   const videoResponse = await fetch("/api/video", {
     method: "POST",
@@ -235,7 +247,9 @@ export async function purchaseHdCommercial(
   };
 
   if (!checkoutResponse.ok) {
-    throw new Error(checkoutData.error || "No pudimos iniciar el pago.");
+    throw new Error(
+      mapCreationError(checkoutData.error) || "No pudimos iniciar el pago.",
+    );
   }
 
   if (checkoutData.status === "awaiting_payment" && checkoutData.sessionId) {
@@ -259,7 +273,9 @@ export async function purchaseHdCommercial(
   const data = (await response.json()) as { error?: string; status?: string };
 
   if (!response.ok) {
-    throw new Error(data.error || "No pudimos producir tu comercial HD.");
+    throw new Error(
+      mapCreationError(data.error) || "No pudimos producir tu comercial HD.",
+    );
   }
 
   const asset = await fetchBibliotecaAssetById(input.assetId);
@@ -297,6 +313,8 @@ async function pollCheckoutCompletion(sessionId: string): Promise<void> {
 
 export function getAutoSaveMessage(status: AutoSaveStatus): string | null {
   switch (status) {
+    case "saving":
+      return "Guardando en tu biblioteca...";
     case "saved":
       return "Guardado automáticamente en tu biblioteca.";
     case "local-only":

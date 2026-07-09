@@ -1,4 +1,9 @@
 import sharp from "sharp";
+import { mapCreationError } from "@/lib/creation-errors";
+import {
+  logDestinationGenerationDebug,
+  parseStudioDestinationFromFormData,
+} from "@/lib/destination-generation";
 import { generateEnhancedImage } from "@/lib/enhancement";
 import type { Mode } from "@/lib/prompts";
 
@@ -39,6 +44,7 @@ export async function POST(req: Request) {
     const rawMode = (formData.get("mode") as string | null) ?? "amazon";
     const mode = (rawMode as Mode) ?? "amazon";
     const aiInstructions = (formData.get("aiInstructions") as string) ?? "";
+    const destination = parseStudioDestinationFromFormData(formData);
 
     if (mode === "custom" && aiInstructions.trim().length === 0) {
       return Response.json(
@@ -71,6 +77,22 @@ export async function POST(req: Request) {
       aiInstructions,
     });
 
+    logDestinationGenerationDebug({
+      stage: "image",
+      destination,
+      finalPrompt: aiInstructions,
+      generationParameters: {
+        mode,
+        provider: "openai-image-generation",
+        destination: destination
+          ? {
+              platform: destination.platform,
+              aspectRatio: destination.aspectRatio,
+            }
+          : null,
+      },
+    });
+
     return Response.json({
       image: `data:image/png;base64,${result.imageBase64}`,
     });
@@ -84,7 +106,10 @@ export async function POST(req: Request) {
       error instanceof Error ? error.message : "Enhancement failed";
 
     return Response.json(
-      { error: message === "OPENAI_API_KEY is not configured." ? "Enhancement failed" : message },
+      {
+        error:
+          mapCreationError(message) || "No pudimos preparar tu escena comercial.",
+      },
       { status: 500 },
     );
   }

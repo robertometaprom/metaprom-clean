@@ -11,10 +11,14 @@ import {
 } from "react";
 import StudioHero from "@/components/studio/StudioHero";
 import StudioAtmosphere from "@/components/studio/StudioAtmosphere";
+import StudioIndustryExamples from "@/components/studio/StudioIndustryExamples";
 import StudioPlatforms from "@/components/studio/StudioPlatforms";
 import StudioTrustBar from "@/components/studio/StudioTrustBar";
 import { markStudioHasProjects } from "@/components/studio/StudioShell";
-import { WELCOME_CHIPS } from "@/lib/studio-atmosphere";
+import {
+  PROMPT_CATEGORY_CHIPS,
+  type PromptCategoryIcon,
+} from "@/lib/studio-atmosphere";
 import {
   PRODUCT_CATALOG,
   resolveStudioWorkflow,
@@ -24,6 +28,7 @@ import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
   createCommercialAssets,
   getAutoSaveMessage,
+  mapCreationError,
   persistCreationToLibrary,
   purchaseHdCommercial,
   type AutoSaveStatus,
@@ -32,6 +37,10 @@ import {
 import type { PaymentMethod } from "@/lib/payments/types";
 import { formatPriceMxn, getPriceById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
+import DestinationStep from "@/components/studio/DestinationStep";
+import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
+import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
+import type { StudioDestination } from "@/lib/studio-destination";
 
 const STUDIO_DRAFT_KEY = "metaprom_studio_draft";
 
@@ -39,6 +48,8 @@ type Phase =
   | "welcome"
   | "unavailable"
   | "upload"
+  | "destination"
+  | "intent"
   | "creating"
   | "cinematic-reveal"
   | "premium-offer"
@@ -53,10 +64,20 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 type CreativeDirectorProps = {
   onWelcomeChange?: (isWelcome: boolean) => void;
+  onOpenLibrary?: (focus?: {
+    projectId?: string;
+    assetId?: string;
+  }) => void;
+  onLibraryUpdated?: (focus?: {
+    projectId?: string;
+    assetId?: string;
+  }) => void;
 };
 
 export default function CreativeDirector({
   onWelcomeChange,
+  onOpenLibrary,
+  onLibraryUpdated,
 }: CreativeDirectorProps) {
   const [phase, setPhase] = useState<Phase>("welcome");
   const [input, setInput] = useState("");
@@ -76,6 +97,9 @@ export default function CreativeDirector({
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [premiumReady, setPremiumReady] = useState(false);
+  const [destination, setDestination] = useState<StudioDestination | null>(
+    null,
+  );
 
   const previewUrlRef = useRef<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
@@ -93,7 +117,9 @@ export default function CreativeDirector({
     workflow_id?: string | null;
     industry?: string | null;
     intended_destination?: string | null;
+    destination?: StudioDestination | null;
   }>({});
+  const destinationRef = useRef<StudioDestination | null>(null);
 
   useEffect(() => {
     selectedFileRef.current = selectedFile;
@@ -139,7 +165,9 @@ export default function CreativeDirector({
           ...projectMetadataRef.current,
           workflow_id: product.id,
           industry: product.industry ?? projectMetadataRef.current.industry,
-          intended_destination: product.destination,
+          intended_destination:
+            destinationRef.current?.platform ?? product.destination,
+          destination: destinationRef.current,
         },
         existingProjectId: savedProjectIdRef.current,
         existingAssetId: savedAssetIdRef.current,
@@ -148,10 +176,16 @@ export default function CreativeDirector({
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
       if (result.assetId) savedAssetIdRef.current = result.assetId;
-      if (result.status === "saved") markStudioHasProjects();
+      if (result.status === "saved") {
+        markStudioHasProjects();
+        onLibraryUpdated?.({
+          projectId: result.projectId ?? undefined,
+          assetId: result.assetId ?? undefined,
+        });
+      }
       setAutoSaveStatus(result.status);
     },
-    [],
+    [onLibraryUpdated],
   );
 
   const runCreation = useCallback(async () => {
@@ -162,9 +196,11 @@ export default function CreativeDirector({
       return;
     }
 
+    primeCinematicFullscreen();
+
     setPhase("creating");
     setCreationStep("image");
-    setCreationMessage("Creando tu imagen premium...");
+    setCreationMessage("Preparando tu escena comercial...");
     setError(null);
     setPremiumImage(null);
     setVideoUrl(null);
@@ -185,6 +221,7 @@ export default function CreativeDirector({
         file,
         customerIntent,
         productMode: product.mode,
+        destination: destinationRef.current,
         onStep: (step, message) => {
           setCreationStep(step);
           setCreationMessage(message);
@@ -197,7 +234,7 @@ export default function CreativeDirector({
       videoUrlRef.current = result.videoUrl;
       setVideoUrl(result.videoUrl);
 
-      void persistToLibrary({
+      await persistToLibrary({
         originalFile: file,
         enhancedDataUrl: result.premiumImage,
         teaserVideoBlob: result.videoBlob,
@@ -209,9 +246,9 @@ export default function CreativeDirector({
     } catch (createError) {
       console.error(createError);
       setError(
-        createError instanceof Error
-          ? createError.message
-          : "Algo salió mal. Intenta de nuevo.",
+        mapCreationError(
+          createError instanceof Error ? createError.message : undefined,
+        ) || "Algo salió mal. Intenta de nuevo.",
       );
       setPhase("upload");
     }
@@ -223,7 +260,12 @@ export default function CreativeDirector({
       const trimmed = input.trim();
       const hasPhoto = Boolean(selectedFileRef.current);
 
-      if (!trimmed && !hasPhoto) return;
+      if (!trimmed) return;
+
+      if (!hasPhoto) {
+        setPhase("upload");
+        return;
+      }
 
       const resolution = resolveStudioWorkflow(trimmed, hasPhoto);
 
@@ -236,7 +278,8 @@ export default function CreativeDirector({
       await recordMarketIntelligence({
         requested_service: resolution.requestedService,
         industry: resolution.industry,
-        intended_destination: resolution.intendedDestination,
+        intended_destination:
+          destinationRef.current?.platform ?? resolution.intendedDestination,
         matched_workflow: resolution.matchedExplicitly,
         workflow_id: resolution.matchedExplicitly
           ? resolution.productId
@@ -247,54 +290,79 @@ export default function CreativeDirector({
       matchedProductRef.current = resolution.product;
       customerIntentRef.current = trimmed;
       projectMetadataRef.current = {
+        ...projectMetadataRef.current,
         workflow_id: resolution.matchedExplicitly
           ? resolution.productId
           : resolution.product.id,
         industry: resolution.industry,
-        intended_destination: resolution.intendedDestination,
+        intended_destination:
+          destinationRef.current?.platform ?? resolution.intendedDestination,
+        destination: destinationRef.current,
       };
       setError(null);
 
-      if (hasPhoto) {
-        await runCreation();
-      } else {
-        setPhase("upload");
-      }
+      await runCreation();
     },
     [input, runCreation],
   );
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+  const handleDestinationContinue = useCallback(
+    (selected: StudioDestination) => {
+      setDestination(selected);
+      destinationRef.current = selected;
+      projectMetadataRef.current = {
+        ...projectMetadataRef.current,
+        destination: selected,
+        intended_destination: selected.platform,
+      };
+      setPhase("intent");
+    },
+    [],
+  );
 
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
-    }
+  const applySelectedFile = useCallback(
+    (file: File, options?: { autoContinue?: boolean }) => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
 
-    setSelectedFile(file);
-    selectedFileRef.current = file;
-    setPremiumImage(null);
-    setVideoUrl(null);
-    setError(null);
+      setSelectedFile(file);
+      selectedFileRef.current = file;
+      setPremiumImage(null);
+      setVideoUrl(null);
+      setError(null);
 
-    if (file) {
       const url = URL.createObjectURL(file);
       previewUrlRef.current = url;
       setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
 
+      if (!options?.autoContinue || phase !== "upload") return;
+
+      setPhase("destination");
+    },
+    [phase],
+  );
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
     event.target.value = "";
+    if (!file) return;
+    applySelectedFile(file, {
+      autoContinue: phase === "upload",
+    });
   };
 
   const handleExampleClick = (example: string) => {
     setInput(example);
+    if (phase === "welcome") {
+      setPhase("upload");
+    }
   };
 
-  const handleCreateWow = async () => {
-    await runCreation();
+  const handleCreateWow = () => {
+    if (!selectedFile) return;
+    setPhase("destination");
   };
 
   const handleDownloadImage = () => {
@@ -341,12 +409,19 @@ export default function CreativeDirector({
       }
 
       setCheckoutMessage(result.message);
+
+      if (result.premiumVideoUrl) {
+        onLibraryUpdated?.({
+          projectId: savedProjectIdRef.current ?? undefined,
+          assetId: savedAssetIdRef.current ?? undefined,
+        });
+      }
     } catch (purchaseError) {
       console.error(purchaseError);
       setCheckoutMessage(
-        purchaseError instanceof Error
-          ? purchaseError.message
-          : "No pudimos completar la compra.",
+        mapCreationError(
+          purchaseError instanceof Error ? purchaseError.message : undefined,
+        ) || "No pudimos completar la compra.",
       );
     } finally {
       setCheckoutLoading(false);
@@ -364,6 +439,8 @@ export default function CreativeDirector({
     setVideoUrl(null);
     setError(null);
     setPremiumReady(false);
+    setDestination(null);
+    destinationRef.current = null;
     setCheckoutMessage(null);
     setCheckoutLoading(false);
     savedProjectIdRef.current = null;
@@ -386,6 +463,13 @@ export default function CreativeDirector({
     setPreviewUrl(null);
   };
 
+  const handleOpenLibrary = useCallback(() => {
+    onOpenLibrary?.({
+      projectId: savedProjectIdRef.current ?? undefined,
+      assetId: savedAssetIdRef.current ?? undefined,
+    });
+  }, [onOpenLibrary]);
+
   const contextualUploadMessage = matchedProduct
     ? getUploadMessage(matchedProduct)
     : "Sube una foto de lo que vendes.";
@@ -407,6 +491,7 @@ export default function CreativeDirector({
           <StudioAtmosphere>
             <div className="relative mx-auto max-w-2xl px-2 pb-4 pt-2 sm:px-4">
               <motion.div
+                id="studio-prompt"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: EASE }}
@@ -414,103 +499,37 @@ export default function CreativeDirector({
               >
                 <div className="space-y-2 text-center">
                   <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-                    ¿Qué te gustaría{" "}
+                    Sube tu{" "}
                     <span className="bg-gradient-to-r from-violet-600 to-purple-500 bg-clip-text text-transparent">
-                      crear
-                    </span>{" "}
-                    hoy?
+                      foto
+                    </span>
                   </h2>
                   <p className="text-sm text-neutral-500 sm:text-base">
-                    Sube tu foto, cuéntame tu idea y yo me encargo del video.
+                    Toma una foto de lo que vendes — Metaprom crea tu comercial.
                   </p>
                 </div>
 
-                <form onSubmit={handleIntentSubmit} className="mt-8 space-y-5">
-                  <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-                    <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Cuéntame qué quieres lograr..."
-                      rows={4}
-                      className="w-full resize-none bg-transparent px-5 pb-14 pt-4 text-base text-neutral-800 placeholder-neutral-400 focus:outline-none"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 pb-3">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:border-neutral-300 hover:text-neutral-700"
-                        aria-label="Adjuntar foto"
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={!input.trim() && !selectedFile}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Enviar"
-                      >
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <label
-                    className="group block cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setPhase("upload")}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
                   >
-                    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-8 transition group-hover:border-violet-300 group-hover:bg-violet-50/30">
-                      {previewUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={previewUrl}
-                          alt="Vista previa"
-                          className="max-h-40 rounded-xl object-contain"
-                        />
-                      ) : (
-                        <>
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-violet-600">
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                            </svg>
-                          </div>
-                          <p className="text-sm font-medium text-neutral-700">
-                            O arrastra tu foto aquí
-                          </p>
-                          <p className="mt-1 text-xs text-neutral-400">
-                            JPG, PNG hasta 20MB
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </label>
-                </form>
+                    Subir o tomar foto
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
 
                 {error && (
-                  <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  <p className="mt-4 whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                     {error}
                   </p>
                 )}
-
-                <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  {WELCOME_CHIPS.map((example) => (
-                    <button
-                      key={example}
-                      type="button"
-                      onClick={() => handleExampleClick(example)}
-                      className="rounded-full bg-violet-50 px-4 py-2 text-sm text-violet-700 transition hover:bg-violet-100"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
               </motion.div>
             </div>
           </StudioAtmosphere>
 
+          <StudioIndustryExamples onExampleSelect={handleExampleClick} />
           <StudioPlatforms />
           <StudioTrustBar />
         </div>
@@ -525,7 +544,7 @@ export default function CreativeDirector({
             exit={{ opacity: 0, y: -12 }}
             className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-lg"
           >
-            <p className="text-lg leading-relaxed text-neutral-700">{error}</p>
+            <p className="whitespace-pre-line text-lg leading-relaxed text-neutral-700">{error}</p>
             <button
               type="button"
               onClick={resetFlow}
@@ -546,11 +565,16 @@ export default function CreativeDirector({
             className="space-y-8 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
           >
             <div className="space-y-3 text-center">
-              <p className="text-sm text-neutral-400">{input.trim()}</p>
               <h2 className="text-2xl font-bold leading-tight text-neutral-900 sm:text-3xl">
                 {contextualUploadMessage}
               </h2>
             </div>
+
+            <InstantCaptureButtons
+              onFileSelected={(file) =>
+                applySelectedFile(file, { autoContinue: true })
+              }
+            />
 
             <label
               className="group block cursor-pointer"
@@ -565,16 +589,11 @@ export default function CreativeDirector({
                     className="mx-auto max-h-80 w-full object-contain p-4"
                   />
                 ) : (
-                  <div className="flex min-h-56 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-violet-600">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                    </div>
-                    <p className="text-base font-medium text-neutral-700">
-                      Toca para subir tu foto
+                  <div className="flex min-h-32 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
+                    <p className="text-sm text-neutral-500">
+                      o arrastra tu foto aquí
                     </p>
-                    <p className="text-sm text-neutral-400">
+                    <p className="text-xs text-neutral-400">
                       Una foto de celular es suficiente
                     </p>
                   </div>
@@ -583,7 +602,7 @@ export default function CreativeDirector({
             </label>
 
             {error && (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <p className="whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
               </p>
             )}
@@ -595,7 +614,7 @@ export default function CreativeDirector({
                 disabled={!selectedFile}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Crear
+                Continuar
               </button>
               <button
                 type="button"
@@ -605,6 +624,105 @@ export default function CreativeDirector({
                 Cambiar idea
               </button>
             </div>
+          </motion.div>
+        )}
+
+        {phase === "destination" && (
+          <motion.div
+            key="destination"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="-mx-6 rounded-3xl bg-black px-6 py-8 sm:-mx-0"
+          >
+            {previewUrl && (
+              <div className="mb-6 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt="Vista previa"
+                  className="max-h-24 rounded-xl border border-white/10 object-contain"
+                />
+              </div>
+            )}
+            <DestinationStep
+              onContinue={handleDestinationContinue}
+              onBack={() => setPhase("upload")}
+            />
+          </motion.div>
+        )}
+
+        {phase === "intent" && (
+          <motion.div
+            key="intent"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="-mx-6 space-y-8 rounded-3xl bg-black px-6 py-8 sm:-mx-0"
+          >
+            <div className="space-y-3 text-center">
+              {destination && (
+                <p className="text-sm text-white/45">
+                  {destination.platform} · {destination.aspectRatio}
+                </p>
+              )}
+              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                ¿Qué te gustaría crear hoy?
+              </h2>
+              <p className="text-base text-white/55">
+                Describe tu comercial. Metaprom interpreta tu intención.
+              </p>
+            </div>
+
+            <form onSubmit={handleIntentSubmit} className="space-y-5">
+              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Describe tu comercial. Ej: hamburguesa artesanal en cámara lenta..."
+                  className="w-full bg-transparent py-4 pl-5 pr-36 text-base text-white placeholder:text-white/35 focus:outline-none"
+                />
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span aria-hidden="true">✨</span>
+                    Generar
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {PROMPT_CATEGORY_CHIPS.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => handleExampleClick(chip.prompt)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                  >
+                    <PromptCategoryIcon type={chip.icon} />
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPhase("destination")}
+                className="w-full rounded-2xl py-3 text-sm font-semibold text-white/50 transition hover:text-white/80"
+              >
+                Volver
+              </button>
+            </form>
           </motion.div>
         )}
 
@@ -632,10 +750,10 @@ export default function CreativeDirector({
               <p className="text-xl font-semibold text-neutral-900">{creationMessage}</p>
               <p className="text-sm text-neutral-500">
                 {creationStep === "image"
-                  ? "Esto toma unos segundos..."
+                  ? "Preparando la escena de tu comercial..."
                   : creationStep === "video"
-                    ? "Tu comercial está en camino..."
-                    : "¡Listo!"}
+                    ? "Produciendo tu comercial..."
+                    : "¡Tu comercial está listo!"}
               </p>
             </div>
           </motion.div>
@@ -647,6 +765,7 @@ export default function CreativeDirector({
               videoUrl={videoUrl}
               priceMxn={HD_COMMERCIAL_PRICE}
               autoSaveMessage={autoSaveMessage}
+              onAutoSaveClick={handleOpenLibrary}
               initialStage={phase === "premium-offer" ? "offer" : "fade"}
               onUnlock={() => setPhase("purchase-hd")}
               onCreateNew={resetFlow}
@@ -783,8 +902,57 @@ function getUploadMessage(product: CatalogProduct): string {
     case "restaurant-poster":
       return "Sube una foto de tu platillo o local.";
     case "hd-video":
-      return "Sube una foto y crearemos tu comercial.";
+      return "Toma una foto y crearemos tu comercial.";
     default:
-      return "Sube una foto de lo que vendes.";
+      return "Toma una foto de lo que vendes — creamos tu comercial.";
+  }
+}
+
+function PromptCategoryIcon({ type }: { type: PromptCategoryIcon }) {
+  const className = "h-3.5 w-3.5 text-white/50";
+
+  switch (type) {
+    case "food":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v14M8 6v4M16 6v4M4 10h16" />
+        </svg>
+      );
+    case "real-estate":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10" />
+        </svg>
+      );
+    case "fashion":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      );
+    case "coffee":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 8h10v6a4 4 0 01-4 4H8a4 4 0 01-4-4V8zM18 10h1a2 2 0 010 4h-1" />
+        </svg>
+      );
+    case "beauty":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M12 22a10 10 0 110-20 10 10 0 010 20z" />
+        </svg>
+      );
+    case "automotive":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 11l1.5-4.5h11L19 11M5 11v6h2v-2h10v2h2v-6M7 17h.01M17 17h.01" />
+        </svg>
+      );
+    case "more":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      );
   }
 }

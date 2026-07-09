@@ -1,36 +1,105 @@
 "use client";
 
 import CommercialVideo from "@/components/landing/CommercialVideo";
+import LivingShowcase from "@/components/studio/LivingShowcase";
+import {
+  BEZEL_TOP,
+  DYNAMIC_ISLAND_HEIGHT,
+  DYNAMIC_ISLAND_TOP,
+  DYNAMIC_ISLAND_WIDTH,
+  PHONE_FRAME_BORDER,
+  PHONE_HEIGHT,
+  PHONE_OUTER_RADIUS,
+  PHONE_WIDTH,
+  SCREEN_HEIGHT,
+  SCREEN_RADIUS,
+  SCREEN_WIDTH,
+  SCREEN_X,
+  SCREEN_Y,
+  phonePct,
+} from "@/lib/phone-device-spec";
 
 type PhoneMockupProps = {
-  videoSrc: string;
+  videoSrc?: string;
+  videoSources?: readonly string[];
   className?: string;
   showSocialChrome?: boolean;
+  screenOnly?: boolean;
 };
 
 export default function PhoneMockup({
   videoSrc,
+  videoSources,
   className = "",
   showSocialChrome = true,
+  screenOnly = false,
 }: PhoneMockupProps) {
+  const resolvedSrc = videoSrc ?? videoSources?.[0] ?? "";
+  const useLivingShowcase = (videoSources?.length ?? 0) > 1;
+  if (screenOnly) {
+    return (
+      <div
+        data-phone-screen
+        className={className}
+        style={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: `${SCREEN_WIDTH} / ${SCREEN_HEIGHT}`,
+          overflow: "hidden",
+          borderRadius: phonePct(SCREEN_RADIUS, SCREEN_WIDTH),
+          background: "#000",
+        }}
+        aria-label="Comercial de ejemplo en teléfono"
+      >
+        {useLivingShowcase && videoSources ? (
+          <LivingShowcase videos={videoSources} />
+        ) : (
+          <PhoneScreenVideo videoSrc={resolvedSrc} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`relative ${className}`}
+      className={className}
+      style={{
+        position: "relative",
+        width: "100%",
+        aspectRatio: `${PHONE_WIDTH} / ${PHONE_HEIGHT}`,
+      }}
       aria-label="Comercial de ejemplo en teléfono"
     >
-      <div className="relative rounded-[2.75rem] border-[4px] border-neutral-800 bg-neutral-900 p-[7px] shadow-[0_32px_64px_rgba(0,0,0,0.45),0_0_48px_rgba(139,92,246,0.2)]">
-        <div className="absolute left-1/2 top-[11px] z-20 h-5 w-[78px] -translate-x-1/2 rounded-full bg-black" />
-
-        <div className="relative overflow-hidden rounded-[2.25rem] bg-black">
-          <CommercialVideo
-            src={videoSrc}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="aspect-[9/16] w-full object-cover"
-          />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: phonePct(PHONE_OUTER_RADIUS, PHONE_WIDTH),
+          border: `${PHONE_FRAME_BORDER}px solid #48484a`,
+          background:
+            "linear-gradient(145deg, #3a3a3c 0%, #1c1c1e 55%, #2c2c2e 100%)",
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.06) inset, 0 24px 48px rgba(0,0,0,0.55)",
+        }}
+      >
+        <div
+          data-phone-screen
+          style={{
+            position: "absolute",
+            left: phonePct(SCREEN_X, PHONE_WIDTH),
+            top: phonePct(SCREEN_Y, PHONE_HEIGHT),
+            width: phonePct(SCREEN_WIDTH, PHONE_WIDTH),
+            height: phonePct(SCREEN_HEIGHT, PHONE_HEIGHT),
+            borderRadius: phonePct(SCREEN_RADIUS, SCREEN_WIDTH),
+            overflow: "hidden",
+            background: "#000",
+          }}
+        >
+          {useLivingShowcase && videoSources ? (
+            <LivingShowcase videos={videoSources} />
+          ) : (
+            <PhoneScreenVideo videoSrc={resolvedSrc} />
+          )}
 
           {showSocialChrome && (
             <>
@@ -63,8 +132,51 @@ export default function PhoneMockup({
             </>
           )}
         </div>
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: phonePct(DYNAMIC_ISLAND_TOP, PHONE_HEIGHT),
+            width: phonePct(DYNAMIC_ISLAND_WIDTH, PHONE_WIDTH),
+            height: phonePct(DYNAMIC_ISLAND_HEIGHT, PHONE_HEIGHT),
+            transform: "translateX(-50%)",
+            borderRadius: 9999,
+            background: "#000",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.04)",
+            zIndex: 2,
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: phonePct(-2, PHONE_WIDTH),
+            top: phonePct(BEZEL_TOP + SCREEN_HEIGHT * 0.34, PHONE_HEIGHT),
+            width: phonePct(3, PHONE_WIDTH),
+            height: phonePct(52, PHONE_HEIGHT),
+            borderRadius: 2,
+            background: "#525255",
+          }}
+        />
       </div>
     </div>
+  );
+}
+
+function PhoneScreenVideo({ videoSrc }: { videoSrc: string }) {
+  return (
+    <CommercialVideo
+      src={videoSrc}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="auto"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
   );
 }
 

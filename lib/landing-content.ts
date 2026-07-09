@@ -81,7 +81,7 @@ export function buildLandingContent(
     nav: messages.nav,
     cinema: {
       ...messages.cinema,
-      primaryCtaHref: "/experience",
+      primaryCtaHref: "/studio",
       secondaryCtaHref: "#how-it-works",
     },
     priceConfidence: {

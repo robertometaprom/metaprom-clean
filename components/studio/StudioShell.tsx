@@ -35,18 +35,32 @@ export default function StudioShell({
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#ececec] text-neutral-900">
-      <header className="relative z-30 border-b border-neutral-200/60 bg-[#ececec]/90 backdrop-blur-md">
+    <div
+      className={`relative min-h-screen ${
+        variant === "welcome" ? "bg-black text-white" : "bg-[#ececec] text-neutral-900"
+      }`}
+    >
+      <header
+        className={`relative z-30 backdrop-blur-md ${
+          variant === "welcome"
+            ? "border-b border-white/10 bg-black/90"
+            : "border-b border-neutral-200/60 bg-[#ececec]/90"
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-10">
           <Link href="/studio">
-            <MetapromLogo variant="dark" />
+            <MetapromLogo variant={variant === "welcome" ? "light" : "dark"} />
           </Link>
 
           <div className="relative">
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 shadow-sm transition hover:border-neutral-300"
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm transition ${
+                variant === "welcome"
+                  ? "border-white/15 bg-white/5 text-white hover:border-white/25"
+                  : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-300"
+              }`}
             >
               <span>{displayName || "Cuenta"}</span>
               <svg
@@ -59,7 +73,11 @@ export default function StudioShell({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
               <span
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-semibold text-neutral-600"
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
+                  variant === "welcome"
+                    ? "bg-white/15 text-white/80"
+                    : "bg-neutral-200 text-neutral-600"
+                }`}
               >
                 {(displayName || "U").charAt(0).toUpperCase()}
               </span>

@@ -1,6 +1,172 @@
 # METAPROM MASTER
 
+## MASTER UPDATE — July 1, 2026
+
+*Supersedes **Executive Summary (June 29, 2026)** and **MASTER UPDATE — June 29, 2026** for current product direction. All prior sections remain as historical record.*
+
+### Current project status
+
+Metaprom has **completed the AI engine**.
+
+The project has officially entered the **Product Polish** phase.
+
+Current work focuses on **UX, commercialization, and Beta readiness**.
+
+### Canonical product — Studio
+
+**Studio is now the only production experience.**
+
+```
+Landing → Studio
+```
+
+* **Experience onboarding has been deprecated.** Route `/experience` is no longer the canonical journey (see **Metaprom Experience v1** for historical context).
+* **Biblioteca is centralized in Studio.**
+* **Studio is the canonical user journey.**
+
+### Core product discovery
+
+The biggest discovery of this phase:
+
+> Customers should **NOT** spend time producing a better photo.
+> Customers should spend time **describing the commercial they want**.
+
+Metaprom takes care of:
+
+* photography cleanup
+* enhancement
+* lighting
+* composition
+* commercial creation
+
+**New philosophy:**
+
+> Take any photo.
+> Describe the commercial.
+> Metaprom creates the production.
+
+This became the **core positioning** of the product.
+
+See **Product Philosophy**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
+
+### Biblioteca — Commercial Portfolio
+
+Biblioteca is **no longer considered a file browser**.
+
+It is a **Commercial Portfolio**.
+
+Each project should visually tell one story:
+
+```
+Original Photo
+↓
+Premium Image
+↓
+Free Teaser
+↓
+HD Commercial
+```
+
+The **transformation itself is the product.**
+
+Future UX decisions should reinforce this concept.
+
+See **Biblioteca — Commercial Portfolio (July 1, 2026)**.
+
+### Customer experience — provider invisibility
+
+Provider implementation details must **never** reach customers.
+
+**Never expose:**
+
+* Vertex
+* provider names
+* safety filters
+* technical messages
+* provider error codes
+
+Failures must always be translated into **premium Metaprom messaging**.
+
+See **Customer Experience (July 1, 2026)**.
+
+### Hero — approved artwork
+
+The Hero artwork is **approved**.
+
+No additional AI image generation is planned. Future work is limited to **CSS/layout art direction**.
+
+However, live testing revealed that the current implementation **drifted away from the intended concept**.
+
+The Hero must communicate one simple idea:
+
+> **This commercial came from THIS phone.**
+
+Future adjustments should prioritize:
+
+* commercial fully integrated inside the phone
+* phone as visual focal point
+* model remains clearly visible
+* premium advertising composition
+
+The Hero is one of Metaprom's **primary marketing assets**.
+
+See **Hero (July 1, 2026)**.
+
+### Beta status — Sprint 3.2
+
+**Current phase:** Sprint 3.2 — **Final Beta Polish**
+
+Remaining work before Payments:
+
+* Biblioteca refresh reliability
+* Biblioteca navigation polish
+* Hero art direction
+* Premium rejection messaging
+
+### Next phase — Sprint 4
+
+**Sprint 4 — Payments**
+
+After payments: **Public Beta**.
+
+See **Product Completion Roadmap (June 2026)** and **Beta Strategy**.
+
+### Long-term positioning
+
+Metaprom is **not** an AI company.
+
+Metaprom is **not** an image enhancement tool.
+
+Metaprom is a **commercial creation platform**.
+
+The product promise:
+
+> You focus on your business.
+> Metaprom creates your commercial.
+
+See **Long-Term Positioning (July 1, 2026)**.
+
+### Current roadmap (July 1, 2026)
+
+| Phase | Status |
+|-------|--------|
+| AI Engine | **Complete** |
+| Shared Architecture | **Complete** |
+| Reliability Sprint | **Complete** |
+| Product Experience | **Complete** |
+| **Product Polish (Sprint 3.2)** | **Active** |
+| Sprint 4 — Payments | **Next** |
+| Public Beta | Pending — after Payments |
+
+**Rule:** No new AI features unless they directly improve the commercial journey.
+
+**Historical note:** Prior roadmap items (CEO Product Review, `/experience` canonical flow, Instant Capture) are preserved in **MASTER UPDATE — June 29, 2026** and below.
+
+---
+
 ## MASTER UPDATE — June 29, 2026
+
+*Historical — preserved. Canonical product flow and priorities superseded by **MASTER UPDATE — July 1, 2026**.*
 
 ### Product phase transition
 
@@ -83,6 +249,8 @@ This removes preparation friction and enables instant product demonstrations.
 
 ## Metaprom Experience v1 (June 28, 2026 — updated June 29, 2026)
 
+*Historical — preserved. Experience onboarding deprecated July 1, 2026. **Studio** is now the canonical production experience. See **MASTER UPDATE — July 1, 2026**.*
+
 **Product decision:** Do not build isolated screen mockups anymore.
 
 Build **one interactive product surface** — **Metaprom Experience v1** at `/experience` — that defines the complete customer journey. Landing and Studio are visually one product: dark, minimal, elegant, cinematic.
@@ -96,6 +264,8 @@ See `docs/experience-v1.md`.
 ---
 
 ## Executive Summary (June 29, 2026)
+
+*Historical — preserved. Superseded by **Executive Summary (July 1, 2026)** and **MASTER UPDATE — July 1, 2026**.*
 
 **Metaprom has officially transitioned from building an AI engine to building a world-class commercial product experience.**
 
@@ -134,6 +304,48 @@ The objective is no longer improving AI generation. The objective is creating a 
 
 See **Product Completion Roadmap (June 2026)**, **Cinematic Reveal**, **Commercial Product Journey**, **Product Philosophy**, **Official Development Workflow**, and **Team Roles**.
 
+*Superseded for current direction by **Executive Summary (July 1, 2026)** and **MASTER UPDATE — July 1, 2026**.*
+
+---
+
+## Executive Summary (July 1, 2026)
+
+**Metaprom has completed the AI engine and entered Product Polish — the final stretch before Payments and Public Beta.**
+
+Studio is the **only production experience** (`Landing → Studio`). Experience onboarding (`/experience`) is deprecated. Biblioteca lives inside Studio as a **Commercial Portfolio**, not a file browser.
+
+**Core positioning (July 2026):**
+
+> Take any photo. Describe the commercial. Metaprom creates the production.
+
+Customers should describe the commercial they want — not spend time producing a better photo. Metaprom handles cleanup, enhancement, lighting, composition, and commercial creation.
+
+| Era | Focus | Status |
+|-----|-------|--------|
+| Phase 1 — AI Engine | Image + video generation, prompts, APIs | **Complete** |
+| Phase 1b — Reliability Sprint | Image generation reliability | **Complete** |
+| Phase 2 — Product Experience | Commercial MVP, Cinematic Reveal, checkout, library | **Complete** |
+| Phase 3 — Product Polish | UX, commercialization, Beta readiness (Sprint 3.2) | **Active** |
+| Phase 4 — Payments | Sprint 4 | **Next** |
+| Phase 5 — Public Beta | After Payments | Pending |
+
+**Current sprint (Sprint 3.2 — Final Beta Polish):**
+
+1. Biblioteca refresh reliability
+2. Biblioteca navigation polish
+3. Hero art direction
+4. Premium rejection messaging
+
+**Strategic positioning:**
+
+Metaprom is a **commercial creation platform** — not an AI company, not an image enhancement tool.
+
+> You focus on your business. Metaprom creates your commercial.
+
+**Customer experience rule:** Provider details (Vertex, safety filters, error codes) never reach customers. Failures translate to premium Metaprom messaging.
+
+See **MASTER UPDATE — July 1, 2026**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, **Hero (July 1, 2026)**, **Customer Experience (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
+
 ---
 
 ## Project Vision
@@ -166,6 +378,8 @@ See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — F
 ---
 
 ## Product Completion Roadmap (June 2026)
+
+*Updated July 1, 2026 — see **MASTER UPDATE — July 1, 2026** for Sprint 3.2 (Product Polish) and Sprint 4 (Payments) status.*
 
 ### Strategic direction
 
@@ -521,6 +735,8 @@ Environment: `PAYMENT_PROVIDER=mock` (development). Production provider TBD afte
 ## Continuity Context (June 2026)
 
 *Handoff summary — consolidates current state, recent discoveries, and immediate next objective.*
+
+*Updated July 1, 2026 — for current state see **MASTER UPDATE — July 1, 2026** and **Executive Summary (July 1, 2026)**. Content below preserved as June 2026 handoff history.*
 
 ### Project State
 
@@ -1842,6 +2058,116 @@ Unified project history. Videos and images share the same project context.
 
 Current state: Biblioteca stores images only; video POC is isolated at `/video-test` and `/api/video`.
 
+*Historical note — superseded July 1, 2026. See **Biblioteca — Commercial Portfolio (July 1, 2026)** for current product definition.*
+
+---
+
+## Biblioteca — Commercial Portfolio (July 1, 2026)
+
+**Status:** Active product definition — supersedes file-browser framing in sections above.
+
+Biblioteca is **not** a file browser. It is a **Commercial Portfolio** centralized inside Studio.
+
+Each project visually tells one transformation story:
+
+```
+Original Photo
+↓
+Premium Image
+↓
+Free Teaser
+↓
+HD Commercial
+```
+
+**The transformation itself is the product.**
+
+### UX principles
+
+* Every project row/card should read as a **before → after commercial journey**, not a folder of assets.
+* Navigation polish and refresh reliability are **Sprint 3.2 blockers** before Payments.
+* Future UX decisions must reinforce portfolio storytelling — not file management metaphors.
+
+See **MASTER UPDATE — July 1, 2026** and **Customer Experience (July 1, 2026)**.
+
+---
+
+## Hero (July 1, 2026)
+
+**Status:** Artwork approved. Implementation art direction in progress (Sprint 3.2).
+
+The Hero is one of Metaprom's **primary marketing assets**.
+
+### Approved scope
+
+* Hero artwork is **approved** — no additional AI image generation planned.
+* Future work is limited to **CSS/layout art direction**.
+
+### Core message
+
+The Hero must communicate one simple idea:
+
+> **This commercial came from THIS phone.**
+
+Live testing revealed the current implementation **drifted from this concept**. Corrections are a Sprint 3.2 priority.
+
+### Art direction priorities
+
+1. Commercial fully integrated **inside** the phone
+2. Phone as the **visual focal point**
+3. Model remains **clearly visible**
+4. **Premium advertising composition**
+
+---
+
+## Customer Experience (July 1, 2026)
+
+**Status:** Non-negotiable product rule — applies to all customer-facing surfaces.
+
+Provider implementation details must **never** reach customers.
+
+### Never expose
+
+* Vertex
+* Provider names (OpenAI, Google, Gemini, Veo, etc.)
+* Safety filters
+* Technical messages
+* Provider error codes
+
+### Failure handling
+
+All failures must be translated into **premium Metaprom messaging** — calm, brand-consistent, action-oriented. The customer experiences Metaprom, not the stack behind it.
+
+Extends **Product principles (non-negotiable)** and **Product Philosophy** — see also **NO BARRIERS. NO NONSENSE.**
+
+---
+
+## Long-Term Positioning (July 1, 2026)
+
+**Status:** Canonical positioning — supersedes "AI Creative Studio" and "image enhancement" framing where they conflict.
+
+Metaprom is **not**:
+
+* an AI company
+* an image enhancement tool
+
+Metaprom **is**:
+
+> a **commercial creation platform**
+
+**Product promise:**
+
+> You focus on your business.
+> Metaprom creates your commercial.
+
+**Operational corollary (July 2026 discovery):**
+
+> Take any photo. Describe the commercial. Metaprom creates the production.
+
+Customers invest time in **describing the commercial**, not in producing a better source photo. Metaprom owns photography cleanup, enhancement, lighting, composition, and commercial creation.
+
+See **Project Vision**, **Strategic Pivot – Metaprom AI Evolution (June 2026)**, and **MASTER UPDATE — July 1, 2026**.
+
 ---
 
 ## Ad-Supported Future Model (Future Exploration)
@@ -1867,7 +2193,9 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Product Philosophy
 
-See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, and **Target Customer (June 2026 Update)**.
+*July 1, 2026 — core positioning updated in **Long-Term Positioning (July 1, 2026)** and **MASTER UPDATE — July 1, 2026**. Prior principles below remain valid unless superseded.*
+
+See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
 
 ### Core principles (June 28, 2026 — official)
 
@@ -2441,6 +2769,12 @@ Low implementation cost today and high strategic flexibility in the future.
 
 ## Beta Strategy
 
+*Updated July 1, 2026 — see **MASTER UPDATE — July 1, 2026** for Sprint 3.2 and Public Beta sequencing.*
+
+**Current phase:** Sprint 3.2 — Final Beta Polish (Biblioteca reliability/navigation, Hero art direction, premium rejection messaging).
+
+**Next:** Sprint 4 — Payments → **Public Beta**.
+
 Current objective:
 
 Acquire the first 20 beta users.
@@ -3012,6 +3346,43 @@ See **Session Summary — June 29, 2026** for current next steps.
 3. Veo capacity plan for Beta (100+ videos/day)
 4. Instant Capture (pre-Beta)
 
+*Superseded by **Session Summary — July 1, 2026**.*
+
+---
+
+## Session Summary — July 1, 2026
+
+### Strategic evolution
+
+Metaprom completed the **AI engine** and entered **Product Polish** (Sprint 3.2 — Final Beta Polish). Work now targets UX, commercialization, and Beta readiness — not new AI capabilities.
+
+### Product decisions
+
+| Decision | Detail |
+|----------|--------|
+| **Canonical journey** | `Landing → Studio` — Studio is the only production experience |
+| **Deprecated** | Experience onboarding (`/experience`) |
+| **Biblioteca** | Commercial Portfolio inside Studio — not a file browser |
+| **Core positioning** | Describe the commercial; Metaprom creates the production |
+| **Customer experience** | Provider details never exposed; premium Metaprom failure messaging |
+| **Hero** | Artwork approved; CSS/layout art direction to restore phone-centric concept |
+| **Next sprint** | Sprint 4 — Payments, then Public Beta |
+
+### Sprint 3.2 remaining (before Payments)
+
+1. Biblioteca refresh reliability
+2. Biblioteca navigation polish
+3. Hero art direction — *"This commercial came from THIS phone"*
+4. Premium rejection messaging
+
+### Long-term positioning
+
+Metaprom is a **commercial creation platform** — not an AI company, not an image enhancement tool.
+
+> You focus on your business. Metaprom creates your commercial.
+
+See **MASTER UPDATE — July 1, 2026** and **Executive Summary (July 1, 2026)**.
+
 ---
 
 ## Session Summary - June 2026
@@ -3131,5 +3502,180 @@ Vision → Conversation → ChatGPT Mockup → Founder Review
 ```
 
 This is now formalized as the **Official Development Workflow** with CEO approval and UX review gates.
+
+---
+
+## Hero V2 Rendering Investigation — Complete (July 8, 2026)
+
+### Hero V2 Status
+
+Hero V2 is now considered **production-ready**.
+
+The original rendering bug has been resolved.
+
+The remaining differences are purely art direction and are no longer considered rendering defects.
+
+The Hero rendering architecture is now under **code freeze**.
+
+Future work should focus on **asset refinement** rather than rendering changes.
+
+### Root Cause Investigation
+
+The following components were individually verified during the investigation:
+
+* React
+* CSS
+* Hero layout
+* HeroPhoneScreen
+* LivingShowcase
+* HTML video rendering
+* Browser rendering
+* Percentage calculations
+* LCD geometry
+
+**Result:**
+
+The rendering pipeline is correct.
+
+The original problem was not caused by React, CSS, or browser rendering.
+
+### LCD Geometry
+
+The LCD opening was manually re-measured from the physical phone bezel instead of luminance detection.
+
+The Hero LCD geometry is now considered the **production reference**.
+
+Future geometry changes should only happen if the presenter artwork itself changes.
+
+### HeroPhoneScreen Discoveries
+
+Two independent controls were identified.
+
+**1. LCD Geometry**
+
+Defined in:
+
+`lib/hero-layout-spec.ts`
+
+Controls:
+
+* LCD position
+* LCD size
+* clipping region
+
+**2. Commercial Framing**
+
+Defined in:
+
+`components/studio/HeroPhoneScreen.tsx`
+
+Important controls discovered:
+
+* `HERO_COMMERCIAL_SCALE_Y`
+* `objectPosition="50% calc(50% + 15px)"`
+
+These control different responsibilities.
+
+`scaleY` controls vertical stretching.
+
+`objectPosition` controls visible framing.
+
+Future work must not confuse these two controls.
+
+### Investigation Results
+
+Conclusions reached after extensive testing:
+
+* Increasing `HERO_COMMERCIAL_SCALE_Y` works.
+* However, after approximately **1.07–1.09** the visible improvement becomes minimal because rendering is ultimately constrained by the fixed LCD clipping region.
+* Reducing `objectPosition` below **+15px** consistently worsened the bottom fit.
+* The remaining optical difference is therefore not a simple `objectPosition` problem.
+
+### Final Hero Baseline
+
+The current Hero is the **approved production baseline**.
+
+Current Hero objective achieved:
+
+> "This premium commercial came from THIS phone."
+
+Any remaining differences are considered cosmetic art direction.
+
+### Future Hero V3
+
+#### Future Improvements
+
+If pixel-perfect LCD alignment is ever required, the preferred solution is **NOT** additional rendering logic.
+
+Instead:
+
+* Modify `hero-presenter-v4.png`.
+* Adjust only the illustrated LCD opening so that it perfectly matches the HTML overlay.
+
+**PNG refinement is preferred over additional runtime rendering complexity.**
+
+### Engineering Lessons
+
+#### Lessons Learned
+
+The biggest engineering lesson from this investigation:
+
+**Previous workflow:**
+
+```
+Large prompts
+↓
+Many simultaneous constraints
+↓
+Cursor searched the entire project
+↓
+Very slow iterations
+```
+
+**New workflow:**
+
+```
+Identify the exact parameter responsible for the behavior
+↓
+Modify ONLY that parameter
+↓
+Freeze everything else
+```
+
+**Concrete example:**
+
+Instead of repeatedly asking:
+
+> "Make the Hero look better"
+
+the investigation eventually isolated:
+
+* `HERO_COMMERCIAL_SCALE_Y`
+* and later `objectPosition`
+
+which reduced iteration time dramatically.
+
+This methodology should be preferred for all future Product Experience work.
+
+#### Workflow Lesson
+
+Once a subsystem becomes stable:
+
+1. Stop describing behavior.
+2. Locate the parameter controlling that behavior.
+3. Iterate **ONLY** on that parameter.
+4. Freeze everything else.
+
+This investigation demonstrated a dramatic reduction in Cursor iteration time once only a single parameter was being modified.
+
+### Remaining Priorities
+
+Current project priorities (July 8, 2026):
+
+1. Commit Hero V2 production baseline.
+2. Push repository.
+3. Fix the Landing right-side overlap issue.
+4. Continue Product Experience polish.
+5. Beta preparation.
 
 ---

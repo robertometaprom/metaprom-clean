@@ -1,97 +1,63 @@
-import { GoogleGenAI } from "@google/genai";
-import { mkdtemp, readFile, rm } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-import sharp from "sharp";
 import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
+import { mapCreationError } from "@/lib/creation-errors";
+import {
+  logDestinationGenerationDebug,
+  parseStudioDestination,
+  resolveVeoGenerationParams,
+} from "@/lib/destination-generation";
 import { updateAssetPremiumVideoServer } from "@/lib/library-storage-server";
 import { createClient } from "@/lib/supabase/server";
+import { generateVertexVideo, isVertexVideoConfigured } from "@/lib/video";
 import { processCommercialVideo } from "@/lib/video-processing";
+import type { StudioDestination } from "@/lib/studio-destination";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-const DEFAULT_VEO_MODEL = "veo-3.1-lite-generate-preview";
-const VEO_MODEL = process.env.VEO_MODEL ?? DEFAULT_VEO_MODEL;
-const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_ATTEMPTS = 60;
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
-function getGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
-}
-
 async function generatePremiumVideoBuffer(
   imageBuffer: Buffer,
   customerIntent: string,
+  destination: StudioDestination | null,
 ): Promise<Buffer> {
-  const ai = getGeminiClient();
-
-  if (!ai) {
-    throw new Error("GEMINI_API_KEY is not configured.");
+  if (!isVertexVideoConfigured()) {
+    throw new Error(
+      "Vertex video is not configured. Set GOOGLE_CLOUD_PROJECT, VERTEX_OUTPUT_GCS_URI, " +
+        "and VERTEX_SERVICE_ACCOUNT_JSON (or GOOGLE_APPLICATION_CREDENTIALS).",
+    );
   }
 
-  const prompt = buildStudioVideoPrompt(customerIntent, "premium");
-  const normalized = await sharp(imageBuffer)
-    .rotate()
-    .toColorspace("srgb")
-    .jpeg({ quality: 90, force: true })
-    .toBuffer();
+  const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
+  const veoParams = resolveVeoGenerationParams(destination);
 
-  let operation = await ai.models.generateVideos({
-    model: VEO_MODEL,
-    prompt,
-    image: {
-      imageBytes: normalized.toString("base64"),
-      mimeType: "image/jpeg",
+  logDestinationGenerationDebug({
+    stage: "premium-video",
+    destination,
+    veoParams,
+    finalPrompt: prompt,
+    generationParameters: {
+      tier: "premium",
+      aspectRatio: veoParams.aspectRatio,
+      requestedAspectRatio: veoParams.requestedAspectRatio,
+      durationSeconds: Number(process.env.VEO_VERTEX_DURATION_SECONDS ?? 4),
+      provider: "vertex-veo",
     },
-    config: { numberOfVideos: 1 },
   });
 
-  for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-    if (operation.done) break;
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    operation = await ai.operations.getVideosOperation({ operation });
-  }
+  const rawBuffer = await generateVertexVideo({
+    prompt,
+    imageBuffer,
+    aspectRatio: veoParams.aspectRatio,
+  });
+  const { buffer } = await processCommercialVideo({
+    buffer: rawBuffer,
+    tier: "premium",
+  });
 
-  if (!operation.done) {
-    throw new Error("Premium video generation timed out.");
-  }
-
-  const generatedVideo = operation.response?.generatedVideos?.[0]?.video;
-
-  if (!generatedVideo) {
-    throw new Error("No premium video was generated.");
-  }
-
-  let tempDir: string | null = null;
-
-  try {
-    tempDir = await mkdtemp(join(tmpdir(), "metaprom-premium-"));
-    const downloadPath = join(tempDir, "premium.mp4");
-
-    await ai.files.download({
-      file: generatedVideo,
-      downloadPath,
-    });
-
-    const rawBuffer = await readFile(downloadPath);
-    const { buffer } = await processCommercialVideo({
-      buffer: rawBuffer,
-      tier: "premium",
-    });
-
-    return buffer;
-  } finally {
-    if (tempDir) {
-      await rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
-    }
-  }
+  return buffer;
 }
 
 export async function POST(req: Request) {
@@ -132,7 +98,7 @@ export async function POST(req: Request) {
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id")
+    .select("id, destination")
     .eq("id", asset.project_id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -174,6 +140,7 @@ export async function POST(req: Request) {
     const videoBuffer = await generatePremiumVideoBuffer(
       imageBuffer,
       asset.ai_instructions ?? "",
+      parseStudioDestination(project?.destination),
     );
 
     await updateAssetPremiumVideoServer({
@@ -187,7 +154,9 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Premium video generation failed:", error);
     return jsonError(
-      error instanceof Error ? error.message : "Premium video generation failed.",
+      mapCreationError(
+        error instanceof Error ? error.message : "Premium video generation failed.",
+      ) || "No pudimos producir tu comercial HD.",
       500,
     );
   }

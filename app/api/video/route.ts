@@ -1,18 +1,20 @@
-import { GoogleGenAI } from "@google/genai";
-import { mkdtemp, readFile, rm } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-import sharp from "sharp";
 import type { CommercialTier } from "@/lib/commercial/tiers";
+import { mapCreationError } from "@/lib/creation-errors";
+import {
+  logDestinationGenerationDebug,
+  parseStudioDestinationFromFormData,
+  resolveVeoGenerationParams,
+} from "@/lib/destination-generation";
+import {
+  generateVertexVideo,
+  getVertexVideoStatus,
+  isVertexVideoConfigured,
+  normalizeImageForVeo,
+} from "@/lib/video";
 import { processCommercialVideo } from "@/lib/video-processing";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-const DEFAULT_VEO_MODEL = "veo-3.1-lite-generate-preview";
-const VEO_MODEL = process.env.VEO_MODEL ?? DEFAULT_VEO_MODEL;
-const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_ATTEMPTS = 60;
 
 const supportedImageTypes = new Set([
   "image/jpeg",
@@ -25,48 +27,15 @@ function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
-function getGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-
-  if (!apiKey) {
-    return null;
-  }
-
-  return new GoogleGenAI({ apiKey });
-}
-
 export async function GET() {
-  const configured = Boolean(process.env.GEMINI_API_KEY?.trim());
-
-  return Response.json({
-    veoIntegration: configured ? "ready" : "missing_api_key",
-    geminiApiKeyConfigured: configured,
-    veoModel: VEO_MODEL,
-  });
-}
-
-async function normalizeImage(uploadBuffer: Buffer): Promise<{
-  buffer: Buffer;
-  mimeType: "image/jpeg";
-}> {
-  const buffer = await sharp(uploadBuffer)
-    .rotate()
-    .toColorspace("srgb")
-    .jpeg({ quality: 90, force: true })
-    .toBuffer();
-
-  return { buffer, mimeType: "image/jpeg" };
+  return Response.json(getVertexVideoStatus());
 }
 
 export async function POST(req: Request) {
-  let tempDir: string | null = null;
-
   try {
-    const ai = getGeminiClient();
-
-    if (!ai) {
+    if (!isVertexVideoConfigured()) {
       return jsonError(
-        "GEMINI_API_KEY is not configured. Add it to your environment variables.",
+        "No pudimos crear tu comercial en este momento. Intenta de nuevo en unos minutos.",
         500,
       );
     }
@@ -76,6 +45,8 @@ export async function POST(req: Request) {
     const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
     const rawTier = (formData.get("tier") as string | null)?.trim() ?? "teaser";
     const tier: CommercialTier = rawTier === "premium" ? "premium" : "teaser";
+    const destination = parseStudioDestinationFromFormData(formData);
+    const veoParams = resolveVeoGenerationParams(destination);
 
     if (!uploadedFile) {
       return jsonError("No image uploaded.", 400);
@@ -95,9 +66,9 @@ export async function POST(req: Request) {
 
     const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 
-    let normalizedImage: { buffer: Buffer; mimeType: "image/jpeg" };
+    let normalizedBuffer: Buffer;
     try {
-      normalizedImage = await normalizeImage(uploadBuffer);
+      normalizedBuffer = await normalizeImageForVeo(uploadBuffer);
     } catch (error) {
       console.error("Image normalization failed:", error);
       return jsonError(
@@ -106,55 +77,28 @@ export async function POST(req: Request) {
       );
     }
 
-    let operation = await ai.models.generateVideos({
-      model: VEO_MODEL,
+    const videoBuffer = await generateVertexVideo({
       prompt,
-      image: {
-        imageBytes: normalizedImage.buffer.toString("base64"),
-        mimeType: normalizedImage.mimeType,
-      },
-      config: {
-        numberOfVideos: 1,
+      imageBuffer: normalizedBuffer,
+      aspectRatio: veoParams.aspectRatio,
+    });
+
+    logDestinationGenerationDebug({
+      stage: "video",
+      destination,
+      veoParams,
+      finalPrompt: prompt,
+      generationParameters: {
+        tier,
+        aspectRatio: veoParams.aspectRatio,
+        requestedAspectRatio: veoParams.requestedAspectRatio,
+        durationSeconds: Number(
+          process.env.VEO_VERTEX_DURATION_SECONDS ?? 4,
+        ),
+        provider: "vertex-veo",
       },
     });
 
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      if (operation.done) {
-        break;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-      operation = await ai.operations.getVideosOperation({ operation });
-    }
-
-    if (!operation.done) {
-      return jsonError(
-        "Video generation timed out. Try again or use a shorter prompt.",
-        504,
-      );
-    }
-
-    const generatedVideo = operation.response?.generatedVideos?.[0]?.video;
-
-    if (!generatedVideo) {
-      const filteredReasons = operation.response?.raiMediaFilteredReasons;
-      const message =
-        filteredReasons && filteredReasons.length > 0
-          ? `Video generation blocked: ${filteredReasons.join(", ")}`
-          : "No video was generated.";
-
-      return jsonError(message, 500);
-    }
-
-    tempDir = await mkdtemp(join(tmpdir(), "metaprom-veo-"));
-    const downloadPath = join(tempDir, "output.mp4");
-
-    await ai.files.download({
-      file: generatedVideo,
-      downloadPath,
-    });
-
-    const videoBuffer = await readFile(downloadPath);
     const { buffer: processedBuffer, processed } = await processCommercialVideo({
       buffer: videoBuffer,
       tier,
@@ -176,10 +120,9 @@ export async function POST(req: Request) {
     const message =
       error instanceof Error ? error.message : "Video generation failed.";
 
-    return jsonError(message, 500);
-  } finally {
-    if (tempDir) {
-      await rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
-    }
+    return jsonError(
+      mapCreationError(message) || "No pudimos crear tu comercial.",
+      500,
+    );
   }
 }

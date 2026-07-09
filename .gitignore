@@ -42,3 +42,9 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# local diagnostics / probe artifacts
+.checkpoints/
+tmp-*
+_diag-*.txt
+scripts/output/

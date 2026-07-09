@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "vertex:poc": "tsx scripts/vertex-video-poc.ts"
+    "lint": "eslint"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

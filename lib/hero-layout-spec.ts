@@ -8,8 +8,8 @@
  * The approved presenter PNG provides the phone frame — do not overlay a second
  * HTML phone on the hero; use HeroPhoneScreen only.
  *
- * HERO_PHONE_* values derive phone-device-spec geometry for /phone-test and
- * future surfaces — not rendered on the hero presenter artwork.
+ * HERO_PHONE_* values derive phone-device-spec geometry for future surfaces —
+ * not rendered on the hero presenter artwork.
  */
 
 import {

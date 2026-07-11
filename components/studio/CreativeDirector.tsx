@@ -26,6 +26,7 @@ import {
 } from "@/lib/product-catalog";
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
+  completeCheckoutAfterRedirect,
   createCommercialAssets,
   getAutoSaveMessage,
   mapCreationError,
@@ -128,6 +129,81 @@ export default function CreativeDirector({
   useEffect(() => {
     onWelcomeChange?.(phase === "welcome");
   }, [phase, onWelcomeChange]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const sessionId = params.get("session_id");
+
+    if (payment !== "success" && payment !== "cancelled") return;
+
+    window.history.replaceState({}, "", "/studio");
+
+    let cancelled = false;
+
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+
+      if (payment === "cancelled") {
+        setPhase("purchase-hd");
+        setCheckoutMessage("El checkout fue cancelado. Puedes intentar de nuevo.");
+        return;
+      }
+
+      if (!sessionId) {
+        setPhase("purchase-hd");
+        setCheckoutMessage("No pudimos confirmar la sesión de pago.");
+        return;
+      }
+
+      setPhase("purchase-hd");
+      setCheckoutLoading(true);
+      setCheckoutMessage("Confirmando tu pago...");
+
+      completeCheckoutAfterRedirect(sessionId, setCheckoutMessage)
+        .then((result) => {
+          if (cancelled) return;
+
+          if (result.assetId) {
+            savedAssetIdRef.current = result.assetId;
+          }
+
+          if (result.premiumVideoUrl) {
+            if (videoUrlRef.current?.startsWith("blob:")) {
+              URL.revokeObjectURL(videoUrlRef.current);
+            }
+            videoUrlRef.current = null;
+            setVideoUrl(result.premiumVideoUrl);
+            setPremiumReady(true);
+          }
+
+          setCheckoutMessage(result.message);
+          onLibraryUpdated?.({
+            assetId: result.assetId,
+          });
+        })
+        .catch((paymentError) => {
+          if (cancelled) return;
+
+          console.error(paymentError);
+          setCheckoutMessage(
+            mapCreationError(
+              paymentError instanceof Error ? paymentError.message : undefined,
+            ) || "No pudimos completar la compra.",
+          );
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setCheckoutLoading(false);
+          }
+        });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [onLibraryUpdated]);
 
   useEffect(() => {
     return () => {

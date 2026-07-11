@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentProvider } from "@/lib/payments";
+import { PaymentProviderError } from "@/lib/payments/types";
+import {
+  persistPaymentResult,
+  updateAssetPaymentState,
+} from "@/lib/payments/persistence";
 import type {
   CheckoutRequest,
+  CheckoutSession,
   PaymentMethod,
+  PaymentProvider,
   PaymentSessionStatus,
 } from "@/lib/payments/types";
 import { getPriceById } from "@/lib/pricing";
@@ -96,8 +103,6 @@ export async function POST(req: Request) {
     return jsonError("Unknown product.", 400);
   }
 
-  const provider = getPaymentProvider();
-
   const checkoutRequest: CheckoutRequest = {
     assetId,
     productId,
@@ -107,7 +112,19 @@ export async function POST(req: Request) {
     userId: user.id,
   };
 
-  const session = await provider.createCheckout(checkoutRequest);
+  let provider: PaymentProvider;
+  let session: CheckoutSession;
+
+  try {
+    provider = getPaymentProvider();
+    session = await provider.createCheckout(checkoutRequest);
+  } catch (error) {
+    if (error instanceof PaymentProviderError) {
+      return jsonError(error.message, 503);
+    }
+
+    throw error;
+  }
 
   const { data: purchase, error: purchaseError } = await supabase
     .from("purchases")
@@ -134,17 +151,9 @@ export async function POST(req: Request) {
     return jsonError("Unable to start checkout.", 500);
   }
 
-  if (session.status === "completed") {
-    await supabase
-      .from("assets")
-      .update({ payment_status: "paid" })
-      .eq("id", assetId);
-  } else {
-    await supabase
-      .from("assets")
-      .update({ payment_status: "pending" })
-      .eq("id", assetId);
-  }
+  await updateAssetPaymentState(supabase, assetId, session.status, {
+    purchaseId: purchase.id,
+  });
 
   return Response.json({
     sessionId: session.sessionId,
@@ -187,19 +196,13 @@ export async function GET(req: Request) {
 
   const nextStatus: PaymentSessionStatus = session.status;
 
-  if (nextStatus === "completed" && purchase.status !== "completed") {
-    await supabase
-      .from("purchases")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", purchase.id);
-
-    await supabase
-      .from("assets")
-      .update({ payment_status: "paid" })
-      .eq("id", purchase.asset_id);
+  if (nextStatus !== purchase.status) {
+    await persistPaymentResult(supabase, {
+      sessionId: session.sessionId,
+      purchaseId: purchase.id,
+      status: nextStatus,
+      providerReference: session.oxxoReference ?? session.sessionId,
+    });
   }
 
   return Response.json({

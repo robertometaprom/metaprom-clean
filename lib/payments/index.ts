@@ -1,9 +1,11 @@
 import { mockPaymentProvider } from "./providers/mock";
+import { stripePaymentProvider } from "./providers/stripe";
 import type { PaymentProvider, PaymentProviderId } from "./types";
 import { PaymentProviderError } from "./types";
 
 const providers: Partial<Record<PaymentProviderId, PaymentProvider>> = {
   mock: mockPaymentProvider,
+  stripe: stripePaymentProvider,
 };
 
 export function getConfiguredPaymentProviderId(): PaymentProviderId {

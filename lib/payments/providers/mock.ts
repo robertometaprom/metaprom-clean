@@ -2,6 +2,7 @@ import type {
   CheckoutRequest,
   CheckoutSession,
   PaymentProvider,
+  PaymentWebhookPayload,
   PaymentWebhookResult,
 } from "../types";
 
@@ -51,7 +52,11 @@ export const mockPaymentProvider: PaymentProvider = {
   },
 
   async handleWebhook(payload: unknown): Promise<PaymentWebhookResult> {
-    const body = payload as { sessionId?: string; purchaseId?: string };
+    const webhookPayload = payload as PaymentWebhookPayload;
+    const body =
+      webhookPayload.payload && typeof webhookPayload.payload === "object"
+        ? (webhookPayload.payload as { sessionId?: string; purchaseId?: string })
+        : (payload as { sessionId?: string; purchaseId?: string });
 
     if (!body.sessionId) {
       throw new Error("Webhook missing sessionId.");

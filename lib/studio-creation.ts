@@ -63,8 +63,10 @@ export type PurchaseHdInput = {
 };
 
 export type PurchaseHdResult = {
+  assetId?: string;
   premiumVideoUrl: string | null;
   message: string;
+  redirected?: boolean;
 };
 
 export function dataUrlToFile(dataUrl: string, filename: string): File {
@@ -244,12 +246,24 @@ export async function purchaseHdCommercial(
     sessionId?: string;
     status?: string;
     oxxoReference?: string;
+    redirectUrl?: string;
   };
 
   if (!checkoutResponse.ok) {
     throw new Error(
       mapCreationError(checkoutData.error) || "No pudimos iniciar el pago.",
     );
+  }
+
+  if (checkoutData.redirectUrl) {
+    input.onStatus?.("Abriendo checkout seguro...");
+    window.location.assign(checkoutData.redirectUrl);
+    return {
+      assetId: input.assetId,
+      premiumVideoUrl: null,
+      message: "Te llevamos al checkout seguro.",
+      redirected: true,
+    };
   }
 
   if (checkoutData.status === "awaiting_payment" && checkoutData.sessionId) {
@@ -262,12 +276,33 @@ export async function purchaseHdCommercial(
     await pollCheckoutCompletion(checkoutData.sessionId);
   }
 
-  input.onStatus?.("Produciendo tu comercial HD...");
+  return generatePremiumAfterPayment(input.assetId, input.onStatus);
+}
+
+export async function completeCheckoutAfterRedirect(
+  sessionId: string,
+  onStatus?: (message: string) => void,
+): Promise<PurchaseHdResult> {
+  onStatus?.("Confirmando tu pago...");
+  const checkout = await pollCheckoutCompletion(sessionId);
+
+  if (!checkout.assetId) {
+    throw new Error("No pudimos encontrar el activo de esta compra.");
+  }
+
+  return generatePremiumAfterPayment(checkout.assetId, onStatus);
+}
+
+async function generatePremiumAfterPayment(
+  assetId: string,
+  onStatus?: (message: string) => void,
+): Promise<PurchaseHdResult> {
+  onStatus?.("Produciendo tu comercial HD...");
 
   const response = await fetch("/api/studio/premium-video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ assetId: input.assetId }),
+    body: JSON.stringify({ assetId }),
   });
 
   const data = (await response.json()) as { error?: string; status?: string };
@@ -278,36 +313,51 @@ export async function purchaseHdCommercial(
     );
   }
 
-  const asset = await fetchBibliotecaAssetById(input.assetId);
+  const asset = await fetchBibliotecaAssetById(assetId);
 
   if (asset?.premium_video_url) {
     return {
+      assetId,
       premiumVideoUrl: asset.premium_video_url,
       message: "¡Listo! Tu comercial HD está disponible para descargar.",
     };
   }
 
   return {
+    assetId,
     premiumVideoUrl: null,
     message: "Pago recibido. Tu comercial HD estará disponible pronto.",
   };
 }
 
-async function pollCheckoutCompletion(sessionId: string): Promise<void> {
+async function pollCheckoutCompletion(sessionId: string): Promise<{
+  assetId?: string;
+}> {
   while (true) {
-    await new Promise((resolve) => window.setTimeout(resolve, 3000));
-
     const statusResponse = await fetch(
       `/api/payments/checkout?sessionId=${encodeURIComponent(sessionId)}`,
     );
     const statusData = (await statusResponse.json()) as {
       status?: string;
       error?: string;
+      assetId?: string;
     };
 
     if (statusData.status === "completed") {
-      return;
+      return { assetId: statusData.assetId };
     }
+
+    if (statusData.status === "failed" || statusData.status === "cancelled") {
+      throw new Error("El pago no se completó.");
+    }
+
+    if (!statusResponse.ok) {
+      throw new Error(
+        mapCreationError(statusData.error) || "No pudimos confirmar el pago.",
+      );
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 3000));
   }
 }
 

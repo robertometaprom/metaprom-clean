@@ -37,6 +37,13 @@ export type PaymentWebhookResult = {
   providerReference?: string;
 };
 
+export type PaymentWebhookPayload = {
+  rawBody?: string;
+  payload?: unknown;
+  headers?: Headers;
+  signature?: string | null;
+};
+
 export interface PaymentProvider {
   readonly id: PaymentProviderId;
   createCheckout(request: CheckoutRequest): Promise<CheckoutSession>;

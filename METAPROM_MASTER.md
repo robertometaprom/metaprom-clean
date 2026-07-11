@@ -1,8 +1,214 @@
 # METAPROM MASTER
 
+## MASTER UPDATE — July 10, 2026
+
+*Supersedes **MASTER UPDATE — July 1, 2026** for current project status, Sprint state, revenue priority, Hero final state, and launch strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+
+### Current project status
+
+**Sprint 3.2 is officially closed.**
+
+Metaprom has completed Product Polish for the current Beta baseline and is entering **Sprint 4 — Revenue Sprint**.
+
+Current objective:
+
+> Generate revenue.
+
+Previous objective:
+
+> Finish the product.
+
+Success is no longer measured by completed features alone. Success is measured by customers obtaining value and paying happily.
+
+### Sprint 3.2 closure
+
+Sprint 3.2 closed with the following decisions and outcomes:
+
+* Hero V2 approved for production.
+* Hero enters the **Art Direction** phase.
+* Runtime architecture considered stable.
+* Rendering investigation completed.
+* Git repository reorganized and cleaned.
+* Hero branch pushed successfully.
+* Sprint 3.2 officially closed.
+
+### Hero final state
+
+Hero architecture is **validated**.
+
+Runtime geometry is **frozen**.
+
+`lib/hero-layout-spec.ts` is **frozen**.
+
+`HeroPhoneScreen` now controls only optical presentation. The following values are documented as **optical tuning only**:
+
+* `HERO_COMMERCIAL_SCALE_Y`
+* `objectPosition`
+
+Future Hero perfection should be done by editing the `hero-presenter` artwork, not by adding runtime hacks.
+
+Engineering lesson:
+
+> Always identify the parameter before describing the behavior.
+
+See **Hero V2 Rendering Investigation — Complete (July 8, 2026)**.
+
+### Git cleanup methodology
+
+Git cleanup is now a documented engineering discipline.
+
+Important principles:
+
+* Never mix cleanup with production commits.
+* Production commits first.
+* Cleanup last.
+* Every commit should remain buildable.
+* Repository cleanup is operational work, not product work.
+
+Current repository state:
+
+* Repository is clean.
+* Hero branch is synchronized with remote.
+
+### Product philosophy update
+
+Metaprom does **NOT** sell AI.
+
+Metaprom sells **premium marketing**.
+
+The customer should never feel they are learning AI. The customer should feel they are obtaining a commercial that normally would require an agency.
+
+Technology must disappear.
+
+Result becomes the product.
+
+Internal philosophy:
+
+> The customer comes for the result, not the technology.
+
+### Revenue strategy
+
+Revenue becomes the company's primary objective.
+
+Previous objective:
+
+> Finish the product.
+
+Current objective:
+
+> Generate revenue.
+
+The **Revenue Sprint** begins after Sprint 3.2.
+
+Stripe is selected as the payment platform after commercial evaluation and after considering previous experience with chargebacks and payment providers.
+
+Reasons for Stripe:
+
+* Fraud prevention.
+* Radar.
+* Smart Disputes.
+* 3D Secure.
+* Strong support for digital businesses.
+* Mexican payment methods.
+* OXXO.
+* SPEI.
+* Excellent documentation.
+* Professional commercial support.
+
+### Payment philosophy
+
+Never ask for payment before the WOW moment.
+
+Official payment sequence:
+
+```
+User uploads photo
+↓
+Commercial generated
+↓
+User experiences WOW
+↓
+User wants to own the commercial
+↓
+Payment
+↓
+HD download
+```
+
+The product demonstrates value before requesting money.
+
+### Growth engine
+
+Marketing is no longer considered traditional advertising.
+
+Growth will be based on **curiosity**.
+
+Growth loop:
+
+```
+Curiosity
+↓
+WOW
+↓
+Purchase
+↓
+Proud customer
+↓
+Share
+↓
+New curiosity
+```
+
+Sharing is a consequence of pride, not an obligation.
+
+The goal is to make customers naturally want to show their commercial.
+
+### Marketing philosophy
+
+Never market AI.
+
+Never educate users about AI.
+
+Never require users to understand prompts.
+
+Never compete on models.
+
+Compete on:
+
+* results
+* premium perception
+* simplicity
+
+### Launch strategy
+
+Do **NOT** position Metaprom as:
+
+* startup
+* beta
+* experimental
+* early company
+
+Position Metaprom as:
+
+> A premium commercial platform that has dramatically reduced production costs through AI.
+
+Price should communicate **opportunity**, not immaturity.
+
+### Next milestone
+
+**Sprint 4 — Revenue Sprint**
+
+Primary milestone:
+
+> The first happy paying customer.
+
+Success is measured by customers obtaining value and paying happily.
+
+---
+
 ## MASTER UPDATE — July 1, 2026
 
-*Supersedes **Executive Summary (June 29, 2026)** and **MASTER UPDATE — June 29, 2026** for current product direction. All prior sections remain as historical record.*
+*Historical — superseded by **MASTER UPDATE — July 10, 2026** for current status, Sprint state, revenue priority, Hero final state, and launch strategy. Supersedes **Executive Summary (June 29, 2026)** and **MASTER UPDATE — June 29, 2026** for its original product direction. All prior sections remain as historical record.*
 
 ### Current project status
 
@@ -114,9 +320,9 @@ See **Hero (July 1, 2026)**.
 
 ### Beta status — Sprint 3.2
 
-**Current phase:** Sprint 3.2 — **Final Beta Polish**
+**Historical phase:** Sprint 3.2 — **Final Beta Polish**
 
-Remaining work before Payments:
+Final scope before Revenue Sprint:
 
 * Biblioteca refresh reliability
 * Biblioteca navigation polish
@@ -125,9 +331,9 @@ Remaining work before Payments:
 
 ### Next phase — Sprint 4
 
-**Sprint 4 — Payments**
+**Sprint 4 — Revenue Sprint**
 
-After payments: **Public Beta**.
+Primary milestone: **the first happy paying customer**.
 
 See **Product Completion Roadmap (June 2026)** and **Beta Strategy**.
 
@@ -146,7 +352,7 @@ The product promise:
 
 See **Long-Term Positioning (July 1, 2026)**.
 
-### Current roadmap (July 1, 2026)
+### Current roadmap (July 1, 2026 — historical)
 
 | Phase | Status |
 |-------|--------|
@@ -154,13 +360,13 @@ See **Long-Term Positioning (July 1, 2026)**.
 | Shared Architecture | **Complete** |
 | Reliability Sprint | **Complete** |
 | Product Experience | **Complete** |
-| **Product Polish (Sprint 3.2)** | **Active** |
-| Sprint 4 — Payments | **Next** |
+| **Product Polish (Sprint 3.2)** | **Closed July 10, 2026** |
+| Sprint 4 — Revenue Sprint | **Active** |
 | Public Beta | Pending — after Payments |
 
 **Rule:** No new AI features unless they directly improve the commercial journey.
 
-**Historical note:** Prior roadmap items (CEO Product Review, `/experience` canonical flow, Instant Capture) are preserved in **MASTER UPDATE — June 29, 2026** and below.
+**Historical note:** Prior roadmap items (CEO Product Review, `/experience` canonical flow, Instant Capture) are preserved in **MASTER UPDATE — June 29, 2026** and below. Current status is defined by **MASTER UPDATE — July 10, 2026**.
 
 ---
 
@@ -310,6 +516,8 @@ See **Product Completion Roadmap (June 2026)**, **Cinematic Reveal**, **Commerci
 
 ## Executive Summary (July 1, 2026)
 
+*Historical — superseded by **MASTER UPDATE — July 10, 2026** for current status, revenue priority, Sprint 3.2 closure, and launch strategy.*
+
 **Metaprom has completed the AI engine and entered Product Polish — the final stretch before Payments and Public Beta.**
 
 Studio is the **only production experience** (`Landing → Studio`). Experience onboarding (`/experience`) is deprecated. Biblioteca lives inside Studio as a **Commercial Portfolio**, not a file browser.
@@ -325,11 +533,11 @@ Customers should describe the commercial they want — not spend time producing 
 | Phase 1 — AI Engine | Image + video generation, prompts, APIs | **Complete** |
 | Phase 1b — Reliability Sprint | Image generation reliability | **Complete** |
 | Phase 2 — Product Experience | Commercial MVP, Cinematic Reveal, checkout, library | **Complete** |
-| Phase 3 — Product Polish | UX, commercialization, Beta readiness (Sprint 3.2) | **Active** |
-| Phase 4 — Payments | Sprint 4 | **Next** |
+| Phase 3 — Product Polish | UX, commercialization, Beta readiness (Sprint 3.2) | **Closed July 10, 2026** |
+| Phase 4 — Revenue Sprint | Stripe payment integration and first happy paying customer | **Active** |
 | Phase 5 — Public Beta | After Payments | Pending |
 
-**Current sprint (Sprint 3.2 — Final Beta Polish):**
+**Sprint 3.2 final scope (closed July 10, 2026):**
 
 1. Biblioteca refresh reliability
 2. Biblioteca navigation polish
@@ -344,7 +552,7 @@ Metaprom is a **commercial creation platform** — not an AI company, not an ima
 
 **Customer experience rule:** Provider details (Vertex, safety filters, error codes) never reach customers. Failures translate to premium Metaprom messaging.
 
-See **MASTER UPDATE — July 1, 2026**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, **Hero (July 1, 2026)**, **Customer Experience (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
+See **MASTER UPDATE — July 10, 2026**, **MASTER UPDATE — July 1, 2026**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, **Hero (July 1, 2026)**, **Customer Experience (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
 
 ---
 
@@ -379,7 +587,7 @@ See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — F
 
 ## Product Completion Roadmap (June 2026)
 
-*Updated July 1, 2026 — see **MASTER UPDATE — July 1, 2026** for Sprint 3.2 (Product Polish) and Sprint 4 (Payments) status.*
+*Updated July 10, 2026 — see **MASTER UPDATE — July 10, 2026** for Sprint 3.2 closure and Sprint 4 Revenue Sprint status. Earlier priorities below are preserved as historical context.*
 
 ### Strategic direction
 
@@ -2094,14 +2302,15 @@ See **MASTER UPDATE — July 1, 2026** and **Customer Experience (July 1, 2026)*
 
 ## Hero (July 1, 2026)
 
-**Status:** Artwork approved. Implementation art direction in progress (Sprint 3.2).
+**Status:** Artwork approved; Hero V2 approved for production. Runtime architecture is stable and frozen as of **MASTER UPDATE — July 10, 2026**.
 
 The Hero is one of Metaprom's **primary marketing assets**.
 
 ### Approved scope
 
 * Hero artwork is **approved** — no additional AI image generation planned.
-* Future work is limited to **CSS/layout art direction**.
+* Runtime geometry is frozen.
+* Future work belongs to **Art Direction** and asset refinement.
 
 ### Core message
 
@@ -2109,7 +2318,7 @@ The Hero must communicate one simple idea:
 
 > **This commercial came from THIS phone.**
 
-Live testing revealed the current implementation **drifted from this concept**. Corrections are a Sprint 3.2 priority.
+Live testing revealed the implementation had drifted from this concept. The rendering investigation is now complete and Hero V2 is approved for production.
 
 ### Art direction priorities
 
@@ -2117,6 +2326,14 @@ Live testing revealed the current implementation **drifted from this concept**. 
 2. Phone as the **visual focal point**
 3. Model remains **clearly visible**
 4. **Premium advertising composition**
+
+### Runtime freeze
+
+`lib/hero-layout-spec.ts` is frozen.
+
+`HeroPhoneScreen` controls optical presentation only. `HERO_COMMERCIAL_SCALE_Y` and `objectPosition` are optical tuning controls, not geometry fixes.
+
+Future Hero perfection should be achieved by editing `hero-presenter` artwork, not runtime hacks.
 
 ---
 
@@ -2193,7 +2410,7 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Product Philosophy
 
-*July 1, 2026 — core positioning updated in **Long-Term Positioning (July 1, 2026)** and **MASTER UPDATE — July 1, 2026**. Prior principles below remain valid unless superseded.*
+*Updated July 10, 2026 — core positioning reinforced in **MASTER UPDATE — July 10, 2026**. Prior principles below remain valid unless superseded.*
 
 See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
 
@@ -2229,6 +2446,22 @@ The customer is not purchasing AI. The customer is purchasing:
 * The emotional peak of seeing their product as a real commercial
 
 Metaprom sells **transformation**, not AI. AI is the enabling technology, not the product.
+
+### July 10, 2026 — premium marketing principle
+
+Metaprom does **NOT** sell AI.
+
+Metaprom sells **premium marketing**.
+
+The customer should never feel they are learning AI. The customer should feel they are obtaining a commercial that normally would require an agency.
+
+Technology must disappear.
+
+Result becomes the product.
+
+Internal philosophy:
+
+> The customer comes for the result, not the technology.
 
 ### Studio Principles (June 28, 2026)
 
@@ -2275,6 +2508,140 @@ Landing and marketing should demonstrate outcomes visually — creative studio, 
 Video is a **validated capability** (Veo 3.1 Lite on Metaprom AI paid project). See **Video Generation — Validated (June 2026)**.
 
 UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom navigates the user from **Cinematic Reveal** to premium offer to purchase. See **NO BARRIERS. NO NONSENSE.** and **Cinematic Reveal**.
+
+---
+
+## Revenue Strategy (July 10, 2026)
+
+**Status:** Current company objective.
+
+Revenue is now the company's primary objective.
+
+Previous objective:
+
+> Finish the product.
+
+Current objective:
+
+> Generate revenue.
+
+The **Revenue Sprint** begins after Sprint 3.2.
+
+Stripe is selected as the payment platform after commercial evaluation and after considering previous experience with chargebacks and payment providers.
+
+Strategic reasons for Stripe:
+
+* Fraud prevention.
+* Radar.
+* Smart Disputes.
+* 3D Secure.
+* Strong support for digital businesses.
+* Mexican payment methods.
+* OXXO.
+* SPEI.
+* Excellent documentation.
+* Professional commercial support.
+
+Primary milestone:
+
+> The first happy paying customer.
+
+---
+
+## Payment Philosophy (July 10, 2026)
+
+**Status:** Non-negotiable conversion principle.
+
+Never ask for payment before the WOW moment.
+
+Official sequence:
+
+```
+User uploads photo
+↓
+Commercial generated
+↓
+User experiences WOW
+↓
+User wants to own the commercial
+↓
+Payment
+↓
+HD download
+```
+
+The product demonstrates value before requesting money.
+
+Checkout sells ownership of the commercial, not access to technology.
+
+---
+
+## Growth Engine (July 10, 2026)
+
+**Status:** Current growth philosophy.
+
+Marketing is no longer considered traditional advertising.
+
+Growth will be based on **curiosity**.
+
+Growth loop:
+
+```
+Curiosity
+↓
+WOW
+↓
+Purchase
+↓
+Proud customer
+↓
+Share
+↓
+New curiosity
+```
+
+Sharing is a consequence of pride, not an obligation.
+
+The goal is to make customers naturally want to show their commercial.
+
+---
+
+## Marketing Philosophy (July 10, 2026)
+
+**Status:** Current external communication rule.
+
+Never market AI.
+
+Never educate users about AI.
+
+Never require users to understand prompts.
+
+Never compete on models.
+
+Compete on:
+
+* results
+* premium perception
+* simplicity
+
+---
+
+## Launch Strategy (July 10, 2026)
+
+**Status:** Current launch positioning.
+
+Do **NOT** position Metaprom as:
+
+* startup
+* beta
+* experimental
+* early company
+
+Position Metaprom as:
+
+> A premium commercial platform that has dramatically reduced production costs through AI.
+
+Price should communicate **opportunity**, not immaturity.
 
 ---
 
@@ -3492,6 +3859,23 @@ Principle: use the best tool for each stage.
 
 Historical note: Biblioteca implementation demonstrated that repository-aware tools (Cursor) are essential for multi-file diagnosis — code generation alone loses context.
 
+### Git Cleanup Methodology (July 10, 2026)
+
+Git cleanup is now a documented engineering discipline.
+
+Important principles:
+
+* Never mix cleanup with production commits.
+* Production commits first.
+* Cleanup last.
+* Every commit should remain buildable.
+* Repository cleanup is operational work, not product work.
+
+Current state:
+
+* Repository is clean.
+* Hero branch is synchronized with remote.
+
 ### Product Creation Workflow (June 28, 2026 — superseded by Official Workflow above)
 
 Earlier emergent workflow (preserved for history):
@@ -3509,7 +3893,7 @@ This is now formalized as the **Official Development Workflow** with CEO approva
 
 ### Hero V2 Status
 
-Hero V2 is now considered **production-ready**.
+Hero V2 is **approved for production**.
 
 The original rendering bug has been resolved.
 
@@ -3517,7 +3901,11 @@ The remaining differences are purely art direction and are no longer considered 
 
 The Hero rendering architecture is now under **code freeze**.
 
-Future work should focus on **asset refinement** rather than rendering changes.
+Runtime geometry is frozen.
+
+`lib/hero-layout-spec.ts` is frozen.
+
+Hero now enters the **Art Direction** phase. Future work should focus on **asset refinement** rather than rendering changes.
 
 ### Root Cause Investigation
 
@@ -3580,7 +3968,7 @@ These control different responsibilities.
 
 `objectPosition` controls visible framing.
 
-Future work must not confuse these two controls.
+Both controls are **optical tuning only**. Future work must not confuse these controls with runtime geometry.
 
 ### Investigation Results
 
@@ -3600,6 +3988,15 @@ Current Hero objective achieved:
 > "This premium commercial came from THIS phone."
 
 Any remaining differences are considered cosmetic art direction.
+
+Final architectural conclusion:
+
+* Hero architecture validated.
+* Runtime geometry frozen.
+* `lib/hero-layout-spec.ts` frozen.
+* `HeroPhoneScreen` controls only optical presentation.
+* `HERO_COMMERCIAL_SCALE_Y` and `objectPosition` are optical tuning only.
+* Future Hero perfection should be done by editing `hero-presenter` artwork, not runtime hacks.
 
 ### Future Hero V3
 
@@ -3668,14 +4065,18 @@ Once a subsystem becomes stable:
 
 This investigation demonstrated a dramatic reduction in Cursor iteration time once only a single parameter was being modified.
 
-### Remaining Priorities
+Core engineering lesson:
 
-Current project priorities (July 8, 2026):
+> Always identify the parameter before describing the behavior.
 
-1. Commit Hero V2 production baseline.
-2. Push repository.
-3. Fix the Landing right-side overlap issue.
-4. Continue Product Experience polish.
-5. Beta preparation.
+### Sprint 3.2 Closure
+
+Current project status (July 10, 2026):
+
+1. Hero V2 production baseline approved.
+2. Hero branch pushed successfully.
+3. Runtime architecture stable.
+4. Rendering investigation complete.
+5. Sprint 3.2 officially closed.
 
 ---

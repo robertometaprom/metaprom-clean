@@ -1,6 +1,180 @@
 # METAPROM MASTER
 
+## MASTER UPDATE — RC1 Customer Journey Progress (July 2026)
+
+*Supersedes **MASTER UPDATE — July 10, 2026** for current RC1 status, AI engine stability, checkout priority, schema drift findings, and product positioning. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+
+### Executive summary
+
+RC1 reached an important milestone: the AI generation engine is now considered **production-stable**.
+
+The remaining work is no longer AI infrastructure. The remaining work is completion of the **commercial customer journey**.
+
+Completed:
+
+* Image generation
+* Video generation
+* Persistence pipeline restored
+* Biblioteca restored
+* Purchases infrastructure restored
+* Mock payment provider operational
+* Premium video generation operational
+
+The product is now capable of:
+
+```
+Photo
+  ↓
+AI Image
+  ↓
+AI Video
+  ↓
+Persist
+  ↓
+Library
+  ↓
+Premium HD generation
+```
+
+### Root cause discovered
+
+A significant **Schema Drift** was discovered between the repository and the live Supabase database.
+
+Examples found:
+
+* Missing `public.purchases` table
+* Missing `projects.destination` column
+* Historical schema mismatches
+* Partial migration history
+
+The issue was infrastructure consistency, not application architecture.
+
+A recovery migration restored the missing purchases infrastructure.
+
+### Post-launch technical debt
+
+Create a dedicated **Schema Alignment Sprint**.
+
+Objective:
+
+> Repository schema == Live production schema
+
+Establish database governance:
+
+* No manual production schema changes.
+* Every schema change originates from a migration.
+* Repository becomes the single source of truth.
+* Schema Drift Audit before every production release.
+
+### CEO product review
+
+The product philosophy has been validated.
+
+The emotional value of Metaprom is **not** photo enhancement.
+
+The emotional value is:
+
+> A normal photo becomes a cinematic commercial.
+
+That remains the core product positioning.
+
+Photo enhancement becomes a secondary capability.
+
+### Official product slogan
+
+Official slogan:
+
+> Escribe lo que imaginas. Metaprom entiende el resto.
+
+### Current RC1 status
+
+The remaining blocker is no longer technical infrastructure.
+
+The remaining work is **Customer Journey completion**.
+
+Current flow:
+
+```
+Generate
+  ↓
+Preview
+  ↓
+Premium generation
+```
+
+Desired flow:
+
+```
+Generate
+  ↓
+Preview
+  ↓
+Unlock Commercial
+  ↓
+Checkout
+  ↓
+Payment
+  ↓
+Premium HD
+  ↓
+Download
+```
+
+The customer must clearly understand:
+
+> I am now purchasing my commercial.
+
+### Next sprint
+
+**RC1.3 — Checkout Experience**
+
+Objective:
+
+> Complete the commercial purchase journey.
+
+Build:
+
+* Checkout screen
+* Purchase summary
+* Price presentation
+* Payment step
+* Payment confirmation
+* Premium unlock
+* HD download
+
+First with Mock Provider.
+
+Only after the journey is fully validated:
+
+> Enable Stripe Test.
+
+### UX notes
+
+Add a proactive warning about protected brands before generation.
+
+Explain that well-known trademarks, including Nike, Coca-Cola, and McDonald's, may prevent generation because of AI provider restrictions.
+
+Preventing failed generations provides a much better user experience.
+
+Biblioteca now works.
+
+Future improvement:
+
+> Allow users to reopen, purchase, and download commercial assets directly from Biblioteca.
+
+### Strategic status
+
+The engine is finished.
+
+The remaining work is product experience.
+
+Metaprom has officially entered **Release Candidate** phase.
+
+---
+
 ## MASTER UPDATE — July 10, 2026
+
+*Historical — superseded by **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, AI engine stability, checkout priority, schema drift findings, and product positioning.*
 
 *Supersedes **MASTER UPDATE — July 1, 2026** for current project status, Sprint state, revenue priority, Hero final state, and launch strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
 

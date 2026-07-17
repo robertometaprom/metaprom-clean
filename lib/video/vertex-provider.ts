@@ -20,6 +20,7 @@ export type VertexVideoGenerateInput = {
   prompt: string;
   imageBuffer: Buffer;
   aspectRatio?: VeoAspectRatio;
+  model?: string;
 };
 
 type ServiceAccountCredentials = {
@@ -229,6 +230,7 @@ export async function generateVertexVideo(
   const requestPrefix = `${config.outputGcsUri}${randomUUID()}/`;
   const imageBuffer = await normalizeImageForVeo(input.imageBuffer);
   const aspectRatio = input.aspectRatio ?? config.aspectRatio;
+  const model = input.model?.trim() || config.model;
 
   if (aspectRatio !== "9:16" && aspectRatio !== "16:9") {
     throw new Error(
@@ -241,7 +243,7 @@ export async function generateVertexVideo(
 
   for (let attempt = 1; attempt <= config.submitRetries; attempt++) {
     operation = await ai.models.generateVideos({
-      model: config.model,
+      model,
       prompt: input.prompt,
       image: {
         imageBytes: imageBuffer.toString("base64"),

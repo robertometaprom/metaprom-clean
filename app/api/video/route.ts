@@ -1,4 +1,3 @@
-import type { CommercialTier } from "@/lib/commercial/tiers";
 import { mapCreationError } from "@/lib/creation-errors";
 import {
   logDestinationGenerationDebug,
@@ -6,12 +5,13 @@ import {
   resolveVeoGenerationParams,
 } from "@/lib/destination-generation";
 import {
-  generateVertexVideo,
+  generateCommercialVideo,
   getVertexVideoStatus,
   isVertexVideoConfigured,
   normalizeImageForVeo,
+  resolveVideoWorkflowFromRequest,
+  resolveWorkflow,
 } from "@/lib/video";
-import { processCommercialVideo } from "@/lib/video-processing";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -44,7 +44,12 @@ export async function POST(req: Request) {
     const uploadedFile = formData.get("image") as File | null;
     const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
     const rawTier = (formData.get("tier") as string | null)?.trim() ?? "teaser";
-    const tier: CommercialTier = rawTier === "premium" ? "premium" : "teaser";
+    const rawWorkflow = (formData.get("workflow") as string | null)?.trim() ?? null;
+    const workflow = resolveVideoWorkflowFromRequest({
+      workflow: rawWorkflow,
+      tier: rawTier,
+    });
+    const workflowConfig = resolveWorkflow(workflow);
     const destination = parseStudioDestinationFromFormData(formData);
     const veoParams = resolveVeoGenerationParams(destination);
 
@@ -77,7 +82,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const videoBuffer = await generateVertexVideo({
+    const generation = await generateCommercialVideo({
+      workflow,
       prompt,
       imageBuffer: normalizedBuffer,
       aspectRatio: veoParams.aspectRatio,
@@ -89,7 +95,9 @@ export async function POST(req: Request) {
       veoParams,
       finalPrompt: prompt,
       generationParameters: {
-        tier,
+        workflow,
+        tier: generation.tier,
+        vertexModel: generation.vertexModel,
         aspectRatio: veoParams.aspectRatio,
         requestedAspectRatio: veoParams.requestedAspectRatio,
         durationSeconds: Number(
@@ -99,19 +107,15 @@ export async function POST(req: Request) {
       },
     });
 
-    const { buffer: processedBuffer, processed } = await processCommercialVideo({
-      buffer: videoBuffer,
-      tier,
-    });
-
-    return new Response(new Uint8Array(processedBuffer), {
+    return new Response(new Uint8Array(generation.buffer), {
       status: 200,
       headers: {
         "Content-Type": "video/mp4",
-        "Content-Length": String(processedBuffer.length),
+        "Content-Length": String(generation.buffer.length),
         "Cache-Control": "no-store",
-        "X-Metaprom-Tier": tier,
-        "X-Metaprom-Processed": processed ? "true" : "false",
+        "X-Metaprom-Workflow": workflow,
+        "X-Metaprom-Tier": workflowConfig.tier,
+        "X-Metaprom-Processed": generation.processed ? "true" : "false",
       },
     });
   } catch (error) {

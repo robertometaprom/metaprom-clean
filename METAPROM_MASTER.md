@@ -2,15 +2,29 @@
 
 ## MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)
 
-*Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, product philosophy, Preview vs Premium differentiation, prompt enrichment architecture, waiting experience, checkout scope, end-of-journey experience, Biblioteca capabilities, and viral growth strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+*Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
 
-### RC1 status
+### Project stage
 
-RC1 is now **feature complete** from an architectural perspective.
+Metaprom is no longer in the phase of building the engine.
+
+The core infrastructure is **validated**.
+
+The official priority has shifted from:
+
+> Making Metaprom work
+
+to:
+
+> Making people want to use it, share it, and come back.
+
+Starting RC1.3.5, the focus is **Product Experience** and **Growth Engine**.
+
+RC1 is **feature complete** from an architectural perspective.
 
 The commercial purchase journey has been successfully validated using the Mock Provider.
 
-Current flow:
+Creation flow:
 
 ```
 Landing
@@ -32,11 +46,7 @@ Download
 Biblioteca
 ```
 
-Architecture has been validated.
-
 No structural rewrites are required before Stripe integration.
-
-The remaining work is **Product Experience**.
 
 ### New product philosophy
 
@@ -80,7 +90,7 @@ The Premium must never feel like a slightly longer Preview.
 
 Purpose:
 
-Generate the WOW factor.
+Generate the WOW factor and **acquire new users**.
 
 Characteristics:
 
@@ -88,11 +98,21 @@ Characteristics:
 * immediate impact
 * teaser
 * shareable
-* not downloadable (future implementation)
+* never downloadable
+* lives exclusively inside Metaprom
+* always available in Biblioteca
+* permanent public URL
+* unlimited sharing
 
 The Preview is **NOT** the product.
 
-The Preview is **marketing**.
+The Preview is a **permanent growth asset**.
+
+Its objective is **not** to deliver a video.
+
+Its objective is to **attract new users**.
+
+Every Preview must generate new users.
 
 #### Premium
 
@@ -145,7 +165,15 @@ Metaprom creates the commercial.
 
 ### Product waiting experience
 
-The CEO Review identified that long generation times require **premium waiting experiences**.
+Waiting must **not** feel like a loader.
+
+Waiting must feel like an **experience**.
+
+The first wait **teaches** the product.
+
+The second wait **inspires**.
+
+Metaprom uses a library of short, memorable commercials during generation.
 
 Current waiting times:
 
@@ -154,15 +182,15 @@ Current waiting times:
 
 Static waiting screens are not acceptable.
 
-Future implementation:
+Waiting experience requirements:
 
 * premium fullscreen experience
-* cinematic background video
+* cinematic background video from the commercial library
 * dynamic progress messaging
 * premium loading animations
 * clear explanation of current processing stage
 
-Customers should always feel the product is actively working.
+Customers should always feel the product is actively working — never that they are waiting on a spinner.
 
 ### Checkout philosophy
 
@@ -202,48 +230,151 @@ Customers should always leave with a feeling of completion.
 
 Preview assets and Premium assets are different products.
 
-Future Preview capabilities:
+Preview capabilities:
 
-* View
-* Share
+* View — always available in Biblioteca
+* Share — unlimited, with permanent public URL
+* Never downloadable
 
-Future Premium capabilities:
+Premium capabilities:
 
 * View
 * Download
 * Share
 
-Preview download will eventually be removed.
+### Growth Engine
 
-### Viral growth strategy
+The Preview is no longer a file.
 
-One of the biggest strategic discoveries.
+The Preview is a **permanent acquisition channel**.
 
-Preview videos are not intended for download.
-
-Preview videos are intended for **sharing**.
-
-Future flow:
+Official acquisition flow:
 
 ```
-Create Preview
+User
+  ↓
+Generates Preview
+  ↓
+Biblioteca
   ↓
 Share
   ↓
-Metaprom Landing
+Public Landing
   ↓
-Watch Preview
+Watches the commercial
   ↓
-Create Your Own Commercial
+Create yours free
   ↓
-Repeat
+New user
 ```
 
-Every Preview should become a customer acquisition asset.
+Every Preview is a customer acquisition asset — not merely a free sample.
 
-The Preview is part of the growth engine.
+### Public Landing
 
-Not merely a free sample.
+The public landing does **NOT** explain AI.
+
+It sells through **demonstration**.
+
+Visual order:
+
+1. Video
+2. Created with Metaprom
+3. Create yours free
+4. *(Future)* Original photo → Preview
+
+First, create emotion.
+
+Then, explain.
+
+See **Public Landing Philosophy**.
+
+### Demo Library
+
+The Demo Library does **NOT** exist to show pretty videos.
+
+It exists to demonstrate that **anyone** can transform everyday content into premium campaigns.
+
+Official rule:
+
+**Always show the origin. Never repeat the exact same origin.**
+
+Valid origin examples:
+
+* Phone photo
+* Downloaded image
+* Local folder
+* Drag & Drop
+* Marketplace
+
+What matters is proving:
+
+> You can do this.
+
+See **Demo Library**.
+
+### Video architecture
+
+All commercial generation must pass exclusively through:
+
+```
+Workflow
+  ↓
+generateCommercialVideo()
+  ↓
+Vertex Provider
+  ↓
+Model resolved by Workflow
+  ↓
+FFmpeg
+  ↓
+Video
+```
+
+Direct calls to Vertex for commercial generation are **prohibited**.
+
+See **Video Architecture** and **Official Video Workflows**.
+
+### Official Video Workflows
+
+The UI never knows the model.
+
+The UI knows only the **Workflow**.
+
+| Workflow | Model |
+|----------|-------|
+| Preview | Veo Lite |
+| Premium | Veo Fast |
+| Enterprise | Enterprise model |
+
+Model selection is resolved internally by the Workflow layer.
+
+### Growth Analytics
+
+Future product vision — metrics that matter for the Growth Engine:
+
+* Views
+* Unique Views
+* Shares
+* WhatsApp Shares
+* Copy Link
+* CTA Clicks
+* Registrations
+* Conversions
+* Watch Completion %
+
+See **Growth Analytics (Future Vision)**.
+
+### UX Principles
+
+Permanent product principles:
+
+* **Do not explain. Demonstrate.**
+* **The user must never feel they are using AI.**
+* **The Preview does not sell a video. It sells the next user.**
+* **You take the photo. Metaprom does the rest.**
+
+See **Product Philosophy**.
 
 ### Internal product principle
 
@@ -258,24 +389,24 @@ If someone watches a Preview and asks:
 
 Metaprom has achieved its purpose.
 
-### RC1.3.5 objective
+### RC1.3.5 focus
 
-Before enabling Stripe:
-
-Focus exclusively on **Product Polish**.
+The current focus is **Product Experience** and **Growth Engine**.
 
 Do **NOT**:
 
 * redesign architecture
 * modify AI infrastructure
 * modify payment providers
-* implement new features unrelated to customer experience
+* implement features unrelated to experience or acquisition
 
-Only improve:
+Improve:
 
 * waiting experience
 * Premium differentiation
-* Preview philosophy
+* Preview as growth asset
+* Public Landing demonstration
+* Demo Library origin storytelling
 * final success experience
 * customer emotional journey
 
@@ -289,7 +420,7 @@ Proceed to:
 
 ## MASTER UPDATE — RC1 Customer Journey Progress (July 2026)
 
-*Historical — superseded by **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for current RC1 status, product philosophy, Preview vs Premium differentiation, prompt enrichment, waiting experience, checkout scope, end-of-journey experience, Biblioteca capabilities, and viral growth strategy.*
+*Historical — superseded by **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for current RC1 status, project stage, product philosophy, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy.*
 
 *Supersedes **MASTER UPDATE — July 10, 2026** for current RC1 status, AI engine stability, checkout priority, schema drift findings, and product positioning. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
 
@@ -604,27 +735,37 @@ The product demonstrates value before requesting money.
 
 Marketing is no longer considered traditional advertising.
 
-Growth will be based on **curiosity**.
+Growth is based on **demonstration** and **curiosity**.
 
-Growth loop:
+Official acquisition flow:
 
 ```
-Curiosity
-↓
-WOW
-↓
-Purchase
-↓
-Proud customer
-↓
+User
+  ↓
+Generates Preview
+  ↓
+Biblioteca
+  ↓
 Share
-↓
-New curiosity
+  ↓
+Public Landing
+  ↓
+Watches the commercial
+  ↓
+Create yours free
+  ↓
+New user
 ```
+
+The Preview is a permanent acquisition channel — not a downloadable file.
 
 Sharing is a consequence of pride, not an obligation.
 
 The goal is to make customers naturally want to show their commercial.
+
+Every Preview must generate new users.
+
+See **Growth Engine**, **Preview Policy**, and **Growth Analytics (Future Vision)**.
 
 ### Marketing philosophy
 
@@ -940,7 +1081,7 @@ See `docs/experience-v1.md`.
 
 The AI generation stack — commercial image transformation and cinematic video via Veo 3.1 Lite — is **mature enough for Beta**. First real customer WOW was validated on June 28, 2026. The product hypothesis is confirmed: customers buy the feeling of seeing their own product transformed into professional marketing, not AI.
 
-**The primary bottleneck is no longer generation quality or image reliability.** It is UX, commercial flow, customer conversion, and **Veo daily quota capacity** for video at Beta scale.
+**The primary bottleneck is no longer generation quality, image reliability, or engine construction.** It is Product Experience, Growth Engine, customer conversion, and **Veo daily quota capacity** for video at Beta scale.
 
 | Era | Focus | Status |
 |-----|-------|--------|
@@ -1035,6 +1176,12 @@ Core mission:
 
 Metaprom sells marketing results, not AI. Customers should never need to understand AI models, prompts, tokens, APIs, Veo, or Gemini.
 
+Growth philosophy:
+
+> You take the photo. Metaprom does the rest.
+
+Every Preview is a permanent acquisition channel. The product grows when customers share their commercials and new users arrive through public landing pages — not when they download files.
+
 Platform scope:
 
 * Commercial image generation
@@ -1100,12 +1247,15 @@ Success metric:
 
 ### Commercial tiers
 
-**Free (customer acquisition — teaser)**
+**Free (customer acquisition — Preview)**
 
 * 3–5 second teaser video
 * Metaprom watermark
 * Medium quality
 * Delivered via **Cinematic Reveal** — creates trust and WOW, not the full deliverable
+* Never downloadable — lives exclusively inside Metaprom
+* Always available in Biblioteca with permanent public URL
+* Unlimited sharing — each Preview is an acquisition channel
 
 **Premium (paid)**
 
@@ -1810,6 +1960,8 @@ Core principle:
 Visual impact first.
 Technical explanation second.
 
+See **Public Landing Philosophy** for the official public Preview landing.
+
 ---
 
 ### Video as Primary Product Candidate
@@ -2480,8 +2632,11 @@ Related principles:
 
 * "The user should not navigate Metaprom AI. Metaprom AI should navigate the user."
 * Design like Uber, not an aircraft cockpit.
+* **Do not explain. Demonstrate.**
+* **The user must never feel they are using AI.**
+* **You take the photo. Metaprom does the rest.**
 
-See **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
+See **UX Philosophy — Kling Analysis Breakthrough (June 2026)** and **Product Philosophy**.
 
 ---
 
@@ -2490,6 +2645,10 @@ See **UX Philosophy — Kling Analysis Breakthrough (June 2026)**.
 **STATUS: VALIDATED**
 
 Video generation is no longer a future roadmap item. It is a **working capability**.
+
+### Video architecture
+
+See **Video Architecture** and **Official Video Workflows**.
 
 ### Current implementation
 
@@ -2707,7 +2866,57 @@ Competitive advantage comes from:
 
 The value is moving from the **model** to the **workflow**.
 
-See **UX Philosophy**, **NO BARRIERS. NO NONSENSE.**, and **H2 - Video as Primary Product**.
+The UI never knows the model. The UI knows only the **Workflow**.
+
+See **Official Video Workflows**, **UX Philosophy**, **NO BARRIERS. NO NONSENSE.**, and **H2 - Video as Primary Product**.
+
+---
+
+## Video Architecture
+
+**Status:** Active product architecture — permanent decision.
+
+All commercial generation must pass exclusively through:
+
+```
+Workflow
+  ↓
+generateCommercialVideo()
+  ↓
+Vertex Provider
+  ↓
+Model resolved by Workflow
+  ↓
+FFmpeg
+  ↓
+Video
+```
+
+Direct calls to Vertex for commercial generation are **prohibited**.
+
+The UI never knows the model. The UI knows only the **Workflow**.
+
+See **Official Video Workflows** and **Video Generation — Validated (June 2026)**.
+
+---
+
+## Official Video Workflows
+
+**Status:** Active product architecture — supersedes direct model references in UI and API routes.
+
+| Workflow | Model | Purpose |
+|----------|-------|---------|
+| Preview | Veo Lite | Customer acquisition — WOW and sharing |
+| Premium | Veo Fast | Paid complete commercial |
+| Enterprise | Enterprise model | High-volume or enterprise tier |
+
+Model selection is resolved internally by the Workflow layer via `resolveWorkflow()`.
+
+The customer-facing product speaks in workflows and outcomes — never in model names.
+
+All generation flows through `generateCommercialVideo()` → Vertex Provider → FFmpeg. Direct Vertex calls for commercial generation are prohibited.
+
+See **Video Architecture** and **Video Generation — Validated (June 2026)**.
 
 ---
 
@@ -2756,10 +2965,123 @@ HD Commercial
 ### UX principles
 
 * Every project row/card should read as a **before → after commercial journey**, not a folder of assets.
+* Previews are always available — never downloadable, always shareable with permanent public URL.
 * Navigation polish and refresh reliability are **Sprint 3.2 blockers** before Payments.
 * Future UX decisions must reinforce portfolio storytelling — not file management metaphors.
 
-See **MASTER UPDATE — July 1, 2026** and **Customer Experience (July 1, 2026)**.
+See **MASTER UPDATE — July 1, 2026**, **Customer Experience (July 1, 2026)**, and **Demo Library**.
+
+---
+
+## Public Landing Philosophy
+
+**Status:** Active product definition — applies to every public Preview URL.
+
+The public landing does **NOT** explain AI.
+
+It sells through **demonstration**.
+
+Visual order:
+
+1. Video
+2. Created with Metaprom
+3. Create yours free
+4. *(Future)* Original photo → Preview
+
+First, create emotion.
+
+Then, explain.
+
+The landing must never communicate "AI platform." It must communicate "look what was created."
+
+See **Future Landing Philosophy**, **Growth Engine**, and **Preview Policy**.
+
+---
+
+## Demo Library
+
+**Status:** Active product definition — supersedes any framing of the library as a video showcase.
+
+The Demo Library does **NOT** exist to show pretty videos.
+
+It exists to demonstrate that **anyone** can transform everyday content into premium campaigns.
+
+Official rule:
+
+**Always show the origin. Never repeat the exact same origin.**
+
+Valid origin examples:
+
+* Phone photo
+* Downloaded image
+* Local folder
+* Drag & Drop
+* Marketplace
+
+What matters is proving:
+
+> You can do this.
+
+Each demo must tell a transformation story — origin to commercial — so the viewer believes they can replicate it.
+
+See **Biblioteca — Commercial Portfolio (July 1, 2026)** and **Growth Engine**.
+
+---
+
+## Preview Policy
+
+**Status:** Active product definition — permanent rules for every Preview asset.
+
+The Preview is **NOT** the product.
+
+The Preview is a **permanent growth asset**.
+
+Its objective is **not** to deliver a video.
+
+Its objective is to **attract new users**.
+
+Permanent rules:
+
+* Never downloadable
+* Lives exclusively inside Metaprom
+* Always available in Biblioteca
+* Permanent public URL
+* Unlimited sharing
+* Every Preview must generate new users
+
+Characteristics:
+
+* approximately 3–5 seconds
+* immediate impact
+* teaser
+* shareable
+* Metaprom watermark
+
+The Premium commercial must always feel significantly more valuable than the Preview.
+
+See **Preview vs Premium**, **Growth Engine**, and **Public Landing Philosophy**.
+
+---
+
+## Growth Analytics (Future Vision)
+
+**Status:** Future product architecture — part of the Growth Engine vision. No implementation prescribed here.
+
+The Growth Engine requires measurement. The following metrics form part of the product vision:
+
+* Views
+* Unique Views
+* Shares
+* WhatsApp Shares
+* Copy Link
+* CTA Clicks
+* Registrations
+* Conversions
+* Watch Completion %
+
+These metrics connect Preview sharing to new user acquisition and conversion.
+
+See **Growth Engine** and **Preview Policy**.
 
 ---
 
@@ -2844,6 +3166,10 @@ Metaprom **is**:
 
 > Take any photo. Describe the commercial. Metaprom creates the production.
 
+**Growth corollary (RC1.3.5):**
+
+> You take the photo. Metaprom does the rest.
+
 Customers invest time in **describing the commercial**, not in producing a better source photo. Metaprom owns photography cleanup, enhancement, lighting, composition, and commercial creation.
 
 See **Project Vision**, **Strategic Pivot – Metaprom AI Evolution (June 2026)**, and **MASTER UPDATE — July 1, 2026**.
@@ -2925,6 +3251,17 @@ Result becomes the product.
 Internal philosophy:
 
 > The customer comes for the result, not the technology.
+
+### UX Principles (permanent)
+
+* **Do not explain. Demonstrate.**
+* **The user must never feel they are using AI.**
+* **The Preview does not sell a video. It sells the next user.**
+* **You take the photo. Metaprom does the rest.**
+
+These principles apply to every customer-facing surface — Studio, Biblioteca, Public Landing, Demo Library, and waiting experiences.
+
+See **Public Landing Philosophy**, **Demo Library**, and **Growth Engine**.
 
 ### Studio Principles (June 28, 2026)
 
@@ -3041,31 +3378,41 @@ Checkout sells ownership of the commercial, not access to technology.
 
 ## Growth Engine (July 10, 2026)
 
-**Status:** Current growth philosophy.
+**Status:** Current growth philosophy — see **Growth Engine** in **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for canonical acquisition flow.
 
 Marketing is no longer considered traditional advertising.
 
-Growth will be based on **curiosity**.
+Growth is based on **demonstration** and **curiosity**.
 
-Growth loop:
+The Preview is a permanent acquisition channel — not a downloadable file.
+
+Official acquisition flow:
 
 ```
-Curiosity
-↓
-WOW
-↓
-Purchase
-↓
-Proud customer
-↓
+User
+  ↓
+Generates Preview
+  ↓
+Biblioteca
+  ↓
 Share
-↓
-New curiosity
+  ↓
+Public Landing
+  ↓
+Watches the commercial
+  ↓
+Create yours free
+  ↓
+New user
 ```
 
 Sharing is a consequence of pride, not an obligation.
 
 The goal is to make customers naturally want to show their commercial.
+
+Every Preview must generate new users.
+
+See **Public Landing Philosophy**, **Demo Library**, and **Growth Analytics (Future Vision)**.
 
 ---
 
@@ -3081,11 +3428,14 @@ Never require users to understand prompts.
 
 Never compete on models.
 
+Never explain — **demonstrate**.
+
 Compete on:
 
 * results
 * premium perception
 * simplicity
+* transformation stories (origin → commercial)
 
 ---
 

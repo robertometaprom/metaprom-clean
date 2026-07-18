@@ -1,8 +1,200 @@
 # METAPROM MASTER
 
+## MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)
+
+*Supersedes **MASTER UPDATE — RC1.3.5 — Product Stabilization & Growth Engine Foundation (July 2026)** for current RC1 status, project stage, product philosophy, completed milestones, Share experience status, Product Backlog process, active objective, soft launch strategy, validation environment, and CEO Product Rule. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+
+### RC1.4
+
+#### Transition to Stripe & Soft Launch
+
+##### Project Status
+
+Metaprom has officially completed the **Infrastructure Phase**.
+
+The platform is no longer focused on making AI work.
+
+The focus is now on delivering a premium product experience and launching a real business.
+
+Current philosophy:
+
+We are no longer building an AI.
+
+We are building a product.
+
+##### Completed
+
+* Enhancement
+* Preview Generation
+* Premium Generation
+* Biblioteca
+* Persistence
+* Workflow Layer
+* Public Commercial Pages
+* Growth Engine Foundation
+* Product Stabilization
+* Share Experience (functional)
+
+##### Share
+
+The Share Experience is considered **functionally complete**.
+
+Verified:
+
+* Share button on Preview
+* Share button on Biblioteca
+* `share_slug` persistence
+* Public Commercial page
+* Video playback
+* Streaming through signed URLs
+* CTA "Create yours free"
+* Navigation
+* Smoke Test
+
+Remaining observations were intentionally moved to the **Product Backlog** and do not block the next milestone.
+
+Official Product Principle:
+
+> Preview belongs to Metaprom.
+> Premium belongs to the customer.
+
+##### Product Backlog
+
+A new official document now exists:
+
+`RC1_PRODUCT_BACKLOG.md`
+
+Purpose:
+
+Capture every product issue discovered during testing without interrupting the active objective.
+
+New Development Rule:
+
+Issues discovered during testing are **NOT** fixed immediately.
+
+They are:
+
+Registered
+
+↓
+
+Prioritized
+
+↓
+
+Executed only after the current objective reaches PASS.
+
+Only **ONE** active objective may exist at any time.
+
+##### Current Active Objective
+
+**RC1.4 — Stripe Integration**
+
+The objective is to complete the commercial purchase flow.
+
+Target flow:
+
+Preview
+
+↓
+
+Checkout
+
+↓
+
+Stripe Payment
+
+↓
+
+Premium Generation
+
+↓
+
+Download
+
+No new features should be implemented during this phase.
+
+The only objective is to complete and stabilize payments.
+
+##### Soft Launch Strategy
+
+After Stripe reaches PASS:
+
+Deploy the current product.
+
+Replace the historical version currently hosted on metaprom.com.
+
+Begin a **Soft Launch**.
+
+Objective:
+
+Collect feedback from real users.
+
+Improve the product based on real usage.
+
+Delay paid marketing until the product consistently feels production-ready.
+
+##### Current Validation Environment
+
+Official development environment:
+
+`localhost`
+
+Official repository:
+
+`metaprom-clean`
+
+Current development branch:
+
+`sprint/hero-barrier-removal`
+
+The current public website at metaprom.com is considered a **historical deployment** and is **NOT** used as the validation target during RC1.x.
+
+Production deployment will occur after Stripe integration is complete.
+
+##### New Product Philosophy
+
+The goal is no longer to perfect Metaprom inside a laboratory.
+
+The goal is to perfect Metaprom in the real market.
+
+Launch.
+
+Learn.
+
+Improve.
+
+Repeat.
+
+##### CEO Product Rule
+
+The **CEO Product Review** is now the final validation step.
+
+A feature is **NOT** considered complete because it compiles.
+
+A feature is complete only after:
+
+Implementation
+
+↓
+
+Smoke Test
+
+↓
+
+CEO Product Review
+
+↓
+
+PASS
+
+Only then may the next objective begin.
+
+---
+
 ## MASTER UPDATE — RC1.3.5 — Product Stabilization & Growth Engine Foundation (July 2026)
 
-*Supersedes **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for current RC1 status, project stage, product philosophy, Growth Engine foundation, Public Commercial experience, product stabilization priorities, smoke test philosophy, navigation philosophy, error experience, Developer QA Mode direction, and development workflow. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+*Historical — superseded by **MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)** for current RC1 status, active objective, and development workflow. Supersedes **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for Product Stabilization phase context, Growth Engine foundation, Public Commercial experience, smoke test philosophy, navigation philosophy, error experience, and Developer QA Mode direction.*
 
 ### RC1.3.5
 
@@ -364,7 +556,7 @@ That is the new definition of product quality for Metaprom.
 
 ## MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)
 
-*Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+*Historical — superseded by **MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)** for current RC1 status and active objective. Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for RC1.3.5 product review context, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy.*
 
 ### Project stage
 
@@ -776,7 +968,7 @@ Once RC1.3.5 is complete:
 
 Proceed to:
 
-> **RC1.4 — Stripe Test Integration**
+> **RC1.4 — Stripe Integration** *(active — see **MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)**)*
 
 ---
 

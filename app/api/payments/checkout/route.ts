@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentProvider } from "@/lib/payments";
 import { PaymentProviderError } from "@/lib/payments/types";
@@ -16,11 +17,41 @@ import { getPriceById } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
-function jsonError(message: string, status: number) {
-  return Response.json({ error: message }, { status });
+function describeUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+    };
+  }
+
+  return {
+    name: typeof error,
+    message: String(error),
+    raw: error,
+  };
 }
 
-async function requireAuthUser() {
+function getTraceId(req: Request): string {
+  return req.headers.get("x-metaprom-trace-id") ?? `server-${randomUUID()}`;
+}
+
+function logTrace(traceId: string, stage: string, details?: unknown) {
+  console.error(`[metaprom-checkout-trace:${traceId}] ${stage}`, details ?? null);
+}
+
+function jsonError(
+  message: string,
+  status: number,
+  traceId: string,
+  details?: unknown,
+) {
+  return Response.json({ error: message, traceId, details }, { status });
+}
+
+async function requireAuthUser(traceId: string) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,9 +59,11 @@ async function requireAuthUser() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
+    logTrace(traceId, "auth failed", { error });
     return { supabase, user: null as null };
   }
 
+  logTrace(traceId, "auth ok", { userId: user.id, email: user.email });
   return { supabase, user };
 }
 
@@ -38,7 +71,9 @@ async function verifyAssetOwnership(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   assetId: string,
+  traceId: string,
 ) {
+  logTrace(traceId, "verify asset ownership start", { userId, assetId });
   const { data: asset, error } = await supabase
     .from("assets")
     .select("id, project_id, payment_status")
@@ -46,6 +81,7 @@ async function verifyAssetOwnership(
     .maybeSingle();
 
   if (error || !asset) {
+    logTrace(traceId, "asset lookup failed", { error, asset });
     return null;
   }
 
@@ -57,21 +93,44 @@ async function verifyAssetOwnership(
     .maybeSingle();
 
   if (!project) {
+    logTrace(traceId, "project ownership lookup failed", {
+      projectId: asset.project_id,
+      userId,
+    });
     return null;
   }
 
+  logTrace(traceId, "verify asset ownership ok", { asset });
   return asset;
 }
 
 export async function POST(req: Request) {
-  const { supabase, user } = await requireAuthUser();
+  const traceId = getTraceId(req);
+
+  try {
+    return await postWithTrace(req, traceId);
+  } catch (error) {
+    const details = describeUnknownError(error);
+    logTrace(traceId, "POST unhandled exception", details);
+    return jsonError(
+      `Unhandled checkout exception: ${details.name}: ${details.message}`,
+      500,
+      traceId,
+      details,
+    );
+  }
+}
+
+async function postWithTrace(req: Request, traceId: string) {
+  logTrace(traceId, "POST /api/payments/checkout start", { url: req.url });
+  const { supabase, user } = await requireAuthUser(traceId);
 
   if (!user) {
-    return jsonError("Authentication required.", 401);
+    return jsonError("Authentication required.", 401, traceId);
   }
 
   let body: {
-    assetId?: string;
+    assetId?: string | number;
     productId?: string;
     paymentMethod?: PaymentMethod;
     customerEmail?: string;
@@ -79,28 +138,42 @@ export async function POST(req: Request) {
 
   try {
     body = (await req.json()) as typeof body;
-  } catch {
-    return jsonError("Invalid request body.", 400);
+  } catch (error) {
+    const details = describeUnknownError(error);
+    logTrace(traceId, "request body parse failed", details);
+    return jsonError(
+      `Invalid request body: ${details.name}: ${details.message}`,
+      400,
+      traceId,
+      details,
+    );
   }
 
-  const assetId = body.assetId?.trim();
+  logTrace(traceId, "request body parsed", body);
+
+  const assetId =
+    typeof body.assetId === "string"
+      ? body.assetId.trim()
+      : typeof body.assetId === "number" && Number.isFinite(body.assetId)
+        ? String(body.assetId)
+        : undefined;
   const productId = body.productId?.trim() ?? "commercial-video";
   const paymentMethod = body.paymentMethod ?? "card";
 
   if (!assetId) {
-    return jsonError("assetId is required.", 400);
+    return jsonError("assetId is required.", 400, traceId, { body });
   }
 
-  const asset = await verifyAssetOwnership(supabase, user.id, assetId);
+  const asset = await verifyAssetOwnership(supabase, user.id, assetId, traceId);
 
   if (!asset) {
-    return jsonError("Asset not found.", 404);
+    return jsonError("Asset not found.", 404, traceId, { assetId, userId: user.id });
   }
 
   const amountMxn = getPriceById(productId);
 
   if (!amountMxn) {
-    return jsonError("Unknown product.", 400);
+    return jsonError("Unknown product.", 400, traceId, { productId });
   }
 
   const checkoutRequest: CheckoutRequest = {
@@ -116,46 +189,71 @@ export async function POST(req: Request) {
   let session: CheckoutSession;
 
   try {
+    logTrace(traceId, "creating checkout with provider", checkoutRequest);
     provider = getPaymentProvider();
     session = await provider.createCheckout(checkoutRequest);
+    logTrace(traceId, "provider checkout created", {
+      provider: provider.id,
+      session,
+    });
   } catch (error) {
+    const details = describeUnknownError(error);
+    logTrace(traceId, "provider createCheckout caught exception", details);
     if (error instanceof PaymentProviderError) {
-      return jsonError(error.message, 503);
+      return jsonError(error.message, 503, traceId, details);
     }
 
     throw error;
   }
 
+  const purchaseInsert = {
+    ...(provider.id === "mock" ? {} : { id: session.purchaseId }),
+    user_id: user.id,
+    asset_id: assetId,
+    product_id: productId,
+    amount_mxn: amountMxn,
+    currency: "MXN",
+    status: session.status,
+    provider: provider.id,
+    provider_reference: session.sessionId,
+    payment_method: paymentMethod,
+    metadata: {
+      providerPurchaseId: session.purchaseId,
+      sessionId: session.sessionId,
+      oxxoReference: session.oxxoReference,
+    },
+    completed_at:
+      session.status === "completed" ? new Date().toISOString() : null,
+  };
+
   const { data: purchase, error: purchaseError } = await supabase
     .from("purchases")
-    .insert({
-      id: session.purchaseId,
-      user_id: user.id,
-      asset_id: assetId,
-      product_id: productId,
-      amount_mxn: amountMxn,
-      currency: "MXN",
-      status: session.status,
-      provider: provider.id,
-      provider_reference: session.oxxoReference ?? session.sessionId,
-      payment_method: paymentMethod,
-      metadata: { sessionId: session.sessionId },
-      completed_at:
-        session.status === "completed" ? new Date().toISOString() : null,
-    })
+    .insert(purchaseInsert)
     .select("id, status")
     .single();
 
   if (purchaseError) {
-    console.error("purchase insert failed:", purchaseError);
-    return jsonError("Unable to start checkout.", 500);
+    logTrace(traceId, "purchase insert failed", purchaseError);
+    return jsonError(
+      `Purchase insert failed: ${purchaseError.message}`,
+      500,
+      traceId,
+      purchaseError,
+    );
   }
 
+  logTrace(traceId, "purchase inserted", purchase);
   await updateAssetPaymentState(supabase, assetId, session.status, {
+    purchaseId: purchase.id,
+  });
+  logTrace(traceId, "asset payment state updated", {
+    assetId,
+    status: session.status,
     purchaseId: purchase.id,
   });
 
   return Response.json({
+    traceId,
     sessionId: session.sessionId,
     purchaseId: purchase.id,
     status: session.status,
@@ -168,30 +266,55 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const { supabase, user } = await requireAuthUser();
+  const traceId = getTraceId(req);
+
+  try {
+    return await getWithTrace(req, traceId);
+  } catch (error) {
+    const details = describeUnknownError(error);
+    logTrace(traceId, "GET unhandled exception", details);
+    return jsonError(
+      `Unhandled checkout status exception: ${details.name}: ${details.message}`,
+      500,
+      traceId,
+      details,
+    );
+  }
+}
+
+async function getWithTrace(req: Request, traceId: string) {
+  logTrace(traceId, "GET /api/payments/checkout start", { url: req.url });
+  const { supabase, user } = await requireAuthUser(traceId);
 
   if (!user) {
-    return jsonError("Authentication required.", 401);
+    return jsonError("Authentication required.", 401, traceId);
   }
 
   const sessionId = new URL(req.url).searchParams.get("sessionId")?.trim();
 
   if (!sessionId) {
-    return jsonError("sessionId is required.", 400);
+    return jsonError("sessionId is required.", 400, traceId);
   }
 
   const provider = getPaymentProvider();
   const session = await provider.getSessionStatus(sessionId);
+  logTrace(traceId, "provider session status", { provider: provider.id, session });
 
-  const { data: purchase } = await supabase
+  let purchaseQuery = supabase
     .from("purchases")
     .select("id, asset_id, status")
-    .eq("id", session.purchaseId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+    .eq("user_id", user.id);
+
+  purchaseQuery =
+    provider.id === "mock"
+      ? purchaseQuery.eq("provider_reference", session.sessionId)
+      : purchaseQuery.eq("id", session.purchaseId);
+
+  const { data: purchase } = await purchaseQuery.maybeSingle();
 
   if (!purchase) {
-    return jsonError("Purchase not found.", 404);
+    logTrace(traceId, "purchase lookup failed", { sessionId, userId: user.id });
+    return jsonError("Purchase not found.", 404, traceId, { sessionId });
   }
 
   const nextStatus: PaymentSessionStatus = session.status;
@@ -199,13 +322,14 @@ export async function GET(req: Request) {
   if (nextStatus !== purchase.status) {
     await persistPaymentResult(supabase, {
       sessionId: session.sessionId,
-      purchaseId: purchase.id,
+      purchaseId: String(purchase.id),
       status: nextStatus,
-      providerReference: session.oxxoReference ?? session.sessionId,
+      providerReference: session.sessionId,
     });
   }
 
   return Response.json({
+    traceId,
     sessionId: session.sessionId,
     purchaseId: purchase.id,
     assetId: purchase.asset_id,

@@ -15,6 +15,8 @@ import StudioIndustryExamples from "@/components/studio/StudioIndustryExamples";
 import StudioPlatforms from "@/components/studio/StudioPlatforms";
 import StudioTrustBar from "@/components/studio/StudioTrustBar";
 import { markStudioHasProjects } from "@/components/studio/StudioShell";
+import Checkout from "@/components/checkout/Checkout";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 import {
   PROMPT_CATEGORY_CHIPS,
   type PromptCategoryIcon,
@@ -36,12 +38,13 @@ import {
   type CreationStep,
 } from "@/lib/studio-creation";
 import type { PaymentMethod } from "@/lib/payments/types";
-import { formatPriceMxn, getPriceById } from "@/lib/pricing";
+import { getPriceById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
 import DestinationStep from "@/components/studio/DestinationStep";
 import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import type { StudioDestination } from "@/lib/studio-destination";
+import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 
 const STUDIO_DRAFT_KEY = "metaprom_studio_draft";
 
@@ -52,9 +55,12 @@ type Phase =
   | "destination"
   | "intent"
   | "creating"
-  | "cinematic-reveal"
-  | "premium-offer"
-  | "purchase-hd";
+  | "preview"
+  | "checkout"
+  | "processing_payment"
+  | "processing_premium"
+  | "ready"
+  | "error";
 
 const OFF_TOPIC_MESSAGE =
   "Solo puedo ayudarte a crear contenido de marketing — imágenes, videos y material para vender mejor. ¿Qué te gustaría crear hoy?";
@@ -62,6 +68,18 @@ const OFF_TOPIC_MESSAGE =
 const HD_COMMERCIAL_PRICE = getPriceById("commercial-video") ?? 149;
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+function describeRuntimeError(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
 
 type CreativeDirectorProps = {
   onWelcomeChange?: (isWelcome: boolean) => void;
@@ -94,9 +112,9 @@ export default function CreativeDirector({
   const [creationMessage, setCreationMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [checkoutAssetId, setCheckoutAssetId] = useState<string | null>(null);
+  const [shareSlug, setShareSlug] = useState<string | null>(null);
   const [premiumReady, setPremiumReady] = useState(false);
   const [destination, setDestination] = useState<StudioDestination | null>(
     null,
@@ -145,19 +163,18 @@ export default function CreativeDirector({
       if (cancelled) return;
 
       if (payment === "cancelled") {
-        setPhase("purchase-hd");
+        setPhase("checkout");
         setCheckoutMessage("El checkout fue cancelado. Puedes intentar de nuevo.");
         return;
       }
 
       if (!sessionId) {
-        setPhase("purchase-hd");
+        setPhase("error");
         setCheckoutMessage("No pudimos confirmar la sesión de pago.");
         return;
       }
 
-      setPhase("purchase-hd");
-      setCheckoutLoading(true);
+      setPhase("processing_payment");
       setCheckoutMessage("Confirmando tu pago...");
 
       completeCheckoutAfterRedirect(sessionId, setCheckoutMessage)
@@ -166,6 +183,7 @@ export default function CreativeDirector({
 
           if (result.assetId) {
             savedAssetIdRef.current = result.assetId;
+            setCheckoutAssetId(result.assetId);
           }
 
           if (result.premiumVideoUrl) {
@@ -178,32 +196,36 @@ export default function CreativeDirector({
           }
 
           setCheckoutMessage(result.message);
+          setPhase(result.premiumVideoUrl ? "ready" : "processing_premium");
           onLibraryUpdated?.({
+            projectId: savedProjectIdRef.current ?? undefined,
             assetId: result.assetId,
           });
+
+          if (result.premiumVideoUrl) {
+            onOpenLibrary?.({
+              projectId: savedProjectIdRef.current ?? undefined,
+              assetId: result.assetId,
+            });
+          }
         })
         .catch((paymentError) => {
           if (cancelled) return;
 
-          console.error(paymentError);
-          setCheckoutMessage(
-            mapCreationError(
-              paymentError instanceof Error ? paymentError.message : undefined,
-            ) || "No pudimos completar la compra.",
-          );
+          const runtimeError = describeRuntimeError(paymentError);
+          console.error("[metaprom-runtime-trace] checkout redirect failed", {
+            error: runtimeError,
+          });
+          setPhase("error");
+          setCheckoutMessage(runtimeError);
         })
-        .finally(() => {
-          if (!cancelled) {
-            setCheckoutLoading(false);
-          }
-        });
     }, 0);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [onLibraryUpdated]);
+  }, [onLibraryUpdated, onOpenLibrary]);
 
   useEffect(() => {
     return () => {
@@ -251,7 +273,13 @@ export default function CreativeDirector({
       });
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
-      if (result.assetId) savedAssetIdRef.current = result.assetId;
+      if (result.assetId) {
+        savedAssetIdRef.current = result.assetId;
+        setCheckoutAssetId(result.assetId);
+      }
+      if (result.shareSlug) {
+        setShareSlug(result.shareSlug);
+      }
       if (result.status === "saved") {
         markStudioHasProjects();
         onLibraryUpdated?.({
@@ -281,8 +309,10 @@ export default function CreativeDirector({
     setPremiumImage(null);
     setVideoUrl(null);
     setAutoSaveStatus("idle");
+    setShareSlug(null);
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
+    setCheckoutAssetId(null);
 
     if (videoUrlRef.current?.startsWith("blob:")) {
       URL.revokeObjectURL(videoUrlRef.current);
@@ -318,7 +348,7 @@ export default function CreativeDirector({
         videoPrompt: result.videoPrompt,
       });
 
-      setPhase("cinematic-reveal");
+      setPhase("preview");
     } catch (createError) {
       console.error(createError);
       setError(
@@ -459,48 +489,59 @@ export default function CreativeDirector({
     link.click();
   };
 
-  const handlePurchaseHd = async () => {
+  const startCheckoutPurchase = async (
+    paymentMethod: PaymentMethod,
+    onStatus: (message: string) => void,
+  ) => {
     if (!savedAssetIdRef.current) {
-      setCheckoutMessage("Inicia sesión para comprar tu comercial HD.");
-      return;
+      throw new Error("Inicia sesión para comprar tu comercial HD.");
     }
 
-    setCheckoutLoading(true);
     setCheckoutMessage(null);
+    setPhase("processing_payment");
 
     try {
-      const result = await purchaseHdCommercial({
+      return await purchaseHdCommercial({
         assetId: savedAssetIdRef.current,
         paymentMethod,
-        onStatus: setCheckoutMessage,
+        onStatus: (message) => {
+          setCheckoutMessage(message);
+          onStatus(message);
+
+          if (message.includes("Produciendo")) {
+            setPhase("processing_premium");
+          }
+        },
       });
-
-      if (result.premiumVideoUrl) {
-        if (videoUrlRef.current?.startsWith("blob:")) {
-          URL.revokeObjectURL(videoUrlRef.current);
-        }
-        videoUrlRef.current = null;
-        setVideoUrl(result.premiumVideoUrl);
-        setPremiumReady(true);
-      }
-
-      setCheckoutMessage(result.message);
-
-      if (result.premiumVideoUrl) {
-        onLibraryUpdated?.({
-          projectId: savedProjectIdRef.current ?? undefined,
-          assetId: savedAssetIdRef.current ?? undefined,
-        });
-      }
     } catch (purchaseError) {
-      console.error(purchaseError);
-      setCheckoutMessage(
-        mapCreationError(
-          purchaseError instanceof Error ? purchaseError.message : undefined,
-        ) || "No pudimos completar la compra.",
-      );
-    } finally {
-      setCheckoutLoading(false);
+      setPhase("error");
+      throw purchaseError;
+    }
+  };
+
+  const handleCheckoutSuccess = (
+    result: Awaited<ReturnType<typeof purchaseHdCommercial>>,
+  ) => {
+    if (result.premiumVideoUrl) {
+      if (videoUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(videoUrlRef.current);
+      }
+      videoUrlRef.current = null;
+      setVideoUrl(result.premiumVideoUrl);
+      setPremiumReady(true);
+    } else {
+      setPhase("processing_premium");
+    }
+
+    setCheckoutMessage(result.message);
+
+    if (result.premiumVideoUrl) {
+      setPhase("ready");
+      onLibraryUpdated?.({
+        projectId: savedProjectIdRef.current ?? undefined,
+        assetId: savedAssetIdRef.current ?? undefined,
+      });
+      handleOpenLibrary();
     }
   };
 
@@ -518,9 +559,10 @@ export default function CreativeDirector({
     setDestination(null);
     destinationRef.current = null;
     setCheckoutMessage(null);
-    setCheckoutLoading(false);
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
+    setCheckoutAssetId(null);
+    setShareSlug(null);
     imagePromptRef.current = "";
     videoPromptRef.current = "";
     projectMetadataRef.current = {};
@@ -835,133 +877,95 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
-        {(phase === "cinematic-reveal" || phase === "premium-offer") &&
+        {phase === "preview" &&
           videoUrl && (
             <CinematicReveal
               videoUrl={videoUrl}
               priceMxn={HD_COMMERCIAL_PRICE}
               autoSaveMessage={autoSaveMessage}
               onAutoSaveClick={handleOpenLibrary}
-              initialStage={phase === "premium-offer" ? "offer" : "fade"}
-              onUnlock={() => setPhase("purchase-hd")}
+              initialStage="fade"
+              onUnlock={() => setPhase("checkout")}
               onCreateNew={resetFlow}
               onDownloadImage={premiumImage ? handleDownloadImage : undefined}
               hasPremiumImage={Boolean(premiumImage)}
+              shareSlug={shareSlug}
+              publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
             />
           )}
 
-        {phase === "purchase-hd" && (
+        {(phase === "checkout" ||
+          phase === "processing_payment" ||
+          phase === "processing_premium" ||
+          phase === "error") && (
           <motion.div
-            key="purchase-hd"
+            key="checkout"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-md space-y-8 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
+            className="space-y-4"
           >
-            <div className="space-y-2 text-center">
-              <h2 className="text-2xl font-bold text-neutral-900">
-                Comercial HD
-              </h2>
-              <p className="text-3xl font-bold text-violet-600">
-                {formatPriceMxn(HD_COMMERCIAL_PRICE, "es")}
-              </p>
-              <p className="text-neutral-500">
-                Video comercial de 10–15 segundos en HD, sin marca de agua, listo
-                para publicar.
-              </p>
-            </div>
-
-            {videoUrl && (
-              <div className="relative mx-auto max-w-xs overflow-hidden rounded-2xl border border-neutral-200">
-                <video
-                  src={videoUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="aspect-[9/16] w-full object-cover"
+            <Checkout
+              purchaseId={checkoutAssetId}
+              price={HD_COMMERCIAL_PRICE}
+              currency="MXN"
+              provider={{
+                id: "mock",
+                label: "Mock Provider",
+                paymentMethods: [
+                  { id: "card", label: "Tarjeta" },
+                  { id: "oxxo", label: "OXXO" },
+                ],
+                startPurchase: startCheckoutPurchase,
+              }}
+              previewVideoUrl={videoUrl}
+              error={checkoutMessage}
+              onSuccess={handleCheckoutSuccess}
+              onCancel={() => setPhase("preview")}
+            />
+            {!checkoutAssetId && autoSaveStatus === "local-only" && (
+              <div className="mx-auto max-w-md">
+                <GoogleSignInButton
+                  redirectTo="/studio"
+                  label="Inicia sesión para comprar tu comercial HD"
                 />
-                {!premiumReady && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="rounded-lg bg-black/50 px-3 py-1.5 text-xs font-semibold tracking-widest text-white/80 backdrop-blur-sm">
-                      METAPROM
-                    </span>
-                  </div>
-                )}
-                <p className="bg-neutral-50 px-4 py-2 text-center text-xs text-neutral-500">
-                  {premiumReady
-                    ? "Comercial HD · sin marca de agua"
-                    : "Avance gratuito · compra HD para descargar sin marca"}
-                </p>
               </div>
             )}
+          </motion.div>
+        )}
 
-            <div className="space-y-3">
-              {!premiumReady && (
-                <>
-                  <p className="text-center text-sm text-neutral-600">
-                    Elige cómo quieres pagar
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("card")}
-                      className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
-                        paymentMethod === "card"
-                          ? "border-violet-500 bg-violet-50 text-violet-800"
-                          : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      Tarjeta
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("oxxo")}
-                      className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
-                        paymentMethod === "oxxo"
-                          ? "border-violet-500 bg-violet-50 text-violet-800"
-                          : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      OXXO
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handlePurchaseHd}
-                    disabled={checkoutLoading}
-                    className="w-full rounded-2xl bg-neutral-900 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {checkoutLoading
-                      ? "Procesando..."
-                      : "Desbloquea el comercial completo"}
-                  </button>
-                </>
-              )}
-
-              {premiumReady && videoUrl && (
-                <button
-                  type="button"
-                  onClick={handleDownloadVideo}
-                  className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-                >
-                  Descargar comercial HD
-                </button>
-              )}
-
-              {checkoutMessage && (
-                <p className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-center text-sm text-neutral-700">
-                  {checkoutMessage}
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setPhase("premium-offer")}
-                className="w-full rounded-2xl border border-neutral-200 py-3 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
-              >
-                Volver
-              </button>
-            </div>
+        {phase === "ready" && videoUrl && (
+          <motion.div
+            key="ready"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-md space-y-4 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
+          >
+            <Checkout
+              purchaseId={checkoutAssetId}
+              price={HD_COMMERCIAL_PRICE}
+              currency="MXN"
+              provider={{
+                id: "mock",
+                label: "Mock Provider",
+                paymentMethods: [
+                  { id: "card", label: "Tarjeta" },
+                  { id: "oxxo", label: "OXXO" },
+                ],
+                startPurchase: startCheckoutPurchase,
+              }}
+              previewVideoUrl={videoUrl}
+              isUnlocked
+              error={checkoutMessage}
+              onSuccess={handleCheckoutSuccess}
+              onCancel={() => setPhase("preview")}
+            />
+            <button
+              type="button"
+              onClick={handleDownloadVideo}
+              className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+            >
+              Descargar comercial HD
+            </button>
           </motion.div>
         )}
         </AnimatePresence>

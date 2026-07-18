@@ -1,0 +1,309 @@
+﻿diff --git a/app/api/studio/premium-video/route.ts b/app/api/studio/premium-video/route.ts
+index c468dd1..a92aa7a 100644
+--- a/app/api/studio/premium-video/route.ts
++++ b/app/api/studio/premium-video/route.ts
+@@ -1,21 +1,52 @@
++import { randomUUID } from "node:crypto";
+ import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
+-import { mapCreationError } from "@/lib/creation-errors";
+ import {
+   logDestinationGenerationDebug,
+-  parseStudioDestination,
+   resolveVeoGenerationParams,
+ } from "@/lib/destination-generation";
+ import { updateAssetPremiumVideoServer } from "@/lib/library-storage-server";
+ import { createClient } from "@/lib/supabase/server";
+-import { generateVertexVideo, isVertexVideoConfigured } from "@/lib/video";
+-import { processCommercialVideo } from "@/lib/video-processing";
++import {
++  generateCommercialVideo,
++  isVertexVideoConfigured,
++  resolveWorkflow,
++} from "@/lib/video";
+ import type { StudioDestination } from "@/lib/studio-destination";
+-
+ export const runtime = "nodejs";
+ export const maxDuration = 300;
+ 
+-function jsonError(message: string, status: number) {
+-  return Response.json({ error: message }, { status });
++function describeUnknownError(error: unknown) {
++  if (error instanceof Error) {
++    return {
++      name: error.name,
++      message: error.message,
++      stack: error.stack,
++      cause: error.cause,
++    };
++  }
++
++  return {
++    name: typeof error,
++    message: String(error),
++    raw: error,
++  };
++}
++
++function getTraceId(req: Request): string {
++  return req.headers.get("x-metaprom-trace-id") ?? `server-${randomUUID()}`;
++}
++
++function logTrace(traceId: string, stage: string, details?: unknown) {
++  console.error(`[metaprom-premium-video-trace:${traceId}] ${stage}`, details ?? null);
++}
++
++function jsonError(
++  message: string,
++  status: number,
++  traceId: string,
++  details?: unknown,
++) {
++  return Response.json({ error: message, traceId, details }, { status });
+ }
+ 
+ async function generatePremiumVideoBuffer(
+@@ -30,6 +61,8 @@ async function generatePremiumVideoBuffer(
+     );
+   }
+ 
++  const workflow = "premium" as const;
++  const workflowConfig = resolveWorkflow(workflow);
+   const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
+   const veoParams = resolveVeoGenerationParams(destination);
+ 
+@@ -39,7 +72,9 @@ async function generatePremiumVideoBuffer(
+     veoParams,
+     finalPrompt: prompt,
+     generationParameters: {
+-      tier: "premium",
++      workflow,
++      tier: workflowConfig.tier,
++      vertexModel: workflowConfig.vertexModel,
+       aspectRatio: veoParams.aspectRatio,
+       requestedAspectRatio: veoParams.requestedAspectRatio,
+       durationSeconds: Number(process.env.VEO_VERTEX_DURATION_SECONDS ?? 4),
+@@ -47,41 +82,73 @@ async function generatePremiumVideoBuffer(
+     },
+   });
+ 
+-  const rawBuffer = await generateVertexVideo({
++  const generation = await generateCommercialVideo({
++    workflow,
+     prompt,
+     imageBuffer,
+     aspectRatio: veoParams.aspectRatio,
+   });
+-  const { buffer } = await processCommercialVideo({
+-    buffer: rawBuffer,
+-    tier: "premium",
+-  });
+ 
+-  return buffer;
++  return generation.buffer;
+ }
+-
+ export async function POST(req: Request) {
++  const traceId = getTraceId(req);
++
++  try {
++    return await postWithTrace(req, traceId);
++  } catch (error) {
++    const details = describeUnknownError(error);
++    logTrace(traceId, "POST unhandled exception", details);
++    return jsonError(
++      `Unhandled premium-video exception: ${details.name}: ${details.message}`,
++      500,
++      traceId,
++      details,
++    );
++  }
++}
++
++async function postWithTrace(req: Request, traceId: string) {
++  logTrace(traceId, "POST /api/studio/premium-video start", { url: req.url });
+   const supabase = await createClient();
+   const {
+     data: { user },
++    error: authError,
+   } = await supabase.auth.getUser();
+ 
+   if (!user) {
+-    return jsonError("Authentication required.", 401);
++    logTrace(traceId, "auth failed", { error: authError });
++    return jsonError("Authentication required.", 401, traceId, authError);
+   }
+ 
+-  let body: { assetId?: string };
++  logTrace(traceId, "auth ok", { userId: user.id, email: user.email });
++
++  let body: { assetId?: string | number };
+ 
+   try {
+     body = (await req.json()) as typeof body;
+-  } catch {
+-    return jsonError("Invalid request body.", 400);
++  } catch (error) {
++    const details = describeUnknownError(error);
++    logTrace(traceId, "request body parse failed", details);
++    return jsonError(
++      `Invalid request body: ${details.name}: ${details.message}`,
++      400,
++      traceId,
++      details,
++    );
+   }
+ 
+-  const assetId = body.assetId?.trim();
++  logTrace(traceId, "request body parsed", body);
++
++  const assetId =
++    typeof body.assetId === "string"
++      ? body.assetId.trim()
++      : typeof body.assetId === "number" && Number.isFinite(body.assetId)
++        ? String(body.assetId)
++        : undefined;
+ 
+   if (!assetId) {
+-    return jsonError("assetId is required.", 400);
++    return jsonError("assetId is required.", 400, traceId, { body });
+   }
+ 
+   const { data: asset, error: assetError } = await supabase
+@@ -93,26 +160,57 @@ export async function POST(req: Request) {
+     .maybeSingle();
+ 
+   if (assetError || !asset) {
+-    return jsonError("Asset not found.", 404);
++    logTrace(traceId, "asset lookup failed", { assetError, assetId });
++    return jsonError("Asset not found.", 404, traceId, { assetError, assetId });
+   }
+ 
+-  const { data: project } = await supabase
++  logTrace(traceId, "asset loaded", {
++    assetId: asset.id,
++    projectId: asset.project_id,
++    paymentStatus: asset.payment_status,
++    hasImageUrl: Boolean(asset.image_url),
++    imagePath: asset.image_path,
++    premiumVideoPath: asset.premium_video_path,
++  });
++
++  const { data: project, error: projectError } = await supabase
+     .from("projects")
+-    .select("id, destination")
++    .select("id")
+     .eq("id", asset.project_id)
+     .eq("user_id", user.id)
+     .maybeSingle();
+ 
+-  if (!project) {
+-    return jsonError("Asset not found.", 404);
++  if (projectError || !project) {
++    logTrace(traceId, "project ownership lookup failed", {
++      projectError,
++      projectId: asset.project_id,
++      userId: user.id,
++    });
++    return jsonError("Asset not found.", 404, traceId, {
++      projectId: asset.project_id,
++      userId: user.id,
++    });
+   }
+ 
+   if (asset.payment_status !== "paid") {
+-    return jsonError("Premium video requires completed payment.", 402);
++    logTrace(traceId, "payment status not paid", {
++      assetId,
++      paymentStatus: asset.payment_status,
++    });
++    return jsonError(
++      "Premium video requires completed payment.",
++      402,
++      traceId,
++      { assetId, paymentStatus: asset.payment_status },
++    );
+   }
+ 
+   if (asset.premium_video_path) {
+-    return Response.json({ status: "ready", assetId });
++    logTrace(traceId, "premium video already ready", {
++      assetId,
++      premiumVideoPath: asset.premium_video_path,
++    });
++    return Response.json({ traceId, status: "ready", assetId });
+   }
+ 
+   let imageBuffer: Buffer | null = null;
+@@ -126,21 +224,44 @@ export async function POST(req: Request) {
+       .download(asset.image_path);
+ 
+     if (error || !data) {
+-      return jsonError("Unable to load enhanced image.", 500);
++      logTrace(traceId, "enhanced image download failed", {
++        error,
++        imagePath: asset.image_path,
++      });
++      return jsonError(
++        "Unable to load enhanced image.",
++        500,
++        traceId,
++        { error, imagePath: asset.image_path },
++      );
+     }
+ 
+     imageBuffer = Buffer.from(await data.arrayBuffer());
+   }
+ 
+   if (!imageBuffer) {
+-    return jsonError("Enhanced image unavailable.", 500);
++    logTrace(traceId, "enhanced image unavailable", {
++      hasImageUrl: Boolean(asset.image_url),
++      imagePath: asset.image_path,
++    });
++    return jsonError(
++      "Enhanced image unavailable.",
++      500,
++      traceId,
++      { hasImageUrl: Boolean(asset.image_url), imagePath: asset.image_path },
++    );
+   }
+ 
+   try {
++    logTrace(traceId, "premium video generation start", {
++      assetId,
++      imageBytes: imageBuffer.byteLength,
++      destination: null,
++    });
+     const videoBuffer = await generatePremiumVideoBuffer(
+       imageBuffer,
+       asset.ai_instructions ?? "",
+-      parseStudioDestination(project?.destination),
++      null,
+     );
+ 
+     await updateAssetPremiumVideoServer({
+@@ -150,14 +271,19 @@ export async function POST(req: Request) {
+       videoBuffer,
+     });
+ 
+-    return Response.json({ status: "ready", assetId });
++    logTrace(traceId, "premium video generation complete", {
++      assetId,
++      videoBytes: videoBuffer.byteLength,
++    });
++    return Response.json({ traceId, status: "ready", assetId });
+   } catch (error) {
+-    console.error("Premium video generation failed:", error);
++    const details = describeUnknownError(error);
++    logTrace(traceId, "premium video generation caught exception", details);
+     return jsonError(
+-      mapCreationError(
+-        error instanceof Error ? error.message : "Premium video generation failed.",
+-      ) || "No pudimos producir tu comercial HD.",
++      `Premium video generation failed: ${details.name}: ${details.message}`,
+       500,
++      traceId,
++      details,
+     );
+   }
+ }

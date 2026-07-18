@@ -2,7 +2,6 @@ import {
   BibliotecaAuthError,
   blobToDataUrl,
   fetchBibliotecaAssetById,
-  getBibliotecaUserId,
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
 import { mapCreationError } from "@/lib/creation-errors";
@@ -15,6 +14,7 @@ import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
 } from "@/lib/studio-prompts";
+import { createClient } from "@/lib/supabase/client";
 
 export type CreationStep = "image" | "video" | "done";
 
@@ -53,6 +53,7 @@ export type PersistCreationInput = {
 export type PersistCreationResult = {
   projectId: string | null;
   assetId: string | null;
+  shareSlug: string | null;
   status: AutoSaveStatus;
 };
 
@@ -69,6 +70,81 @@ export type PurchaseHdResult = {
   redirected?: boolean;
 };
 
+type RuntimeTraceBody = Record<string, unknown> & {
+  error?: string;
+  traceId?: string;
+};
+
+function createRuntimeTraceId(): string {
+  return `checkout-${Date.now()}-${crypto.randomUUID()}`;
+}
+
+function describeUnknownError(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function traceRuntime(traceId: string, stage: string, details?: unknown) {
+  console.error(`[metaprom-runtime-trace:${traceId}] ${stage}`, details ?? null);
+}
+
+async function readRuntimeResponseBody(
+  response: Response,
+  traceId: string,
+  stage: string,
+): Promise<RuntimeTraceBody> {
+  const responseText = await response.text();
+  let responseBody: RuntimeTraceBody = {};
+
+  try {
+    responseBody = responseText
+      ? (JSON.parse(responseText) as RuntimeTraceBody)
+      : {};
+  } catch (parseError) {
+    traceRuntime(traceId, `${stage} response JSON parse failed`, {
+      error: describeUnknownError(parseError),
+      responseText,
+    });
+    responseBody = { error: responseText };
+  }
+
+  traceRuntime(traceId, `${stage} response`, {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url,
+    headers: Object.fromEntries(response.headers.entries()),
+    bodyText: responseText,
+    body: responseBody,
+  });
+
+  return responseBody;
+}
+
+function throwRuntimeResponseError(
+  traceId: string,
+  stage: string,
+  response: Response,
+  body: RuntimeTraceBody,
+): never {
+  throw new Error(
+    `[${traceId}] ${stage} failed (${response.status} ${response.statusText}): ${JSON.stringify(
+      body,
+    )}`,
+  );
+}
+
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(",");
   const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
@@ -80,6 +156,37 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
   }
 
   return new File([bytes], filename, { type: mime });
+}
+
+function normalizePersistLogDetails(details?: Record<string, unknown>) {
+  if (!details) return undefined;
+
+  return Object.fromEntries(
+    Object.entries(details).map(([key, value]) => {
+      if (value instanceof Error) {
+        return [
+          key,
+          {
+            name: value.name,
+            message: value.message,
+            stack: value.stack,
+          },
+        ];
+      }
+
+      return [key, value];
+    }),
+  );
+}
+
+function logPersistCreationStage(
+  stage: string,
+  details?: Record<string, unknown>,
+) {
+  console.info("[persistCreationToLibrary]", {
+    stage,
+    ...normalizePersistLogDetails(details),
+  });
 }
 
 export async function parseJsonResponse(
@@ -182,8 +289,33 @@ export async function createCommercialAssets(
 export async function persistCreationToLibrary(
   input: PersistCreationInput,
 ): Promise<PersistCreationResult> {
+  let finalResult: PersistCreationResult = {
+    projectId: null,
+    assetId: null,
+    shareSlug: null,
+    status: "idle",
+  };
+
   try {
-    const userId = await getBibliotecaUserId();
+    logPersistCreationStage("auth.getUser:start");
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    logPersistCreationStage("auth.getUser:result", {
+      hasUser: Boolean(user),
+      userId: user?.id ?? null,
+      authError,
+    });
+
+    if (authError || !user) {
+      throw new BibliotecaAuthError();
+    }
+
+    const userId = user.id;
+    logPersistCreationStage("user id", { userId });
+
     const result = await persistStudioCreation({
       userId,
       originalFile: input.originalFile,
@@ -196,14 +328,27 @@ export async function persistCreationToLibrary(
       projectMetadata: input.projectMetadata,
       existingProjectId: input.existingProjectId,
       existingAssetId: input.existingAssetId,
+      onStage: logPersistCreationStage,
     });
 
-    return {
+    logPersistCreationStage("returned projectId", {
+      projectId: result.projectId,
+    });
+    logPersistCreationStage("returned assetId", {
+      assetId: result.assetId,
+    });
+
+    finalResult = {
       projectId: result.projectId,
       assetId: result.assetId,
+      shareSlug: result.asset.share_slug ?? null,
       status: "saved",
     };
+    logPersistCreationStage("final PersistCreationResult", finalResult);
+    return finalResult;
   } catch (saveError) {
+    logPersistCreationStage("caught exception", { error: saveError });
+
     if (saveError instanceof BibliotecaAuthError && input.localDraftKey) {
       try {
         sessionStorage.setItem(
@@ -220,44 +365,73 @@ export async function persistCreationToLibrary(
         // ignore storage errors
       }
 
-      return { projectId: null, assetId: null, status: "local-only" };
+      finalResult = {
+        projectId: null,
+        assetId: null,
+        shareSlug: null,
+        status: "local-only",
+      };
+      logPersistCreationStage("final PersistCreationResult", finalResult);
+      return finalResult;
     }
 
     console.error(saveError);
-    return { projectId: null, assetId: null, status: "idle" };
+    logPersistCreationStage("final PersistCreationResult", finalResult);
+    return finalResult;
   }
 }
 
 export async function purchaseHdCommercial(
   input: PurchaseHdInput,
 ): Promise<PurchaseHdResult> {
-  const checkoutResponse = await fetch("/api/payments/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      assetId: input.assetId,
-      productId: "commercial-video",
-      paymentMethod: input.paymentMethod,
-    }),
-  });
-
-  const checkoutData = (await checkoutResponse.json()) as {
-    error?: string;
-    sessionId?: string;
-    status?: string;
-    oxxoReference?: string;
-    redirectUrl?: string;
+  const traceId = createRuntimeTraceId();
+  const checkoutPayload = {
+    assetId: input.assetId,
+    productId: "commercial-video",
+    paymentMethod: input.paymentMethod,
   };
 
+  traceRuntime(traceId, "POST /api/payments/checkout request", checkoutPayload);
+
+  let checkoutResponse: Response;
+  try {
+    checkoutResponse = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Metaprom-Trace-Id": traceId,
+      },
+      body: JSON.stringify(checkoutPayload),
+    });
+  } catch (networkError) {
+    traceRuntime(traceId, "POST /api/payments/checkout fetch threw", {
+      error: describeUnknownError(networkError),
+    });
+    throw networkError;
+  }
+
+  const checkoutData = await readRuntimeResponseBody(
+    checkoutResponse,
+    traceId,
+    "POST /api/payments/checkout",
+  );
+
   if (!checkoutResponse.ok) {
-    throw new Error(
-      mapCreationError(checkoutData.error) || "No pudimos iniciar el pago.",
+    throwRuntimeResponseError(
+      traceId,
+      "POST /api/payments/checkout",
+      checkoutResponse,
+      checkoutData,
     );
   }
 
-  if (checkoutData.redirectUrl) {
+  const redirectUrl = readString(checkoutData.redirectUrl);
+  const sessionId = readString(checkoutData.sessionId);
+  const oxxoReference = readString(checkoutData.oxxoReference);
+
+  if (redirectUrl) {
     input.onStatus?.("Abriendo checkout seguro...");
-    window.location.assign(checkoutData.redirectUrl);
+    window.location.assign(redirectUrl);
     return {
       assetId: input.assetId,
       premiumVideoUrl: null,
@@ -266,50 +440,73 @@ export async function purchaseHdCommercial(
     };
   }
 
-  if (checkoutData.status === "awaiting_payment" && checkoutData.sessionId) {
+  if (checkoutData.status === "awaiting_payment" && sessionId) {
     input.onStatus?.(
-      checkoutData.oxxoReference
-        ? `Referencia OXXO: ${checkoutData.oxxoReference}. Confirma el pago para producir tu comercial HD.`
+      oxxoReference
+        ? `Referencia OXXO: ${oxxoReference}. Confirma el pago para producir tu comercial HD.`
         : "Esperando confirmación de pago...",
     );
 
-    await pollCheckoutCompletion(checkoutData.sessionId);
+    await pollCheckoutCompletion(sessionId, traceId);
   }
 
-  return generatePremiumAfterPayment(input.assetId, input.onStatus);
+  return fulfillPurchase(input.assetId, input.onStatus, traceId);
 }
 
 export async function completeCheckoutAfterRedirect(
   sessionId: string,
   onStatus?: (message: string) => void,
 ): Promise<PurchaseHdResult> {
+  const traceId = createRuntimeTraceId();
+  traceRuntime(traceId, "complete checkout after redirect", { sessionId });
   onStatus?.("Confirmando tu pago...");
-  const checkout = await pollCheckoutCompletion(sessionId);
+  const checkout = await pollCheckoutCompletion(sessionId, traceId);
 
   if (!checkout.assetId) {
     throw new Error("No pudimos encontrar el activo de esta compra.");
   }
 
-  return generatePremiumAfterPayment(checkout.assetId, onStatus);
+  return fulfillPurchase(checkout.assetId, onStatus, traceId);
 }
 
-async function generatePremiumAfterPayment(
+export async function fulfillPurchase(
   assetId: string,
   onStatus?: (message: string) => void,
+  traceId = createRuntimeTraceId(),
 ): Promise<PurchaseHdResult> {
   onStatus?.("Produciendo tu comercial HD...");
 
-  const response = await fetch("/api/studio/premium-video", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ assetId }),
-  });
+  traceRuntime(traceId, "POST /api/studio/premium-video request", { assetId });
 
-  const data = (await response.json()) as { error?: string; status?: string };
+  let response: Response;
+  try {
+    response = await fetch("/api/studio/premium-video", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Metaprom-Trace-Id": traceId,
+      },
+      body: JSON.stringify({ assetId }),
+    });
+  } catch (networkError) {
+    traceRuntime(traceId, "POST /api/studio/premium-video fetch threw", {
+      error: describeUnknownError(networkError),
+    });
+    throw networkError;
+  }
+
+  const data = await readRuntimeResponseBody(
+    response,
+    traceId,
+    "POST /api/studio/premium-video",
+  );
 
   if (!response.ok) {
-    throw new Error(
-      mapCreationError(data.error) || "No pudimos producir tu comercial HD.",
+    throwRuntimeResponseError(
+      traceId,
+      "POST /api/studio/premium-video",
+      response,
+      data,
     );
   }
 
@@ -330,21 +527,37 @@ async function generatePremiumAfterPayment(
   };
 }
 
-async function pollCheckoutCompletion(sessionId: string): Promise<{
+async function pollCheckoutCompletion(sessionId: string, traceId: string): Promise<{
   assetId?: string;
 }> {
   while (true) {
-    const statusResponse = await fetch(
-      `/api/payments/checkout?sessionId=${encodeURIComponent(sessionId)}`,
+    traceRuntime(traceId, "GET /api/payments/checkout request", { sessionId });
+
+    let statusResponse: Response;
+    try {
+      statusResponse = await fetch(
+        `/api/payments/checkout?sessionId=${encodeURIComponent(sessionId)}`,
+        {
+          headers: {
+            "X-Metaprom-Trace-Id": traceId,
+          },
+        },
+      );
+    } catch (networkError) {
+      traceRuntime(traceId, "GET /api/payments/checkout fetch threw", {
+        error: describeUnknownError(networkError),
+      });
+      throw networkError;
+    }
+
+    const statusData = await readRuntimeResponseBody(
+      statusResponse,
+      traceId,
+      "GET /api/payments/checkout",
     );
-    const statusData = (await statusResponse.json()) as {
-      status?: string;
-      error?: string;
-      assetId?: string;
-    };
 
     if (statusData.status === "completed") {
-      return { assetId: statusData.assetId };
+      return { assetId: readString(statusData.assetId) };
     }
 
     if (statusData.status === "failed" || statusData.status === "cancelled") {
@@ -352,8 +565,11 @@ async function pollCheckoutCompletion(sessionId: string): Promise<{
     }
 
     if (!statusResponse.ok) {
-      throw new Error(
-        mapCreationError(statusData.error) || "No pudimos confirmar el pago.",
+      throwRuntimeResponseError(
+        traceId,
+        "GET /api/payments/checkout",
+        statusResponse,
+        statusData,
       );
     }
 

@@ -25,7 +25,10 @@ const WORKFLOW_REGISTRY: Record<VideoWorkflow, WorkflowConfig> = {
   premium: {
     workflow: "premium",
     tier: "premium",
-    vertexModel: process.env.VEO_PREMIUM_MODEL?.trim() || DEFAULT_PREMIUM_MODEL,
+    vertexModel:
+      process.env.VEO_PREMIUM_MODEL?.trim() ||
+      process.env.VEO_VERTEX_MODEL?.trim() ||
+      DEFAULT_PREMIUM_MODEL,
     requiresPayment: true,
     requiresAuth: true,
   },
@@ -33,7 +36,9 @@ const WORKFLOW_REGISTRY: Record<VideoWorkflow, WorkflowConfig> = {
     workflow: "enterprise",
     tier: "premium",
     vertexModel:
-      process.env.VEO_ENTERPRISE_MODEL?.trim() || DEFAULT_ENTERPRISE_MODEL,
+      process.env.VEO_ENTERPRISE_MODEL?.trim() ||
+      process.env.VEO_VERTEX_MODEL?.trim() ||
+      DEFAULT_ENTERPRISE_MODEL,
     requiresPayment: true,
     requiresAuth: true,
   },

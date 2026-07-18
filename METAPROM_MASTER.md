@@ -1,5 +1,367 @@
 # METAPROM MASTER
 
+## MASTER UPDATE — RC1.3.5 — Product Stabilization & Growth Engine Foundation (July 2026)
+
+*Supersedes **MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)** for current RC1 status, project stage, product philosophy, Growth Engine foundation, Public Commercial experience, product stabilization priorities, smoke test philosophy, navigation philosophy, error experience, Developer QA Mode direction, and development workflow. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+
+### RC1.3.5
+
+#### Product Stabilization Phase
+
+##### Project Status
+
+Metaprom has officially entered the Product phase.
+
+The platform is no longer focused on making AI work.
+
+The core platform is already functional:
+
+* Enhancement
+* Preview Video
+* Checkout
+* Premium Generation
+* Biblioteca
+* Persistence
+* Stripe-ready architecture
+* Workflow abstraction
+* Public Commercial Pages
+* Growth Engine foundation
+
+The primary objective is no longer adding features.
+
+The primary objective is making the existing product stable and delightful.
+
+##### Product Philosophy
+
+Technology is no longer the product.
+
+Technology is infrastructure.
+
+Metaprom sells:
+
+* transformation
+* premium marketing
+* simplicity
+* growth
+* product experience
+
+Not AI.
+
+Official reminder:
+
+> Demonstrate first.
+> Explain later.
+
+##### Growth Engine Philosophy
+
+The Preview officially becomes a permanent marketing asset.
+
+The Preview:
+
+* lives permanently in Metaprom
+* is shared
+* is watched
+* inspires
+* generates new users
+
+The Preview is never treated as a downloadable file.
+
+The Premium commercial:
+
+* is purchased
+* belongs to the customer
+* is downloadable
+* may be used without restrictions by the customer
+
+Official principle:
+
+> Preview belongs to Metaprom.
+> Premium belongs to the customer.
+
+##### Public Commercial Experience
+
+Every Preview permanently lives at:
+
+`https://metaprom.com/p/{share_slug}`
+
+This page is NOT a landing page.
+
+It is the permanent home of every commercial.
+
+The commercial is the hero.
+
+The page frames it.
+
+Future visitors should emotionally experience:
+
+"Wow..."
+
+↓
+
+"This came from one photo?"
+
+↓
+
+"I want one."
+
+↓
+
+Create yours free.
+
+##### Product Vision
+
+A long-term strategic vision was reinforced.
+
+Metaprom may eventually evolve into:
+
+"The place where commercial videos live."
+
+Not simply an AI generator.
+
+Potential future inspiration:
+
+"A YouTube for Commercials."
+
+This is NOT part of the MVP.
+
+It remains a long-term vision only.
+
+##### Product Stabilization
+
+RC1.3.5 revealed an important change.
+
+The platform is no longer bottlenecked by AI.
+
+The bottleneck has become:
+
+Product Stability.
+
+Several regressions were discovered through real product usage.
+
+Examples:
+
+* broken navigation
+* dead buttons
+* incomplete flows
+* state loss
+* checkout regressions
+* library navigation
+* menu navigation
+
+Official priority:
+
+Stabilize before expanding.
+
+##### Smoke Test Philosophy
+
+Every PR must now finish with a complete Smoke Test.
+
+Compilation is no longer sufficient.
+
+Every user flow must be verified manually.
+
+Required checklist:
+
+PASS / FAIL
+
+* Landing
+* Studio
+* Preview
+* Checkout
+* Premium
+* Biblioteca
+* Avatar Menu
+* Public Commercial
+* Navigation
+
+Implemented is no longer enough.
+
+Verified becomes the new development standard.
+
+##### Navigation Philosophy
+
+The browser Back button should never become the primary navigation mechanism.
+
+Every screen should naturally guide the user.
+
+No dead ends.
+
+No dead buttons.
+
+No dead links.
+
+Navigation is now considered part of the product.
+
+##### Error Experience
+
+A critical UX discovery occurred.
+
+Provider failures are acceptable.
+
+Poor communication is not.
+
+The platform should always preserve:
+
+* uploaded image
+* prompt
+* workflow
+
+Whenever recovery is possible.
+
+Future direction:
+
+Retry.
+
+Not Restart.
+
+The user should understand:
+
+* what happened
+* why it happened
+* what they can do next
+
+Never respond with generic:
+
+"Something went wrong."
+
+##### Error Taxonomy
+
+Future error handling should distinguish:
+
+* Safety / RAI
+* Quota
+* Timeout
+* Storage
+* Persistence
+* Network
+* Internal Error
+
+Each category should have dedicated UX.
+
+##### Product QA Discovery
+
+An important development bottleneck was discovered.
+
+Current development requires:
+
+```
+Upload
+  ↓
+Enhancement
+  ↓
+Preview
+  ↓
+Checkout
+  ↓
+Premium
+  ↓
+Biblioteca
+```
+
+just to verify small UI changes.
+
+This wastes:
+
+* time
+* AI credits
+* Vertex cost
+* developer productivity
+
+Future priority:
+
+Developer QA Mode.
+
+##### Developer QA Mode
+
+Future architecture should allow developers to reuse existing Biblioteca assets.
+
+Objective:
+
+Jump directly into:
+
+* Preview
+* Checkout
+* Biblioteca
+* Public Commercial
+
+using already-generated commercial assets.
+
+No new AI generation should be required for routine UI testing.
+
+Pipeline validation will continue using real AI generations.
+
+UI validation should reuse existing assets.
+
+##### Development Philosophy
+
+A new engineering rule has been adopted.
+
+Before:
+
+```
+Build
+  ↓
+Merge
+```
+
+Now:
+
+```
+Build
+  ↓
+Smoke Test
+  ↓
+UX Review
+  ↓
+Merge
+```
+
+Product quality now depends more on stability than feature count.
+
+##### Current Priority
+
+Finish Product Stabilization.
+
+Do not continue expanding the Growth Engine until the following user flows are fully stable:
+
+* Landing
+* Studio
+* Preview
+* Checkout
+* Premium
+* Biblioteca
+* Public Commercial
+* Navigation
+
+Only then continue with:
+
+* PR3 completion
+* Analytics
+* Developer QA Mode
+* Future Growth Engine phases
+
+##### CEO Product Note
+
+This chat marked an important transition.
+
+Metaprom is no longer primarily solving AI problems.
+
+Metaprom is now solving product problems.
+
+That transition marks the beginning of a new stage.
+
+The objective is no longer:
+
+> Can we generate commercial videos?
+
+The objective is now:
+
+> Can every interaction feel effortless?
+
+That is the new definition of product quality for Metaprom.
+
+---
+
 ## MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)
 
 *Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*

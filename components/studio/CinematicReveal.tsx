@@ -8,6 +8,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import MetapromInfinityLogo from "@/components/studio/MetapromInfinityLogo";
 
+import { ShareCommercialActions } from "@/components/share";
+
 import { requestCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 
 import { formatPriceMxn } from "@/lib/pricing";
@@ -44,6 +46,10 @@ type CinematicRevealProps = {
 
   hasPremiumImage?: boolean;
 
+  publicPreviewUrl?: string | null;
+
+  shareSlug?: string | null;
+
 };
 
 
@@ -79,6 +85,10 @@ export default function CinematicReveal({
   onDownloadImage,
 
   hasPremiumImage,
+
+  publicPreviewUrl,
+
+  shareSlug,
 
 }: CinematicRevealProps) {
 
@@ -653,6 +663,20 @@ export default function CinematicReveal({
                   {formatPriceMxn(priceMxn, "es")}
 
                 </p>
+
+                {publicPreviewUrl && shareSlug && (
+
+                  <ShareCommercialActions
+
+                    publicPreviewUrl={publicPreviewUrl}
+
+                    shareSlug={shareSlug}
+
+                    variant="prominent"
+
+                  />
+
+                )}
 
                 {autoSaveMessage &&
 

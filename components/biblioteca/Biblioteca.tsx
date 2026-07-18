@@ -14,6 +14,8 @@ import {
 
   getCommercialStatusLabel,
 
+  getPublicPreviewUrl,
+
   getTeaserPlaybackUrl,
 
   refreshAssetPremiumUrl,
@@ -29,6 +31,8 @@ import {
 } from "@/lib/biblioteca";
 
 import { downloadFromUrl } from "@/lib/library-storage";
+
+import { ShareCommercialActions } from "@/components/share";
 
 
 
@@ -1090,6 +1094,8 @@ function AssetDetailCard({
 
   const hasTeaser = assetHasTeaser(asset);
 
+  const publicPreviewUrl = getPublicPreviewUrl(asset);
+
   const hasPremium = Boolean(premiumUrl || asset.premium_video_path);
 
   const premiumLocked =
@@ -1657,6 +1663,20 @@ function AssetDetailCard({
 
 
       <div className="flex flex-wrap gap-2 px-3 py-3">
+
+        {publicPreviewUrl && asset.share_slug && hasTeaser && (
+
+          <ShareCommercialActions
+
+            publicPreviewUrl={publicPreviewUrl}
+
+            shareSlug={asset.share_slug}
+
+            variant="compact"
+
+          />
+
+        )}
 
         {premiumUrl && (
 

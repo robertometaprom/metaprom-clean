@@ -1,6 +1,7 @@
 import {
   buildAutoProjectName,
   createBibliotecaProject,
+  fetchBibliotecaAssetById,
   saveBibliotecaAssets,
   updateBibliotecaAsset,
   updateBibliotecaProject,
@@ -13,6 +14,7 @@ import {
   inferExtensionFromMime,
   uploadLibraryObject,
 } from "@/lib/library-storage";
+import { generateShareSlug, isShareSlugUniqueViolation } from "@/lib/preview/share-slug";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -26,6 +28,7 @@ export type PersistStudioCreationInput = {
   projectMetadata: StudioProjectMetadata;
   existingProjectId?: string | null;
   existingAssetId?: string | null;
+  onStage?: (stage: string, details?: Record<string, unknown>) => void;
 };
 
 export type PersistStudioCreationResult = {
@@ -34,6 +37,83 @@ export type PersistStudioCreationResult = {
   asset: BibliotecaAsset;
 };
 
+function resolveShareSlugForTeaser(
+  existingShareSlug?: string | null,
+): string {
+  if (existingShareSlug) {
+    return existingShareSlug;
+  }
+
+  return generateShareSlug();
+}
+
+function isSchemaColumnMissingError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const { code, message } = error as { code?: string; message?: string };
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    (typeof message === "string" &&
+      (message.includes("does not exist") ||
+        (message.includes("Could not find the") &&
+          message.includes("column"))))
+  );
+}
+
+function withoutShareFields(
+  updates: Partial<BibliotecaAsset>,
+): Partial<BibliotecaAsset> {
+  const { share_slug: _shareSlug, visibility: _visibility, ...rest } = updates;
+  return rest;
+}
+
+async function updateAssetWithShareSlugRetry(
+  assetId: string,
+  updates: Partial<BibliotecaAsset>,
+  existingShareSlug?: string | null,
+  onStage?: PersistStudioCreationInput["onStage"],
+): Promise<BibliotecaAsset> {
+  if (existingShareSlug || !updates.share_slug) {
+    try {
+      return await updateBibliotecaAsset(assetId, updates);
+    } catch (error) {
+      if (!isSchemaColumnMissingError(error) || !updates.share_slug) {
+        throw error;
+      }
+
+      onStage?.("asset update:share fields unavailable, continuing", {
+        assetId,
+      });
+      return updateBibliotecaAsset(assetId, withoutShareFields(updates));
+    }
+  }
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      return await updateBibliotecaAsset(assetId, updates);
+    } catch (error) {
+      if (isSchemaColumnMissingError(error)) {
+        onStage?.("asset update:share fields unavailable, continuing", {
+          assetId,
+        });
+        return updateBibliotecaAsset(assetId, withoutShareFields(updates));
+      }
+
+      if (!isShareSlugUniqueViolation(error)) {
+        throw error;
+      }
+
+      updates = {
+        ...updates,
+        share_slug: generateShareSlug(),
+      };
+    }
+  }
+
+  throw new Error("Unable to assign a unique share slug.");
+}
+
 export async function persistStudioCreation(
   input: PersistStudioCreationInput,
 ): Promise<PersistStudioCreationResult> {
@@ -41,19 +121,24 @@ export async function persistStudioCreation(
   let assetId = input.existingAssetId ?? null;
 
   if (!projectId) {
+    input.onStage?.("project insert:start");
     const project = await createBibliotecaProject(
       buildAutoProjectName(input.customerIntent),
       input.projectMetadata,
     );
     projectId = project.id;
+    input.onStage?.("project insert:success", { projectId });
   } else {
+    input.onStage?.("project update:start", { projectId });
     await updateBibliotecaProject(projectId, input.projectMetadata);
+    input.onStage?.("project update:success", { projectId });
   }
 
   const originalExtension =
     inferExtensionFromMime(input.originalFile.type || "image/jpeg") || "jpg";
 
   if (!assetId) {
+    input.onStage?.("asset insert:start", { projectId });
     const [asset] = await saveBibliotecaAssets([
       {
         project_id: projectId,
@@ -69,8 +154,14 @@ export async function persistStudioCreation(
       },
     ]);
     assetId = asset.id;
+    input.onStage?.("asset insert:success", { assetId, projectId });
   }
 
+  input.onStage?.("storage upload:start", {
+    kind: "original",
+    projectId,
+    assetId,
+  });
   const originalUpload = await uploadLibraryObject({
     userId: input.userId,
     projectId,
@@ -80,8 +171,17 @@ export async function persistStudioCreation(
     contentType: input.originalFile.type || "image/jpeg",
     extension: originalExtension,
   });
+  input.onStage?.("storage upload:success", {
+    kind: "original",
+    path: originalUpload.path,
+  });
 
   const enhancedBlob = dataUrlToBlob(input.enhancedDataUrl);
+  input.onStage?.("storage upload:start", {
+    kind: "enhanced",
+    projectId,
+    assetId,
+  });
   const enhancedUpload = await uploadLibraryObject({
     userId: input.userId,
     projectId,
@@ -90,6 +190,10 @@ export async function persistStudioCreation(
     file: enhancedBlob,
     contentType: enhancedBlob.type || "image/png",
     extension: inferExtensionFromMime(enhancedBlob.type || "image/png"),
+  });
+  input.onStage?.("storage upload:success", {
+    kind: "enhanced",
+    path: enhancedUpload.path,
   });
 
   let teaserUpdates: Partial<BibliotecaAsset> = {
@@ -101,7 +205,14 @@ export async function persistStudioCreation(
     ai_instructions: input.customerIntent || null,
   };
 
+  let existingShareSlug: string | null | undefined;
+
   if (input.teaserVideoBlob) {
+    input.onStage?.("storage upload:start", {
+      kind: "teaser",
+      projectId,
+      assetId,
+    });
     const teaserUpload = await uploadLibraryObject({
       userId: input.userId,
       projectId,
@@ -111,14 +222,31 @@ export async function persistStudioCreation(
       contentType: "video/mp4",
       extension: "mp4",
     });
+    input.onStage?.("storage upload:success", {
+      kind: "teaser",
+      path: teaserUpload.path,
+    });
+
+    const existingAsset = await fetchBibliotecaAssetById(assetId);
+    existingShareSlug = existingAsset?.share_slug;
+    const shareSlug = resolveShareSlugForTeaser(existingShareSlug);
 
     teaserUpdates = {
       ...teaserUpdates,
       teaser_video_path: teaserUpload.path,
+      share_slug: shareSlug,
+      visibility: "public",
     };
   }
 
-  const asset = await updateBibliotecaAsset(assetId, teaserUpdates);
+  input.onStage?.("asset update:start", { assetId });
+  const asset = await updateAssetWithShareSlugRetry(
+    assetId,
+    teaserUpdates,
+    existingShareSlug,
+    input.onStage,
+  );
+  input.onStage?.("asset update:success", { assetId });
 
   return { projectId, assetId, asset };
 }

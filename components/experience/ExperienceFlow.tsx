@@ -51,6 +51,7 @@ import {
 } from "@/lib/experience/types";
 import type { LandingContent } from "@/lib/i18n";
 import { formatPriceMxn, getPriceById } from "@/lib/pricing";
+import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 import { WELCOME_CHIPS } from "@/lib/studio-atmosphere";
 
 type ExperienceFlowProps = {
@@ -84,6 +85,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [revealFromOffer, setRevealFromOffer] = useState(false);
+  const [shareSlug, setShareSlug] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
@@ -233,6 +235,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
     setPremiumImage(null);
     setVideoUrl(null);
     setAutoSaveStatus("idle");
+    setShareSlug(null);
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
 
@@ -283,6 +286,9 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
       if (persistResult.assetId) {
         savedAssetIdRef.current = persistResult.assetId;
       }
+      if (persistResult.shareSlug) {
+        setShareSlug(persistResult.shareSlug);
+      }
       if (persistResult.status === "saved") markStudioHasProjects();
       setAutoSaveStatus(persistResult.status);
 
@@ -313,8 +319,13 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
 
   const handleCheckout = async () => {
     if (!savedAssetIdRef.current) {
+      if (!isAuthenticated) {
+        goTo("login");
+        return;
+      }
+
       setCheckoutMessage(
-        "Inicia sesión para comprar tu comercial HD y conservarlo en tu biblioteca.",
+        "No pudimos vincular tu comercial a la biblioteca. Genera de nuevo o inicia sesión otra vez.",
       );
       return;
     }
@@ -735,6 +746,8 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 : undefined
             }
             hasPremiumImage={Boolean(premiumImage)}
+            shareSlug={shareSlug}
+            publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
           />
         )}
 

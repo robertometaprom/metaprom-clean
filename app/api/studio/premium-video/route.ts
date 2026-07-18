@@ -7,8 +7,11 @@ import {
 } from "@/lib/destination-generation";
 import { updateAssetPremiumVideoServer } from "@/lib/library-storage-server";
 import { createClient } from "@/lib/supabase/server";
-import { generateVertexVideo, isVertexVideoConfigured } from "@/lib/video";
-import { processCommercialVideo } from "@/lib/video-processing";
+import {
+  generateCommercialVideo,
+  isVertexVideoConfigured,
+  resolveWorkflow,
+} from "@/lib/video";
 import type { StudioDestination } from "@/lib/studio-destination";
 
 export const runtime = "nodejs";
@@ -30,6 +33,8 @@ async function generatePremiumVideoBuffer(
     );
   }
 
+  const workflow = "premium" as const;
+  const workflowConfig = resolveWorkflow(workflow);
   const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
   const veoParams = resolveVeoGenerationParams(destination);
 
@@ -39,7 +44,9 @@ async function generatePremiumVideoBuffer(
     veoParams,
     finalPrompt: prompt,
     generationParameters: {
-      tier: "premium",
+      workflow,
+      tier: workflowConfig.tier,
+      vertexModel: workflowConfig.vertexModel,
       aspectRatio: veoParams.aspectRatio,
       requestedAspectRatio: veoParams.requestedAspectRatio,
       durationSeconds: Number(process.env.VEO_VERTEX_DURATION_SECONDS ?? 4),
@@ -47,17 +54,14 @@ async function generatePremiumVideoBuffer(
     },
   });
 
-  const rawBuffer = await generateVertexVideo({
+  const generation = await generateCommercialVideo({
+    workflow,
     prompt,
     imageBuffer,
     aspectRatio: veoParams.aspectRatio,
   });
-  const { buffer } = await processCommercialVideo({
-    buffer: rawBuffer,
-    tier: "premium",
-  });
 
-  return buffer;
+  return generation.buffer;
 }
 
 export async function POST(req: Request) {

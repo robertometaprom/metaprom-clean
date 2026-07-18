@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { resolveLibraryUrl } from "@/lib/library-storage";
+import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
+import type { PreviewVisibility } from "@/lib/preview/types";
 import type { User } from "@supabase/supabase-js";
 import type { Mode } from "./prompts";
 import type { AssetPaymentStatus } from "./commercial/tiers";
@@ -37,6 +39,8 @@ export type BibliotecaAsset = {
   teaser_video_path?: string | null;
   premium_video_url?: string | null;
   premium_video_path?: string | null;
+  share_slug?: string | null;
+  visibility?: PreviewVisibility;
   image_prompt?: string | null;
   video_prompt?: string | null;
   mode: Mode;
@@ -45,6 +49,7 @@ export type BibliotecaAsset = {
   industry?: string | null;
   payment_status?: AssetPaymentStatus;
   created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type StudioProjectMetadata = {
@@ -58,8 +63,98 @@ export type PersistStudioAssetInput = {
   mode: Mode;
 };
 
-const ASSET_SELECT =
+const PROJECT_SELECT =
+  "id, name, user_id, workflow_id, industry, intended_destination, created_at";
+const ASSET_SELECT_CORE =
   "id, project_id, original_name, original_url, original_path, image_url, image_path, video_url, teaser_video_url, teaser_video_path, premium_video_url, premium_video_path, image_prompt, video_prompt, mode, ai_instructions, workflow_id, industry, payment_status, created_at";
+const ASSET_SHARE_FIELDS = "share_slug, visibility, updated_at";
+const ASSET_SELECT = `${ASSET_SELECT_CORE}, ${ASSET_SHARE_FIELDS}`;
+
+function isMissingSchemaColumnError(
+  error: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!error) return false;
+
+  if (error.code === "42703" || error.code === "PGRST204") {
+    return true;
+  }
+
+  return (
+    typeof error.message === "string" &&
+    (error.message.includes("does not exist") ||
+      (error.message.includes("Could not find the") &&
+        error.message.includes("column")))
+  );
+}
+
+function withoutShareFields(
+  updates: Partial<BibliotecaAsset>,
+): Partial<BibliotecaAsset> {
+  const { share_slug: _shareSlug, visibility: _visibility, ...rest } = updates;
+  return rest;
+}
+
+type BibliotecaSupabaseClient = ReturnType<typeof createClient>;
+
+async function selectBibliotecaAssetsForProject(
+  supabaseClient: BibliotecaSupabaseClient,
+  projectId: string,
+) {
+  const full = await supabaseClient
+    .from("assets")
+    .select(ASSET_SELECT)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+
+  if (!isMissingSchemaColumnError(full.error)) {
+    return full;
+  }
+
+  return supabaseClient
+    .from("assets")
+    .select(ASSET_SELECT_CORE)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+}
+
+async function selectBibliotecaAssetById(
+  supabaseClient: BibliotecaSupabaseClient,
+  assetId: string,
+) {
+  const full = await supabaseClient
+    .from("assets")
+    .select(ASSET_SELECT)
+    .eq("id", assetId)
+    .maybeSingle();
+
+  if (!isMissingSchemaColumnError(full.error)) {
+    return full;
+  }
+
+  return supabaseClient
+    .from("assets")
+    .select(ASSET_SELECT_CORE)
+    .eq("id", assetId)
+    .maybeSingle();
+}
+
+async function selectBibliotecaAssetsAfterMutation<T>(
+  supabaseClient: BibliotecaSupabaseClient,
+  run: (
+    select: string,
+  ) => PromiseLike<{
+    data: T | null;
+    error: { code?: string } | null;
+  }>,
+) {
+  const full = await run(ASSET_SELECT);
+
+  if (!isMissingSchemaColumnError(full.error)) {
+    return full;
+  }
+
+  return run(ASSET_SELECT_CORE);
+}
 
 function getAuthenticatedClient() {
   return createClient();
@@ -106,9 +201,7 @@ export async function fetchBibliotecaProjects(): Promise<BibliotecaProject[]> {
 
   const { data, error } = await supabaseClient
     .from("projects")
-    .select(
-      "id, name, user_id, workflow_id, industry, intended_destination, destination, created_at",
-    )
+    .select(PROJECT_SELECT)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -139,15 +232,12 @@ export async function createBibliotecaProject(
     workflow_id: metadata.workflow_id ?? null,
     industry: metadata.industry ?? null,
     intended_destination: metadata.intended_destination ?? null,
-    destination: metadata.destination ?? null,
   };
 
   const { data, error } = await supabaseClient
     .from("projects")
     .insert(insertPayload)
-    .select(
-      "id, name, user_id, workflow_id, industry, intended_destination, destination, created_at",
-    )
+    .select(PROJECT_SELECT)
     .single();
 
   if (error) {
@@ -171,7 +261,6 @@ export async function updateBibliotecaProject(
       workflow_id: metadata.workflow_id ?? null,
       industry: metadata.industry ?? null,
       intended_destination: metadata.intended_destination ?? null,
-      destination: metadata.destination ?? null,
     })
     .eq("id", projectId)
     .eq("user_id", user.id);
@@ -202,11 +291,10 @@ export async function fetchBibliotecaAssets(
     throw new Error("Project not found or access denied.");
   }
 
-  const { data, error } = await supabaseClient
-    .from("assets")
-    .select(ASSET_SELECT)
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: false });
+  const { data, error } = await selectBibliotecaAssetsForProject(
+    supabaseClient,
+    projectId,
+  );
 
   if (error) {
     throw error;
@@ -222,11 +310,10 @@ export async function fetchBibliotecaAssetById(
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
 
-  const { data, error } = await supabaseClient
-    .from("assets")
-    .select(ASSET_SELECT)
-    .eq("id", assetId)
-    .maybeSingle();
+  const { data, error } = await selectBibliotecaAssetById(
+    supabaseClient,
+    assetId,
+  );
 
   if (error) {
     throw error;
@@ -277,10 +364,11 @@ export async function saveBibliotecaAssets(
     }
   }
 
-  const { data, error } = await supabaseClient
-    .from("assets")
-    .insert(assets)
-    .select(ASSET_SELECT);
+  const { data, error } = await selectBibliotecaAssetsAfterMutation<
+    BibliotecaAsset[]
+  >(supabaseClient, (select) =>
+    supabaseClient.from("assets").insert(assets).select(select),
+  );
 
   if (error) {
     throw error;
@@ -302,6 +390,8 @@ export async function updateBibliotecaAsset(
       | "teaser_video_path"
       | "premium_video_url"
       | "premium_video_path"
+      | "share_slug"
+      | "visibility"
       | "original_url"
       | "original_path"
       | "image_prompt"
@@ -343,12 +433,27 @@ export async function updateBibliotecaAsset(
     throw new Error("Project not found or access denied.");
   }
 
-  const { data, error } = await supabaseClient
-    .from("assets")
-    .update(updates)
-    .eq("id", assetId)
-    .select(ASSET_SELECT)
-    .single();
+  const runUpdate = (payload: Partial<BibliotecaAsset>) =>
+    selectBibliotecaAssetsAfterMutation<BibliotecaAsset>(
+      supabaseClient,
+      (select) =>
+        supabaseClient
+          .from("assets")
+          .update(payload)
+          .eq("id", assetId)
+          .select(select)
+          .single(),
+    );
+
+  let { data, error } = await runUpdate(updates);
+
+  if (
+    error &&
+    isMissingSchemaColumnError(error) &&
+    (updates.share_slug !== undefined || updates.visibility !== undefined)
+  ) {
+    ({ data, error } = await runUpdate(withoutShareFields(updates)));
+  }
 
   if (error) {
     throw error;
@@ -407,6 +512,18 @@ export function getCommercialStatusLabel(
     return { label: "Pago pendiente", tone: "pending" };
   }
   return { label: "Avance gratis", tone: "free" };
+}
+
+export function getPublicPreviewUrl(asset: BibliotecaAsset): string | null {
+  if (!asset.share_slug) {
+    return null;
+  }
+
+  return buildPublicPreviewUrl(asset.share_slug);
+}
+
+export function assetHasShareSlug(asset: BibliotecaAsset): boolean {
+  return Boolean(asset.share_slug);
 }
 
 export async function refreshAssetTeaserUrl(

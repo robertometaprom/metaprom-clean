@@ -6,8 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Storage } from "@google-cloud/storage";
 import sharp from "sharp";
 import type { VeoAspectRatio } from "@/lib/destination-generation";
-
-const DEFAULT_MODEL = "veo-3.1-fast-generate-001";
+import { resolveWorkflow } from "@/lib/video/workflows";
 const DEFAULT_LOCATION = "global";
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 const DEFAULT_MAX_POLL_ATTEMPTS = 40;
@@ -20,7 +19,7 @@ export type VertexVideoGenerateInput = {
   prompt: string;
   imageBuffer: Buffer;
   aspectRatio?: VeoAspectRatio;
-  model?: string;
+  model: string;
 };
 
 type ServiceAccountCredentials = {
@@ -32,7 +31,6 @@ type ServiceAccountCredentials = {
 type ResolvedVertexConfig = {
   projectId: string;
   location: string;
-  model: string;
   outputGcsUri: string;
   pollIntervalMs: number;
   maxPollAttempts: number;
@@ -102,7 +100,6 @@ function resolveVertexConfig(): ResolvedVertexConfig | null {
   return {
     projectId,
     location: process.env.GOOGLE_CLOUD_LOCATION?.trim() || DEFAULT_LOCATION,
-    model: process.env.VEO_VERTEX_MODEL?.trim() || DEFAULT_MODEL,
     outputGcsUri: outputGcsUri.endsWith("/") ? outputGcsUri : `${outputGcsUri}/`,
     pollIntervalMs: Number(process.env.VERTEX_POLL_MS ?? DEFAULT_POLL_INTERVAL_MS),
     maxPollAttempts: Number(process.env.VERTEX_MAX_POLLS ?? DEFAULT_MAX_POLL_ATTEMPTS),
@@ -124,12 +121,20 @@ export function isVertexVideoConfigured(): boolean {
 
 export function getVertexVideoStatus() {
   const config = resolveVertexConfig();
+  const preview = resolveWorkflow("preview");
+  const premium = resolveWorkflow("premium");
+  const enterprise = resolveWorkflow("enterprise");
 
   return {
     veoIntegration: config ? "ready" : "missing_config",
     vertexConfigured: Boolean(config),
     provider: "vertex" as const,
-    veoModel: config?.model ?? DEFAULT_MODEL,
+    modelSelection: "workflow" as const,
+    workflows: {
+      preview: preview.vertexModel,
+      premium: premium.vertexModel,
+      enterprise: enterprise.vertexModel,
+    },
     projectId: config?.projectId ?? null,
     location: config?.location ?? DEFAULT_LOCATION,
   };
@@ -230,7 +235,11 @@ export async function generateVertexVideo(
   const requestPrefix = `${config.outputGcsUri}${randomUUID()}/`;
   const imageBuffer = await normalizeImageForVeo(input.imageBuffer);
   const aspectRatio = input.aspectRatio ?? config.aspectRatio;
-  const model = input.model?.trim() || config.model;
+  const model = input.model.trim();
+
+  if (!model) {
+    throw new Error("Vertex video model is required. Resolve it from the workflow registry.");
+  }
 
   if (aspectRatio !== "9:16" && aspectRatio !== "16:9") {
     throw new Error(

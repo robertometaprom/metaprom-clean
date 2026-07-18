@@ -1,5 +1,4 @@
 export {
-  generateVertexVideo,
   getVertexVideoStatus,
   isVertexVideoConfigured,
   normalizeImageForVeo,

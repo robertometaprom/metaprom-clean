@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       headers: req.headers,
     });
     const supabase = createAdminClient();
-    await persistPaymentResult(supabase, result);
+    await persistPaymentResult(supabase, provider.id, result);
 
     return Response.json({ ok: true, ...result });
   } catch (error) {

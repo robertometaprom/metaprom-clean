@@ -320,7 +320,7 @@ async function getWithTrace(req: Request, traceId: string) {
   const nextStatus: PaymentSessionStatus = session.status;
 
   if (nextStatus !== purchase.status) {
-    await persistPaymentResult(supabase, {
+    await persistPaymentResult(supabase, provider.id, {
       sessionId: session.sessionId,
       purchaseId: String(purchase.id),
       status: nextStatus,

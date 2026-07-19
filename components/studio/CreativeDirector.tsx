@@ -522,6 +522,11 @@ export default function CreativeDirector({
   const handleCheckoutSuccess = (
     result: Awaited<ReturnType<typeof purchaseHdCommercial>>,
   ) => {
+    if (result.redirected) {
+      setCheckoutMessage(result.message);
+      return;
+    }
+
     if (result.premiumVideoUrl) {
       if (videoUrlRef.current?.startsWith("blob:")) {
         URL.revokeObjectURL(videoUrlRef.current);

@@ -207,7 +207,6 @@ async function postWithTrace(req: Request, traceId: string) {
   }
 
   const purchaseInsert = {
-    ...(provider.id === "mock" ? {} : { id: session.purchaseId }),
     user_id: user.id,
     asset_id: assetId,
     product_id: productId,
@@ -300,17 +299,13 @@ async function getWithTrace(req: Request, traceId: string) {
   const session = await provider.getSessionStatus(sessionId);
   logTrace(traceId, "provider session status", { provider: provider.id, session });
 
-  let purchaseQuery = supabase
+  const { data: purchase } = await supabase
     .from("purchases")
     .select("id, asset_id, status")
-    .eq("user_id", user.id);
-
-  purchaseQuery =
-    provider.id === "mock"
-      ? purchaseQuery.eq("provider_reference", session.sessionId)
-      : purchaseQuery.eq("id", session.purchaseId);
-
-  const { data: purchase } = await purchaseQuery.maybeSingle();
+    .eq("user_id", user.id)
+    .eq("provider", provider.id)
+    .eq("provider_reference", session.sessionId)
+    .maybeSingle();
 
   if (!purchase) {
     logTrace(traceId, "purchase lookup failed", { sessionId, userId: user.id });
@@ -332,7 +327,7 @@ async function getWithTrace(req: Request, traceId: string) {
     traceId,
     sessionId: session.sessionId,
     purchaseId: purchase.id,
-    assetId: purchase.asset_id,
+    assetId: String(purchase.asset_id),
     status: nextStatus,
     provider: provider.id,
     oxxoReference: session.oxxoReference,

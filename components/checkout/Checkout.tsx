@@ -69,6 +69,9 @@ export default function Checkout({
     try {
       const result = await provider.startPurchase(selectedMethod, setMessage);
       setMessage(result.message);
+      if (result.redirected) {
+        return;
+      }
       onSuccess(result);
     } catch (purchaseError) {
       const runtimeError =

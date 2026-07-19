@@ -95,6 +95,19 @@ function readString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function readId(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return undefined;
+}
+
 function traceRuntime(traceId: string, stage: string, details?: unknown) {
   console.error(`[metaprom-runtime-trace:${traceId}] ${stage}`, details ?? null);
 }
@@ -557,7 +570,7 @@ async function pollCheckoutCompletion(sessionId: string, traceId: string): Promi
     );
 
     if (statusData.status === "completed") {
-      return { assetId: readString(statusData.assetId) };
+      return { assetId: readId(statusData.assetId) };
     }
 
     if (statusData.status === "failed" || statusData.status === "cancelled") {

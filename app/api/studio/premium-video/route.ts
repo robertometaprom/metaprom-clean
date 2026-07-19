@@ -21,6 +21,70 @@ function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
+function parseAssetId(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function isMissingSchemaColumnError(
+  error: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!error) return false;
+
+  if (error.code === "42703" || error.code === "PGRST204") {
+    return true;
+  }
+
+  return (
+    typeof error.message === "string" &&
+    (error.message.includes("does not exist") ||
+      (error.message.includes("Could not find the") &&
+        error.message.includes("column")))
+  );
+}
+
+async function fetchOwnedProjectForAsset(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  projectId: string | number,
+) {
+  const withDestination = await supabase
+    .from("projects")
+    .select("id, destination")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!withDestination.error) {
+    return withDestination.data;
+  }
+
+  if (!isMissingSchemaColumnError(withDestination.error)) {
+    return null;
+  }
+
+  const fallback = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (fallback.error || !fallback.data) {
+    return null;
+  }
+
+  return { ...fallback.data, destination: null };
+}
+
 async function generatePremiumVideoBuffer(
   imageBuffer: Buffer,
   customerIntent: string,
@@ -74,7 +138,7 @@ export async function POST(req: Request) {
     return jsonError("Authentication required.", 401);
   }
 
-  let body: { assetId?: string };
+  let body: { assetId?: string | number };
 
   try {
     body = (await req.json()) as typeof body;
@@ -82,7 +146,7 @@ export async function POST(req: Request) {
     return jsonError("Invalid request body.", 400);
   }
 
-  const assetId = body.assetId?.trim();
+  const assetId = parseAssetId(body.assetId);
 
   if (!assetId) {
     return jsonError("assetId is required.", 400);
@@ -100,12 +164,11 @@ export async function POST(req: Request) {
     return jsonError("Asset not found.", 404);
   }
 
-  const { data: project } = await supabase
-    .from("projects")
-    .select("id, destination")
-    .eq("id", asset.project_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const project = await fetchOwnedProjectForAsset(
+    supabase,
+    user.id,
+    asset.project_id,
+  );
 
   if (!project) {
     return jsonError("Asset not found.", 404);

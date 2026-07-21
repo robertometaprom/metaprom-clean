@@ -94,6 +94,37 @@ function withoutShareFields(
   return rest;
 }
 
+type ProjectInsertPayload = {
+  name: string;
+  user_id: string;
+  description: string | null;
+  workflow_id: string | null;
+  industry: string | null;
+  intended_destination: string | null;
+  destination: StudioDestination | null;
+};
+
+function withoutProjectDestinationField(
+  payload: ProjectInsertPayload,
+): Omit<ProjectInsertPayload, "destination"> {
+  const { destination: _destination, ...rest } = payload;
+  return rest;
+}
+
+function logBibliotecaSupabaseError(
+  context: string,
+  payload: unknown,
+  error: { code?: string; message?: string; details?: string; hint?: string },
+): void {
+  console.error(context, {
+    insertPayload: payload,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+}
+
 type BibliotecaSupabaseClient = ReturnType<typeof createClient>;
 
 async function selectBibliotecaAssetsForProject(
@@ -225,23 +256,37 @@ export async function createBibliotecaProject(
       ? { description: metadataOrDescription || null }
       : (metadataOrDescription ?? {});
 
-  const insertPayload = {
+  const insertPayload: ProjectInsertPayload = {
     name,
     user_id: user.id,
     description: metadata.description ?? null,
     workflow_id: metadata.workflow_id ?? null,
     industry: metadata.industry ?? null,
     intended_destination: metadata.intended_destination ?? null,
+    destination: metadata.destination ?? null,
   };
 
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from("projects")
     .insert(insertPayload)
     .select(PROJECT_SELECT)
     .single();
 
+  if (error && isMissingSchemaColumnError(error)) {
+    const fallbackPayload = withoutProjectDestinationField(insertPayload);
+    ({ data, error } = await supabaseClient
+      .from("projects")
+      .insert(fallbackPayload)
+      .select(PROJECT_SELECT)
+      .single());
+  }
+
   if (error) {
-    console.error("createBibliotecaProject error", { insertPayload, error });
+    logBibliotecaSupabaseError(
+      "createBibliotecaProject error",
+      insertPayload,
+      error,
+    );
     throw error;
   }
 
@@ -255,17 +300,34 @@ export async function updateBibliotecaProject(
   const supabaseClient = getAuthenticatedClient();
   const user = await requireUser();
 
-  const { error } = await supabaseClient
+  const updatePayload = {
+    workflow_id: metadata.workflow_id ?? null,
+    industry: metadata.industry ?? null,
+    intended_destination: metadata.intended_destination ?? null,
+    destination: metadata.destination ?? null,
+  };
+
+  let { error } = await supabaseClient
     .from("projects")
-    .update({
-      workflow_id: metadata.workflow_id ?? null,
-      industry: metadata.industry ?? null,
-      intended_destination: metadata.intended_destination ?? null,
-    })
+    .update(updatePayload)
     .eq("id", projectId)
     .eq("user_id", user.id);
 
+  if (error && isMissingSchemaColumnError(error)) {
+    const { destination: _destination, ...fallbackPayload } = updatePayload;
+    ({ error } = await supabaseClient
+      .from("projects")
+      .update(fallbackPayload)
+      .eq("id", projectId)
+      .eq("user_id", user.id));
+  }
+
   if (error) {
+    logBibliotecaSupabaseError(
+      "updateBibliotecaProject error",
+      updatePayload,
+      error,
+    );
     throw error;
   }
 }

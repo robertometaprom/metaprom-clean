@@ -1,8 +1,96 @@
 # METAPROM MASTER
 
+The definitive operating manual for Metaprom — product vision, philosophy, architecture, and current state.
+
+---
+
+## Current State
+
+### Project Status
+
+Metaprom has fully transitioned from **Infrastructure Phase** into **Product Phase**.
+
+Infrastructure is no longer the primary challenge.
+
+Current focus:
+
+* Product Experience
+* Product Quality
+* Product Personality
+* Customer Confidence
+* Commercial Quality
+
+The **Creative Director** is now considered one of Metaprom's primary competitive advantages.
+
+We are no longer building an AI. We are building a product — perfected in the real market through launch, learn, improve, repeat.
+
+### Completed (RC2)
+
+* Hero layout restoration
+* Pixel-perfect Hero preservation
+* Premium generation alignment
+* Premium duration correction
+* Premium aspect-ratio preservation
+* Biblioteca persistence fallback
+* Creative Director integration after Preview
+* Creative Director integration after Premium
+* Creative Director product refinement
+* Creative Director personality redesign
+
+Prior RC1 milestones remain valid foundation: Enhancement, Preview Generation, Premium Generation, Biblioteca, Persistence, Workflow Layer, Public Commercial Pages, Growth Engine Foundation, Product Stabilization, Share Experience (functional), and Stripe commercial flow.
+
+Official Product Principle:
+
+> Preview belongs to Metaprom.
+> Premium belongs to the customer.
+
+### CEO Product Rule
+
+The **CEO Product Review** is the final validation step.
+
+A feature is **NOT** considered complete because it compiles.
+
+A feature is complete only after:
+
+Implementation
+
+↓
+
+Smoke Test
+
+↓
+
+CEO Product Review
+
+↓
+
+PASS
+
+Only then may the next objective begin.
+
+### Product Backlog
+
+Discovered product issues are captured in `RC1_PRODUCT_BACKLOG.md` without interrupting the active objective.
+
+Development rule: register → prioritize → execute only after the current objective reaches PASS. Only **ONE** active objective may exist at any time.
+
+Active backlog priorities are defined in **Product Backlog (RC2)** later in this document.
+
+### Validation Environment
+
+Official development environment: `localhost`
+
+Official repository: `metaprom-ai`
+
+---
+
+## Historical Milestones
+
+*The sections below record prior sprint and RC milestones. Where they conflict with **Current State** or canonical sections later in this document, the later sections govern.*
+
 ## MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)
 
-*Supersedes **MASTER UPDATE — RC1.3.5 — Product Stabilization & Growth Engine Foundation (July 2026)** for current RC1 status, project stage, product philosophy, completed milestones, Share experience status, Product Backlog process, active objective, soft launch strategy, validation environment, and CEO Product Rule. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
+*Historical — RC1 commercial foundation. Superseded by **Current State** for project status, focus, and completed milestones.*
 
 ### RC1.4
 
@@ -10,17 +98,7 @@
 
 ##### Project Status
 
-Metaprom has officially completed the **Infrastructure Phase**.
-
-The platform is no longer focused on making AI work.
-
-The focus is now on delivering a premium product experience and launching a real business.
-
-Current philosophy:
-
-We are no longer building an AI.
-
-We are building a product.
+Metaprom officially completed the **Infrastructure Phase** and entered product-focused development.
 
 ##### Completed
 
@@ -51,144 +129,9 @@ Verified:
 * Navigation
 * Smoke Test
 
-Remaining observations were intentionally moved to the **Product Backlog** and do not block the next milestone.
-
-Official Product Principle:
-
-> Preview belongs to Metaprom.
-> Premium belongs to the customer.
-
-##### Product Backlog
-
-A new official document now exists:
-
-`RC1_PRODUCT_BACKLOG.md`
-
-Purpose:
-
-Capture every product issue discovered during testing without interrupting the active objective.
-
-New Development Rule:
-
-Issues discovered during testing are **NOT** fixed immediately.
-
-They are:
-
-Registered
-
-↓
-
-Prioritized
-
-↓
-
-Executed only after the current objective reaches PASS.
-
-Only **ONE** active objective may exist at any time.
-
-##### Current Active Objective
-
-**RC1.4 — Stripe Integration**
-
-The objective is to complete the commercial purchase flow.
-
-Target flow:
-
-Preview
-
-↓
-
-Checkout
-
-↓
-
-Stripe Payment
-
-↓
-
-Premium Generation
-
-↓
-
-Download
-
-No new features should be implemented during this phase.
-
-The only objective is to complete and stabilize payments.
-
 ##### Soft Launch Strategy
 
-After Stripe reaches PASS:
-
-Deploy the current product.
-
-Replace the historical version currently hosted on metaprom.com.
-
-Begin a **Soft Launch**.
-
-Objective:
-
-Collect feedback from real users.
-
-Improve the product based on real usage.
-
-Delay paid marketing until the product consistently feels production-ready.
-
-##### Current Validation Environment
-
-Official development environment:
-
-`localhost`
-
-Official repository:
-
-`metaprom-clean`
-
-Current development branch:
-
-`sprint/hero-barrier-removal`
-
-The current public website at metaprom.com is considered a **historical deployment** and is **NOT** used as the validation target during RC1.x.
-
-Production deployment will occur after Stripe integration is complete.
-
-##### New Product Philosophy
-
-The goal is no longer to perfect Metaprom inside a laboratory.
-
-The goal is to perfect Metaprom in the real market.
-
-Launch.
-
-Learn.
-
-Improve.
-
-Repeat.
-
-##### CEO Product Rule
-
-The **CEO Product Review** is now the final validation step.
-
-A feature is **NOT** considered complete because it compiles.
-
-A feature is complete only after:
-
-Implementation
-
-↓
-
-Smoke Test
-
-↓
-
-CEO Product Review
-
-↓
-
-PASS
-
-Only then may the next objective begin.
+Deploy the current product. Replace the historical version on metaprom.com. Begin a **Soft Launch** — collect feedback from real users, improve based on real usage, delay paid marketing until the product consistently feels production-ready.
 
 ---
 
@@ -232,7 +175,7 @@ Technology is infrastructure.
 Metaprom sells:
 
 * transformation
-* premium marketing
+* creative direction
 * simplicity
 * growth
 * product experience
@@ -302,17 +245,9 @@ Create yours free.
 
 ##### Product Vision
 
-A long-term strategic vision was reinforced.
+See **Project Vision** and **Long-Term Positioning** for the canonical product vision.
 
-Metaprom may eventually evolve into:
-
-"The place where commercial videos live."
-
-Not simply an AI generator.
-
-Potential future inspiration:
-
-"A YouTube for Commercials."
+Metaprom's long-term direction includes becoming the place where commercial videos live — a platform for commercial creation led by a world-class Creative Director, not simply an AI generator.
 
 This is NOT part of the MVP.
 
@@ -608,21 +543,21 @@ Metaprom is **NOT** selling AI.
 
 Metaprom is **NOT** selling prompts.
 
-Metaprom is selling **complete commercial experiences**.
+Metaprom sells **Creative Direction** and complete commercial experiences.
 
 Every commercial must feel like it was directed by a creative agency rather than generated by an AI model.
 
+The customer owns the marketing message. The Creative Director owns creative execution. Customer commercial copy is immutable project input.
+
 The customer should never need prompt engineering knowledge.
 
-The system is responsible for transforming simple ideas into premium commercial productions.
+The Creative Director is responsible for transforming simple ideas into premium commercial productions — without rewriting customer commercial copy.
 
 Official slogan remains:
 
 > Escribe lo que imaginas. Metaprom entiende el resto.
 
-This slogan now becomes an **architectural principle**.
-
-Metaprom enriches prompts automatically.
+This slogan is an **architectural principle**. See **Creative Director** for jurisdiction and golden rules.
 
 ### Preview vs Premium
 
@@ -676,12 +611,14 @@ Deliver the complete commercial.
 
 Target characteristics:
 
-* approximately 12–15 seconds
+* maximum officially supported Veo clip duration
+* preserves customer's selected aspect ratio
 * complete commercial narrative
 * cinematic sequence
 * HD
 * commercial-ready
 * downloadable
+* Creative Director available after generation
 
 Target duration is an **internal objective**.
 
@@ -691,31 +628,29 @@ Customers purchase:
 
 > A complete commercial.
 
+Video Extension and clip chaining remain backlog only.
+
 ### Automatic prompt enrichment
 
-Critical product decision.
+Critical product decision — see **Creative Director** for current jurisdiction and principles.
 
-Customer prompts must **never** be sent directly to the generation model.
-
-Instead:
+Customer ideas must **never** be sent directly to the generation model.
 
 ```
-Customer Idea
+Customer Idea + Commercial Copy (immutable)
   ↓
 Metaprom Creative Director
   ↓
-Expanded Cinematic Prompt
+Expanded Cinematic Prompt (internal)
   ↓
 Generation Model
 ```
 
-The Creative Director layer becomes one of Metaprom's competitive advantages.
+The Creative Director layer is one of Metaprom's primary competitive advantages.
 
-The system should automatically enrich prompts with cinematic direction, pacing, camera movement, storytelling, and commercial structure.
+The Director enriches prompts with cinematic direction, pacing, camera movement, storytelling, and commercial structure — without rewriting customer commercial copy.
 
-The customer writes the idea.
-
-Metaprom creates the commercial.
+The customer writes the idea and supplies commercial copy. Metaprom creates the commercial.
 
 ### Product waiting experience
 
@@ -1182,18 +1117,7 @@ Sprint 3.2 closed with the following decisions and outcomes:
 
 ### Hero final state
 
-Hero architecture is **validated**.
-
-Runtime geometry is **frozen**.
-
-`lib/hero-layout-spec.ts` is **frozen**.
-
-`HeroPhoneScreen` now controls only optical presentation. The following values are documented as **optical tuning only**:
-
-* `HERO_COMMERCIAL_SCALE_Y`
-* `objectPosition`
-
-Future Hero perfection should be done by editing the `hero-presenter` artwork, not by adding runtime hacks.
+Hero layout, phone mockup, phone alignment, HTML video alignment, and Hero composition are **approved and locked**. See **Hero** for current specification.
 
 Engineering lesson:
 
@@ -1222,17 +1146,9 @@ Current repository state:
 
 Metaprom does **NOT** sell AI.
 
-Metaprom sells **premium marketing**.
+Metaprom sells **Creative Direction**.
 
-The customer should never feel they are learning AI. The customer should feel they are obtaining a commercial that normally would require an agency.
-
-Technology must disappear.
-
-Result becomes the product.
-
-Internal philosophy:
-
-> The customer comes for the result, not the technology.
+See **Product Philosophy** and **Creative Director** for official principles.
 
 ### Revenue strategy
 
@@ -1411,7 +1327,7 @@ Metaprom takes care of:
 
 This became the **core positioning** of the product.
 
-See **Product Philosophy**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
+See **Product Philosophy**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, and **Long-Term Positioning**.
 
 ### Biblioteca — Commercial Portfolio
 
@@ -1455,26 +1371,7 @@ See **Customer Experience (July 1, 2026)**.
 
 ### Hero — approved artwork
 
-The Hero artwork is **approved**.
-
-No additional AI image generation is planned. Future work is limited to **CSS/layout art direction**.
-
-However, live testing revealed that the current implementation **drifted away from the intended concept**.
-
-The Hero must communicate one simple idea:
-
-> **This commercial came from THIS phone.**
-
-Future adjustments should prioritize:
-
-* commercial fully integrated inside the phone
-* phone as visual focal point
-* model remains clearly visible
-* premium advertising composition
-
-The Hero is one of Metaprom's **primary marketing assets**.
-
-See **Hero (July 1, 2026)**.
+Hero layout, phone mockup, phone alignment, HTML video alignment, and Hero composition are **approved and locked**. See **Hero**.
 
 ### Beta status — Sprint 3.2
 
@@ -1497,18 +1394,7 @@ See **Product Completion Roadmap (June 2026)** and **Beta Strategy**.
 
 ### Long-term positioning
 
-Metaprom is **not** an AI company.
-
-Metaprom is **not** an image enhancement tool.
-
-Metaprom is a **commercial creation platform**.
-
-The product promise:
-
-> You focus on your business.
-> Metaprom creates your commercial.
-
-See **Long-Term Positioning (July 1, 2026)**.
+See **Long-Term Positioning** and **Project Vision** for canonical positioning and final product vision.
 
 ### Current roadmap (July 1, 2026 — historical)
 
@@ -1704,31 +1590,39 @@ Customers should describe the commercial they want — not spend time producing 
 
 **Strategic positioning:**
 
-Metaprom is a **commercial creation platform** — not an AI company, not an image enhancement tool.
+Metaprom is a **commercial creation platform** — not an AI company, not an image enhancement tool. The Creative Director is a primary competitive advantage.
 
 > You focus on your business. Metaprom creates your commercial.
 
+**Final vision:** Anyone should create a premium commercial by collaborating with a world-class Creative Director. The AI becomes invisible. The customer remembers the Director.
+
 **Customer experience rule:** Provider details (Vertex, safety filters, error codes) never reach customers. Failures translate to premium Metaprom messaging.
 
-See **MASTER UPDATE — July 10, 2026**, **MASTER UPDATE — July 1, 2026**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, **Hero (July 1, 2026)**, **Customer Experience (July 1, 2026)**, and **Long-Term Positioning (July 1, 2026)**.
+See **MASTER UPDATE — July 10, 2026**, **MASTER UPDATE — July 1, 2026**, **Biblioteca — Commercial Portfolio (July 1, 2026)**, **Hero**, **Customer Experience (July 1, 2026)**, and **Long-Term Positioning**.
 
 ---
 
 ## Project Vision
 
-Metaprom is a commercial content platform focused on creating professional advertising assets for ecommerce sellers, restaurants, real estate, and SMBs — not merely improving product photos.
+Metaprom is a commercial creation platform focused on professional advertising assets for ecommerce sellers, restaurants, real estate, and SMBs — not merely improving product photos or selling AI.
 
-The long-term vision is the simplest way for businesses to manufacture professional commercial advertising content: images, social creatives, and video.
+**Final product vision:**
+
+Anyone, regardless of technical knowledge, should be able to create a premium commercial simply by collaborating with a world-class Creative Director.
+
+The AI should become invisible. The customer should remember the Director.
 
 Core philosophy:
 
 > Customers do not want AI. Customers want content that helps them sell.
 
+> Metaprom does not sell AI. Metaprom sells Creative Direction.
+
 Core mission:
 
 > Bring premium advertising creation to people who are not AI experts.
 
-Metaprom sells marketing results, not AI. Customers should never need to understand AI models, prompts, tokens, APIs, Veo, or Gemini.
+Metaprom sells marketing results and creative direction, not AI. Customers should never need to understand AI models, prompts, tokens, APIs, Veo, or Gemini.
 
 Growth philosophy:
 
@@ -1742,10 +1636,9 @@ Platform scope:
 * Cinematic video generation
 * Automatic marketing asset library
 * Premium commercial purchase and download
+* Creative Director — senior creative partnership throughout the commercial journey
 
-Historical scope (preserved): photo enhancement, marketplace optimization — now acquisition channels, not the product center.
-
-See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — First Real Commercial Generated (June 28, 2026)**, **Video Generation — Validated (June 2026)**, and **Session Summary — Strategic Transition (June 28, 2026)**.
+See **Creative Director**, **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — First Real Commercial Generated (June 28, 2026)**, and **Video Generation — Validated (June 2026)**.
 
 ---
 
@@ -1755,13 +1648,13 @@ See **Strategic Pivot – Metaprom AI Evolution (June 2026)**, **Milestone — F
 
 ### Strategic direction
 
-**Metaprom is no longer AI-first. Metaprom is Product Experience First.**
+**Metaprom is Product Experience First — powered by the Creative Director.**
 
-The AI engine is considered mature enough for Beta. The primary bottleneck is UX, commercial flow, and customer conversion.
+The AI engine is mature. The primary focus is product experience, commercial quality, customer confidence, and Creative Director excellence.
 
 Objective:
 
-> Complete the commercial flow as one continuous premium experience.
+> Complete the commercial flow as one continuous premium experience — led by a world-class Creative Director.
 
 Success metric:
 
@@ -1788,11 +1681,13 @@ Success metric:
 ### Product principles (non-negotiable)
 
 * The customer buys **results**, not AI.
+* Metaprom sells **Creative Direction**, not AI.
 * Never expose prompts, models, or technical concepts.
 * AI adapts to the customer; the customer never adapts to AI.
 * Every screen must reduce friction.
 * **Product Experience First.**
 * **The WOW stays inside Metaprom** (see **Cinematic Reveal**).
+* Customer commercial copy is **immutable project input** (see **Creative Director**).
 * Uploaded photo always takes precedence.
 * Saving is automatic — the customer never manages files.
 * Library is automatic — every creation appears without user action.
@@ -1813,10 +1708,14 @@ Success metric:
 
 **Premium (paid)**
 
-* 10–15 second HD commercial
+* Maximum officially supported Veo clip duration
+* Preserves the customer's selected aspect ratio
 * No watermark
 * Marketing-ready download
 * Unlocked after checkout inside Studio
+* Creative Director available after Premium generation
+
+Preview remains lightweight. Video Extension and clip chaining remain backlog only — not current product scope.
 
 Reference price: **$149 MXN** (`commercial-video` in `lib/pricing.ts`).
 
@@ -2139,7 +2038,7 @@ This validates the core product hypothesis:
 
 > Customers are not buying AI. Customers are buying the feeling of seeing their own product transformed into professional marketing.
 
-The biggest lesson was **experiential**, not technical. Metaprom is no longer an image enhancement platform — it is becoming an **AI Creative Studio**. The customer should feel they are working with a creative director, not operating software.
+The biggest lesson was **experiential**, not technical. Metaprom is a commercial creation platform with a world-class Creative Director — not an image enhancement platform or AI tool. The customer should feel they are working with a senior creative director at an agency, not operating software.
 
 See **Milestone — First Real Commercial Generated (June 28, 2026)**.
 
@@ -2234,9 +2133,9 @@ This validates the core product hypothesis:
 
 The biggest lesson was not technical. It was experiential.
 
-The product is no longer an image enhancement platform. Metaprom is becoming an **AI Creative Studio**.
+Metaprom is a **commercial creation platform** with a world-class Creative Director — not an image enhancement platform or AI tool.
 
-The customer should feel they are working with a creative director, not operating software.
+The customer should feel they are working with a senior creative director at an agency, not operating software.
 
 ### Studio Philosophy
 
@@ -3516,14 +3415,18 @@ HD Commercial
 
 **The transformation itself is the product.**
 
+### Persistence
+
+Production database may temporarily lack `projects.destination`. Persistence now includes a graceful fallback so customer workflows continue while production migrations catch up. Failure to persist project state is a production defect.
+
 ### UX principles
 
 * Every project row/card should read as a **before → after commercial journey**, not a folder of assets.
 * Previews are always available — never downloadable, always shareable with permanent public URL.
-* Navigation polish and refresh reliability are **Sprint 3.2 blockers** before Payments.
+* Navigation polish and refresh reliability are production requirements.
 * Future UX decisions must reinforce portfolio storytelling — not file management metaphors.
 
-See **MASTER UPDATE — July 1, 2026**, **Customer Experience (July 1, 2026)**, and **Demo Library**.
+See **Customer Experience (July 1, 2026)** and **Demo Library**.
 
 ---
 
@@ -3613,7 +3516,9 @@ Characteristics:
 
 The Premium commercial must always feel significantly more valuable than the Preview.
 
-See **Preview vs Premium**, **Growth Engine**, and **Public Landing Philosophy**.
+Premium requests the maximum officially supported Veo clip duration and preserves the customer's selected aspect ratio. Video Extension and clip chaining remain backlog only.
+
+See **Premium Generation**, **Preview vs Premium**, **Growth Engine**, and **Public Landing Philosophy**.
 
 ---
 
@@ -3639,25 +3544,27 @@ See **Growth Engine** and **Preview Policy**.
 
 ---
 
-## Hero (July 1, 2026)
+## Hero
 
-**Status:** Artwork approved; Hero V2 approved for production. Runtime architecture is stable and frozen as of **MASTER UPDATE — July 10, 2026**.
+**Status:** Layout approved and locked. Future work must preserve these approvals.
 
 The Hero is one of Metaprom's **primary marketing assets**.
 
-### Approved scope
+### Approved and locked
 
-* Hero artwork is **approved** — no additional AI image generation planned.
-* Runtime geometry is frozen.
-* Future work belongs to **Art Direction** and asset refinement.
+* Hero layout — **approved**
+* Phone mockup — **approved**
+* Phone alignment — **locked**
+* HTML video alignment — **locked**
+* Hero composition — **approved**
+
+Future Hero work must preserve these approvals. Perfection belongs to **Art Direction** and asset refinement — not runtime geometry changes.
 
 ### Core message
 
 The Hero must communicate one simple idea:
 
 > **This commercial came from THIS phone.**
-
-Live testing revealed the implementation had drifted from this concept. The rendering investigation is now complete and Hero V2 is approved for production.
 
 ### Art direction priorities
 
@@ -3673,6 +3580,158 @@ Live testing revealed the implementation had drifted from this concept. The rend
 `HeroPhoneScreen` controls optical presentation only. `HERO_COMMERCIAL_SCALE_Y` and `objectPosition` are optical tuning controls, not geometry fixes.
 
 Future Hero perfection should be achieved by editing `hero-presenter` artwork, not runtime hacks.
+
+See **Hero V2 Rendering Investigation — Complete (July 8, 2026)**.
+
+---
+
+## Premium Generation
+
+Preview remains **lightweight** — a teaser, not the deliverable.
+
+Premium requests the **maximum officially supported Veo clip duration** and **preserves the customer's selected aspect ratio**.
+
+Customers purchase a complete commercial, not seconds. Duration targets are internal objectives only.
+
+Future Premium roadmap items — **Video Extension** and **clip chaining** — remain backlog only.
+
+The Premium commercial must always feel significantly more valuable than the Preview.
+
+See **Preview Policy**, **Preview vs Premium**, and **Creative Director**.
+
+---
+
+## Creative Director
+
+**Status:** Independent product — one of Metaprom's primary competitive advantages.
+
+The Creative Director is no longer described as simply an AI assistant. The Director is:
+
+* Senior Creative Director
+* Marketing Expert
+* Commercial Storytelling Expert
+* Creative Strategist
+
+The Director accompanies the customer throughout creation. The Director exists to improve **commercial quality**. The Director should feel like an experienced creative agency.
+
+The Director is integrated after Preview generation and after Premium generation. It is not merely a prompt — it is an independent product with personality, product principles, behavior, ownership, acceptance criteria, product philosophy, and roadmap.
+
+Official product principles governing the Director are defined in **Product Philosophy**.
+
+The Director **MAY** improve:
+
+* storytelling
+* pacing
+* emotional impact
+* cinematography
+* scene composition
+* visual execution
+* production quality
+
+The Director **MUST NOT** — unless the customer explicitly requests rewriting:
+
+* reinterpret slogans
+* change positioning
+* soften claims
+* replace CTAs
+* remove websites
+* remove phone numbers
+* change prices
+* modify promotions
+* rewrite guarantees
+* rewrite commercial copy
+
+### Mandatory Customer Requirements
+
+Customer-supplied content is mandatory project input. Failure to preserve it is a **production defect**:
+
+* slogans
+* URLs
+* phone numbers
+* CTA
+* pricing
+* offers
+* discounts
+* guarantees
+* promotions
+* company names
+* brand names
+* product names
+* campaign names
+* positioning
+* commercial copy
+
+### Production Risk
+
+Production Risk and Marketing Language are distinct.
+
+**Production Risk** includes:
+
+* copyright
+* protected logos
+* celebrity likeness
+* minors
+* violence
+* explicit content
+* illegal requests
+* provider generation limitations
+
+**Marketing language is NOT Production Risk.** Examples that belong to the customer:
+
+* "The best wine."
+* "The fastest plumbing service."
+* "Premium quality."
+* "Luxury."
+* "50% OFF."
+* "Lifetime warranty."
+
+The Director gates production risks. The Director does not audit advertising claims.
+
+### Personality
+
+Creative. Commercial. Helpful. Optimistic. Collaborative. Marketing-oriented. Production-aware. Supportive.
+
+**Never:** bureaucratic, legalistic, argumentative, preachy, paternalistic, compliance officer, advertising auditor.
+
+### Golden Rules
+
+Customer commercial copy is immutable project input.
+
+When in doubt: preserve the customer's original commercial copy. Never assume the customer accidentally wrote it.
+
+If clarification is required: ask. Never silently modify.
+
+### Major Discovery (RC2)
+
+Advertising-claim blocking was **not** primarily caused by Gemini. Investigation demonstrated that it originated from the Creative Director prompt itself.
+
+The Director had unintentionally evolved into:
+
+Creative Director + Compliance Officer + Legal Reviewer
+
+The prompt was redesigned to restore the intended product behavior. This is considered one of the most important product discoveries to date.
+
+### Prompt Enrichment Architecture
+
+Customer ideas must **never** be sent directly to the generation model.
+
+```
+Customer Idea + Commercial Copy (immutable)
+  ↓
+Creative Director
+  ↓
+Expanded Cinematic Prompt (internal)
+  ↓
+Generation Model
+```
+
+The customer writes the idea and supplies commercial copy. The Director shapes creative execution. Metaprom creates the commercial.
+
+### Product Evolution
+
+Future development should treat the Creative Director as its own product — not a feature bolted onto generation.
+
+See `CREATIVE_DIRECTOR_ARCHITECTURE.md` for implementation specification detail.
 
 ---
 
@@ -3698,7 +3757,7 @@ Extends **Product principles (non-negotiable)** and **Product Philosophy** — s
 
 ---
 
-## Long-Term Positioning (July 1, 2026)
+## Long-Term Positioning
 
 **Status:** Canonical positioning — supersedes "AI Creative Studio" and "image enhancement" framing where they conflict.
 
@@ -3706,27 +3765,32 @@ Metaprom is **not**:
 
 * an AI company
 * an image enhancement tool
+* a video generation tool
 
 Metaprom **is**:
 
-> a **commercial creation platform**
+> a **commercial creation platform** powered by a world-class Creative Director
 
 **Product promise:**
 
 > You focus on your business.
 > Metaprom creates your commercial.
 
-**Operational corollary (July 2026 discovery):**
+**Final vision:**
+
+Anyone, regardless of technical knowledge, should be able to create a premium commercial simply by collaborating with a world-class Creative Director. The AI should become invisible. The customer should remember the Director.
+
+**Operational corollary:**
 
 > Take any photo. Describe the commercial. Metaprom creates the production.
 
-**Growth corollary (RC1.3.5):**
+**Growth corollary:**
 
 > You take the photo. Metaprom does the rest.
 
 Customers invest time in **describing the commercial**, not in producing a better source photo. Metaprom owns photography cleanup, enhancement, lighting, composition, and commercial creation.
 
-See **Project Vision**, **Strategic Pivot – Metaprom AI Evolution (June 2026)**, and **MASTER UPDATE — July 1, 2026**.
+See **Project Vision**, **Creative Director**, and **Strategic Pivot – Metaprom AI Evolution (June 2026)**.
 
 ---
 
@@ -3753,11 +3817,25 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Product Philosophy
 
-*Updated July 10, 2026 — core positioning reinforced in **MASTER UPDATE — July 10, 2026**. Prior principles below remain valid unless superseded.*
+See also: **Creative Director**, **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
 
-See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
+### Official Product Principles
 
-### Core principles (June 28, 2026 — official)
+1. Metaprom does not sell AI. Metaprom sells **Creative Direction**.
+
+2. The customer owns the marketing message. The Creative Director owns the **creative execution**.
+
+3. **Production Risk is NOT Advertising Compliance.**
+
+4. The Director works for the customer. The customer never works for the Director.
+
+5. **Protect production. Never police creativity.**
+
+6. Customer commercial copy is **immutable project input**. Treat customer commercial copy exactly like uploaded assets.
+
+7. **Never silently rewrite customer commercial copy.** If clarification is required: ask. Never assume.
+
+### Core principles
 
 * The customer buys **results**, not AI.
 * Never expose prompts, models, or technical concepts.
@@ -3765,8 +3843,9 @@ See also: **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **C
 * Every screen must reduce friction.
 * **Product Experience First.**
 * **The WOW stays inside Metaprom.**
+* Metaprom sells **transformation and creative direction**, not AI. AI is enabling technology, not the product.
 
-### Supporting principles (preserved)
+### Supporting principles
 
 * The user should not navigate Metaprom — Metaprom navigates the user.
 * Design like Uber, not an aircraft cockpit.
@@ -3787,20 +3866,7 @@ The customer is not purchasing AI. The customer is purchasing:
 * Better advertising assets
 * Increased perceived professionalism
 * The emotional peak of seeing their product as a real commercial
-
-Metaprom sells **transformation**, not AI. AI is the enabling technology, not the product.
-
-### July 10, 2026 — premium marketing principle
-
-Metaprom does **NOT** sell AI.
-
-Metaprom sells **premium marketing**.
-
-The customer should never feel they are learning AI. The customer should feel they are obtaining a commercial that normally would require an agency.
-
-Technology must disappear.
-
-Result becomes the product.
+* Partnership with a senior Creative Director
 
 Internal philosophy:
 
@@ -3813,7 +3879,7 @@ Internal philosophy:
 * **The Preview does not sell a video. It sells the next user.**
 * **You take the photo. Metaprom does the rest.**
 
-These principles apply to every customer-facing surface — Studio, Biblioteca, Public Landing, Demo Library, and waiting experiences.
+These principles apply to every customer-facing surface — Studio, Biblioteca, Public Landing, Demo Library, waiting experiences, and Creative Director conversations.
 
 See **Public Landing Philosophy**, **Demo Library**, and **Growth Engine**.
 
@@ -3830,6 +3896,36 @@ See **Milestone — First Real Commercial Generated (June 28, 2026)** and **Cine
 * The WOW moment happens inside Metaprom via **Cinematic Reveal** — before the purchase decision.
 
 Customers care far more about business outcomes than about the underlying AI technology.
+
+---
+
+## Product Backlog (RC2)
+
+**Status:** Active backlog priorities for Product Phase development.
+
+Discovered issues during testing are registered in `RC1_PRODUCT_BACKLOG.md`. The items below are strategic product initiatives.
+
+### HIGH
+
+* Director Acceptance Test Suite
+* Mandatory Requirement Memory
+* Promotion Engine
+* Coupon Engine
+* Founder Credits
+* Persistent Creative Director memory
+
+### MEDIUM
+
+* Premium Video Extension
+* Clip chaining
+* Story Planner
+* Multi-scene generation
+
+### LOW
+
+* Director analytics
+* Conversation scoring
+* Prompt quality metrics
 
 ---
 

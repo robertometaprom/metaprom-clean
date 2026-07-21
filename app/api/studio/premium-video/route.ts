@@ -12,6 +12,7 @@ import {
   isVertexVideoConfigured,
   resolveWorkflow,
 } from "@/lib/video";
+import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
 import type { StudioDestination } from "@/lib/studio-destination";
 
 export const runtime = "nodejs";
@@ -101,6 +102,7 @@ async function generatePremiumVideoBuffer(
   const workflowConfig = resolveWorkflow(workflow);
   const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
   const veoParams = resolveVeoGenerationParams(destination);
+  const durationSeconds = resolvePremiumVeoDurationSeconds();
 
   logDestinationGenerationDebug({
     stage: "premium-video",
@@ -113,8 +115,16 @@ async function generatePremiumVideoBuffer(
       vertexModel: workflowConfig.vertexModel,
       aspectRatio: veoParams.aspectRatio,
       requestedAspectRatio: veoParams.requestedAspectRatio,
-      durationSeconds: Number(process.env.VEO_VERTEX_DURATION_SECONDS ?? 4),
+      durationSeconds,
       provider: "vertex-veo",
+      veoRequestPayload: {
+        model: workflowConfig.vertexModel,
+        config: {
+          aspectRatio: veoParams.aspectRatio,
+          numberOfVideos: 1,
+          durationSeconds,
+        },
+      },
     },
   });
 

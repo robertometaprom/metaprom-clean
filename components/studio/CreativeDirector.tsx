@@ -40,8 +40,11 @@ import {
 import type { PaymentMethod } from "@/lib/payments/types";
 import { getPriceById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
+import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import DestinationStep from "@/components/studio/DestinationStep";
 import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
+import type { ProjectContext } from "@/lib/creative-director/types";
+import type { CompanionMoment } from "@/lib/studio/creative-director-companion";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import type { StudioDestination } from "@/lib/studio-destination";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
@@ -119,6 +122,10 @@ export default function CreativeDirector({
   const [destination, setDestination] = useState<StudioDestination | null>(
     null,
   );
+  const [directorPanelOpen, setDirectorPanelOpen] = useState(false);
+  const [pendingCompanionMoment, setPendingCompanionMoment] =
+    useState<CompanionMoment | null>(null);
+  const [directorSessionKey, setDirectorSessionKey] = useState("initial");
 
   const previewUrlRef = useRef<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
@@ -349,6 +356,8 @@ export default function CreativeDirector({
       });
 
       setPhase("preview");
+      setPendingCompanionMoment("preview");
+      setDirectorPanelOpen(true);
     } catch (createError) {
       console.error(createError);
       setError(
@@ -563,6 +572,9 @@ export default function CreativeDirector({
     setPremiumReady(false);
     setDestination(null);
     destinationRef.current = null;
+    setDirectorPanelOpen(false);
+    setPendingCompanionMoment(null);
+    setDirectorSessionKey(`${Date.now()}`);
     setCheckoutMessage(null);
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
@@ -596,6 +608,37 @@ export default function CreativeDirector({
   const contextualUploadMessage = matchedProduct
     ? getUploadMessage(matchedProduct)
     : "Sube una foto de lo que vendes.";
+
+  const creativeDirectorProjectContext: ProjectContext = {
+    currentImage: previewUrl ? { url: previewUrl } : undefined,
+    currentCommercialDescription: input.trim() || undefined,
+    destination: destination
+      ? {
+          platform: destination.platform,
+          aspectRatio: destination.aspectRatio,
+          width: destination.width,
+          height: destination.height,
+        }
+      : undefined,
+    workflow: matchedProduct?.id,
+    previousPreview: videoUrl ? { url: videoUrl } : undefined,
+  };
+
+  const handleCompanionMomentHandled = useCallback((moment: CompanionMoment) => {
+    setPendingCompanionMoment((current) =>
+      current === moment ? null : current,
+    );
+  }, []);
+
+  const handleOpenDirectorPanel = useCallback(() => {
+    setDirectorPanelOpen(true);
+  }, []);
+
+  const handleUseDirectorProposal = useCallback((narrative: string) => {
+    setInput(narrative);
+    customerIntentRef.current = narrative;
+    setError(null);
+  }, []);
 
   return (
     <>
@@ -824,6 +867,18 @@ export default function CreativeDirector({
                 </p>
               )}
 
+              <div className="border-t border-white/10 pt-5 text-center">
+                <p className="text-sm text-white/45">¿Necesitas ayuda?</p>
+                <button
+                  type="button"
+                  onClick={() => setDirectorPanelOpen(true)}
+                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
+                >
+                  <span aria-hidden="true">✨</span>
+                  Habla con el Director Creativo
+                </button>
+              </div>
+
               <div className="flex flex-wrap justify-center gap-2">
                 {PROMPT_CATEGORY_CHIPS.map((chip) => (
                   <button
@@ -896,6 +951,7 @@ export default function CreativeDirector({
               hasPremiumImage={Boolean(premiumImage)}
               shareSlug={shareSlug}
               publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
+              onOpenCreativeDirector={handleOpenDirectorPanel}
             />
           )}
 
@@ -976,6 +1032,16 @@ export default function CreativeDirector({
         </AnimatePresence>
         </div>
       )}
+
+      <CreativeDirectorPanel
+        open={directorPanelOpen}
+        onClose={() => setDirectorPanelOpen(false)}
+        projectContext={creativeDirectorProjectContext}
+        onUseProposal={handleUseDirectorProposal}
+        pendingCompanionMoment={pendingCompanionMoment}
+        onCompanionMomentHandled={handleCompanionMomentHandled}
+        sessionKey={directorSessionKey}
+      />
     </>
   );
 }

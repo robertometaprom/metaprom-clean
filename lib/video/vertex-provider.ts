@@ -19,6 +19,7 @@ export type VertexVideoGenerateInput = {
   prompt: string;
   imageBuffer: Buffer;
   aspectRatio?: VeoAspectRatio;
+  durationSeconds?: number;
   model: string;
 };
 
@@ -235,6 +236,7 @@ export async function generateVertexVideo(
   const requestPrefix = `${config.outputGcsUri}${randomUUID()}/`;
   const imageBuffer = await normalizeImageForVeo(input.imageBuffer);
   const aspectRatio = input.aspectRatio ?? config.aspectRatio;
+  const durationSeconds = input.durationSeconds ?? config.durationSeconds;
   const model = input.model.trim();
 
   if (!model) {
@@ -261,7 +263,7 @@ export async function generateVertexVideo(
       config: {
         aspectRatio,
         numberOfVideos: 1,
-        durationSeconds: config.durationSeconds,
+        durationSeconds,
         outputGcsUri: requestPrefix,
       },
     });

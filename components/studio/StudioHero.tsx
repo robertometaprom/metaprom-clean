@@ -56,10 +56,10 @@ function scrollToId(id: string) {
 export default function StudioHero() {
   return (
     <section className="relative bg-black">
-      <div className="relative mx-auto max-w-[1280px] overflow-visible px-6 pb-10 pt-6 lg:px-10 lg:pb-14 lg:pt-8">
-        <div className="grid items-center gap-10 overflow-visible lg:grid-cols-[5fr_3fr] lg:gap-6">
+      <div className="relative mx-auto max-w-[1400px] overflow-visible px-6 pb-10 pt-6 lg:px-10 lg:pb-14 lg:pt-8">
+        <div className="grid items-center gap-10 overflow-visible lg:grid-cols-[5fr_3fr] lg:gap-12">
           {/* LEFT — presenter artwork + live phone screen */}
-          <div className="relative mx-auto w-full max-w-[512px] overflow-visible lg:mx-0 lg:-mr-12 lg:max-w-none xl:-mr-16">
+          <div className="relative mx-auto w-full max-w-[512px] overflow-visible lg:mx-0 lg:max-w-none">
             <div
               className="relative w-full overflow-visible"
               style={{ transform: `scaleX(${HERO_PRESENTER_BASE_SCALE_X})` }}
@@ -85,7 +85,7 @@ export default function StudioHero() {
           </div>
 
           {/* RIGHT — supporting marketing content (~35–40%) */}
-          <div className="flex min-w-0 flex-col justify-center lg:py-4 lg:pl-2">
+          <div className="relative z-10 flex min-w-0 flex-col justify-center lg:py-4 lg:pl-10 xl:pl-14">
             <HeroBrandLogo className="mb-8" />
 
             <h1 className="text-[2.5rem] font-bold leading-[1.05] tracking-tight text-white sm:text-[2.85rem] lg:text-[3.35rem]">

@@ -1,4 +1,5 @@
 import type { VeoAspectRatio } from "@/lib/destination-generation";
+import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
 import { generateVertexVideo } from "@/lib/video/vertex-provider";
 import { processCommercialVideo } from "@/lib/video-processing";
 import {
@@ -25,11 +26,16 @@ export async function generateCommercialVideo(
   input: GenerateCommercialVideoInput,
 ): Promise<GenerateCommercialVideoResult> {
   const workflowConfig = resolveWorkflow(input.workflow);
+  const durationSeconds =
+    input.workflow === "premium"
+      ? resolvePremiumVeoDurationSeconds()
+      : undefined;
 
   const rawBuffer = await generateVertexVideo({
     prompt: input.prompt,
     imageBuffer: input.imageBuffer,
     aspectRatio: input.aspectRatio,
+    durationSeconds,
     model: workflowConfig.vertexModel,
   });
 

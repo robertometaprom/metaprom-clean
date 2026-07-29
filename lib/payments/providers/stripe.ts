@@ -11,7 +11,6 @@ import type {
 } from "../types";
 import { PaymentProviderError } from "../types";
 
-const STRIPE_PROVIDER_REFERENCE_PREFIX = "stripe";
 const DEFAULT_APP_URL = "http://localhost:3000";
 
 function getStripeClient(): Stripe {
@@ -31,7 +30,15 @@ function getAppUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
-  return (configured || DEFAULT_APP_URL).replace(/\/$/, "");
+  const appUrl = (configured || DEFAULT_APP_URL).replace(/\/$/, "");
+
+  if (process.env.NODE_ENV === "production" && /localhost|127\.0\.0\.1/i.test(appUrl)) {
+    throw new PaymentProviderError(
+      "NEXT_PUBLIC_APP_URL must be set to your public production URL for Stripe redirects.",
+    );
+  }
+
+  return appUrl;
 }
 
 function getPaymentMethodTypes(
@@ -151,7 +158,7 @@ export const stripePaymentProvider: PaymentProvider = {
     return toCheckoutSession(session);
   },
 
-  async handleWebhook(payload: unknown): Promise<PaymentWebhookResult> {
+  async handleWebhook(payload: unknown): Promise<PaymentWebhookResult | null> {
     const webhookPayload = parseWebhookPayload(payload);
     const rawBody = webhookPayload.rawBody;
     const signature =
@@ -190,9 +197,10 @@ export const stripePaymentProvider: PaymentProvider = {
           "cancelled",
         );
       default:
-        throw new PaymentProviderError(
-          `${STRIPE_PROVIDER_REFERENCE_PREFIX} webhook event "${event.type}" is not handled.`,
+        console.info(
+          `[stripe] Ignoring unhandled webhook event "${event.type}".`,
         );
+        return null;
     }
   },
 };

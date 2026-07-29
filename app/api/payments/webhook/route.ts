@@ -21,8 +21,24 @@ export async function POST(req: Request) {
       payload,
       headers: req.headers,
     });
+
+    if (!result) {
+      return Response.json({ ok: true, ignored: true });
+    }
+
     const supabase = createAdminClient();
-    await persistPaymentResult(supabase, provider.id, result);
+    const purchase = await persistPaymentResult(supabase, provider.id, result);
+
+    if (!purchase) {
+      console.error(
+        "[payments/webhook] Purchase not found for provider session:",
+        result.sessionId,
+      );
+      return Response.json(
+        { error: "Purchase not found for webhook session." },
+        { status: 500 },
+      );
+    }
 
     return Response.json({ ok: true, ...result });
   } catch (error) {

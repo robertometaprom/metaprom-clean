@@ -48,7 +48,7 @@ export interface PaymentProvider {
   readonly id: PaymentProviderId;
   createCheckout(request: CheckoutRequest): Promise<CheckoutSession>;
   getSessionStatus(sessionId: string): Promise<CheckoutSession>;
-  handleWebhook(payload: unknown): Promise<PaymentWebhookResult>;
+  handleWebhook(payload: unknown): Promise<PaymentWebhookResult | null>;
 }
 
 export class PaymentProviderError extends Error {

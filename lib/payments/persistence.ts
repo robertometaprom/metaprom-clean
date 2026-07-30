@@ -76,10 +76,16 @@ export async function updateAssetPaymentState(
     nextStatus = "paid";
   }
 
-  await supabase
+  const { error } = await supabase
     .from("assets")
     .update({ payment_status: nextStatus })
     .eq("id", assetId);
+
+  if (error) {
+    throw new Error(
+      `Failed to update asset payment status for ${assetId}: ${error.message}`,
+    );
+  }
 }
 
 export async function persistPaymentResult(
@@ -121,7 +127,16 @@ export async function persistPaymentResult(
     update.completed_at = null;
   }
 
-  await supabase.from("purchases").update(update).eq("id", purchase.id);
+  const { error: purchaseError } = await supabase
+    .from("purchases")
+    .update(update)
+    .eq("id", purchase.id);
+
+  if (purchaseError) {
+    throw new Error(
+      `Failed to update purchase ${purchase.id}: ${purchaseError.message}`,
+    );
+  }
 
   await updateAssetPaymentState(supabase, purchase.asset_id, result.status, {
     purchaseId: purchase.id,

@@ -438,9 +438,10 @@ export async function purchaseHdCommercial(
     );
   }
 
-  const redirectUrl = readString(checkoutData.redirectUrl);
+  const redirectUrl = readString(checkoutData.redirectUrl)?.trim();
   const sessionId = readString(checkoutData.sessionId);
   const oxxoReference = readString(checkoutData.oxxoReference);
+  const provider = readString(checkoutData.provider);
 
   if (redirectUrl) {
     input.onStatus?.("Abriendo checkout seguro...");
@@ -454,6 +455,12 @@ export async function purchaseHdCommercial(
   }
 
   if (checkoutData.status === "awaiting_payment" && sessionId) {
+    if (provider === "stripe" && !redirectUrl) {
+      throw new Error(
+        "Stripe checkout did not return a redirect URL. Cannot open hosted checkout.",
+      );
+    }
+
     input.onStatus?.(
       oxxoReference
         ? `Referencia OXXO: ${oxxoReference}. Confirma el pago para producir tu comercial HD.`

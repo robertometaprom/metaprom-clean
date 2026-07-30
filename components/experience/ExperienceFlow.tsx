@@ -340,6 +340,11 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
         onStatus: setCheckoutMessage,
       });
 
+      if (result.redirected) {
+        setCheckoutMessage(result.message);
+        return;
+      }
+
       if (result.premiumVideoUrl) {
         if (videoUrlRef.current?.startsWith("blob:")) {
           URL.revokeObjectURL(videoUrlRef.current);
@@ -438,11 +443,19 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                   preload={index <= 1 ? "auto" : "metadata"}
                   fullBleed
                   className="absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ease-in-out"
-                  style={{ opacity: index === activeVideoIndex ? 1 : 0 }}
+                  style={{
+                    opacity: index === activeVideoIndex ? 1 : 0,
+                    filter: "brightness(1.15) contrast(1.05) saturate(1.08)",
+                  }}
                 />
               ))}
-              <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/55" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.08) 100%)",
+                }}
+              />
             </div>
 
             <div className="relative z-10 flex min-h-screen flex-col justify-end px-6 pb-20 pt-32 md:px-10 md:pb-28">

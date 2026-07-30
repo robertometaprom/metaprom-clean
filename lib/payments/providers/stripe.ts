@@ -148,7 +148,15 @@ export const stripePaymentProvider: PaymentProvider = {
       cancel_url: `${appUrl}/studio?payment=cancelled&purchase=${purchaseId}`,
     });
 
-    return toCheckoutSession(session);
+    const checkoutSession = toCheckoutSession(session);
+
+    if (!checkoutSession.redirectUrl) {
+      throw new PaymentProviderError(
+        "Stripe did not return a hosted checkout URL. Verify Stripe Checkout is enabled for card payments.",
+      );
+    }
+
+    return checkoutSession;
   },
 
   async getSessionStatus(sessionId: string): Promise<CheckoutSession> {

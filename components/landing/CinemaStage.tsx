@@ -83,11 +83,17 @@ export default function CinemaStage({
             style={{
               opacity: index === activeIndex ? 1 : 0,
               transitionDuration: `${FADE_MS}ms`,
+              filter: "brightness(1.32) contrast(1.03) saturate(1.10)",
             }}
           />
         ))}
-        <div className="absolute inset-0 bg-black/45" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/50" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(0,0,0,0.34) 0%, rgba(0,0,0,0.14) 48%, rgba(0,0,0,0.02) 100%)",
+          }}
+        />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col justify-end px-6 pb-16 pt-32 md:px-10 md:pb-24">

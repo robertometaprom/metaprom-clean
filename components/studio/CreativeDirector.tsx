@@ -37,6 +37,7 @@ import {
   type AutoSaveStatus,
   type CreationStep,
 } from "@/lib/studio-creation";
+import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
 import type { PaymentMethod } from "@/lib/payments/types";
 import { getPriceById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
@@ -70,6 +71,11 @@ const OFF_TOPIC_MESSAGE =
 
 const HD_COMMERCIAL_PRICE = getPriceById("commercial-video") ?? 149;
 
+const CHECKOUT_PAYMENT_METHODS = [
+  { id: "card" as const, label: "Tarjeta" },
+  { id: "oxxo" as const, label: "OXXO" },
+];
+
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 function describeRuntimeError(error: unknown): string {
@@ -85,6 +91,7 @@ function describeRuntimeError(error: unknown): string {
 }
 
 type CreativeDirectorProps = {
+  paymentProviderDisplay: PaymentProviderDisplayMetadata;
   onWelcomeChange?: (isWelcome: boolean) => void;
   onOpenLibrary?: (focus?: {
     projectId?: string;
@@ -97,6 +104,7 @@ type CreativeDirectorProps = {
 };
 
 export default function CreativeDirector({
+  paymentProviderDisplay,
   onWelcomeChange,
   onOpenLibrary,
   onLibraryUpdated,
@@ -640,6 +648,13 @@ export default function CreativeDirector({
     setError(null);
   }, []);
 
+  const checkoutProvider = {
+    id: paymentProviderDisplay.id,
+    label: paymentProviderDisplay.label,
+    paymentMethods: CHECKOUT_PAYMENT_METHODS,
+    startPurchase: startCheckoutPurchase,
+  };
+
   return (
     <>
       <input
@@ -969,15 +984,7 @@ export default function CreativeDirector({
               purchaseId={checkoutAssetId}
               price={HD_COMMERCIAL_PRICE}
               currency="MXN"
-              provider={{
-                id: "mock",
-                label: "Mock Provider",
-                paymentMethods: [
-                  { id: "card", label: "Tarjeta" },
-                  { id: "oxxo", label: "OXXO" },
-                ],
-                startPurchase: startCheckoutPurchase,
-              }}
+              provider={checkoutProvider}
               previewVideoUrl={videoUrl}
               error={checkoutMessage}
               onSuccess={handleCheckoutSuccess}
@@ -1005,15 +1012,7 @@ export default function CreativeDirector({
               purchaseId={checkoutAssetId}
               price={HD_COMMERCIAL_PRICE}
               currency="MXN"
-              provider={{
-                id: "mock",
-                label: "Mock Provider",
-                paymentMethods: [
-                  { id: "card", label: "Tarjeta" },
-                  { id: "oxxo", label: "OXXO" },
-                ],
-                startPurchase: startCheckoutPurchase,
-              }}
+              provider={checkoutProvider}
               previewVideoUrl={videoUrl}
               isUnlocked
               error={checkoutMessage}

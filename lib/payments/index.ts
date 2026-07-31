@@ -18,6 +18,26 @@ export function getConfiguredPaymentProviderId(): PaymentProviderId {
   return "mock";
 }
 
+export type PaymentProviderDisplayMetadata = {
+  id: PaymentProviderId;
+  label: string;
+};
+
+const PAYMENT_PROVIDER_LABELS: Record<PaymentProviderId, string> = {
+  mock: "Mock Provider",
+  stripe: "Stripe",
+  mercadopago: "Mercado Pago",
+};
+
+export function getPaymentProviderDisplayMetadata(): PaymentProviderDisplayMetadata {
+  const id = getConfiguredPaymentProviderId();
+
+  return {
+    id,
+    label: PAYMENT_PROVIDER_LABELS[id],
+  };
+}
+
 export function getPaymentProvider(): PaymentProvider {
   const providerId = getConfiguredPaymentProviderId();
   const provider = providers[providerId];

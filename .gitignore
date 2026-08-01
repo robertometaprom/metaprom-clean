@@ -49,3 +49,9 @@ tmp-*
 _diag-*.txt
 scripts/output/
 premium-diff.txt
+vercel-production.env
+
+# local experiments and verification scripts (not for auth commit)
+/experimental/
+scripts/verify-auth-continuity.mjs
+.tmp-oauth-browser-profile/

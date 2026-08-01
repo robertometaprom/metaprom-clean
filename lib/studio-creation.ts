@@ -1,6 +1,5 @@
 import {
   BibliotecaAuthError,
-  blobToDataUrl,
   fetchBibliotecaAssetById,
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
@@ -362,22 +361,7 @@ export async function persistCreationToLibrary(
   } catch (saveError) {
     logPersistCreationStage("caught exception", { error: saveError });
 
-    if (saveError instanceof BibliotecaAuthError && input.localDraftKey) {
-      try {
-        sessionStorage.setItem(
-          input.localDraftKey,
-          JSON.stringify({
-            premiumImage: input.enhancedDataUrl,
-            videoDataUrl: input.teaserVideoBlob
-              ? await blobToDataUrl(input.teaserVideoBlob)
-              : undefined,
-            customerIntent: input.customerIntent,
-          }),
-        );
-      } catch {
-        // ignore storage errors
-      }
-
+    if (saveError instanceof BibliotecaAuthError) {
       finalResult = {
         projectId: null,
         assetId: null,
@@ -604,7 +588,7 @@ export function getAutoSaveMessage(status: AutoSaveStatus): string | null {
     case "saved":
       return "Guardado automáticamente en tu biblioteca.";
     case "local-only":
-      return "Guardado en este dispositivo. Inicia sesión para conservarlo.";
+      return "Guarda este trabajo en tu biblioteca personal.";
     default:
       return null;
   }

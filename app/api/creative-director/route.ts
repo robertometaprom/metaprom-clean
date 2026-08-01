@@ -3,19 +3,29 @@ import {
   createCreativeProposal,
   CreativeDirectorError,
 } from "@/lib/creative-director";
-import type {
-  CreateCreativeProposalInput,
-  ProjectContext,
-} from "@/lib/creative-director";
+import type { CreateCreativeProposalInput } from "@/lib/creative-director";
 import { createClient } from "@/lib/supabase/server";
+import {
+  buildPostGenerationAnonymousGuard,
+  evaluateAnonymousDirectorGuard,
+} from "@/lib/security/anonymous-director";
+import {
+  ANON_DIRECTOR_RATE_LIMIT,
+  MAX_JSON_BODY_BYTES,
+} from "@/lib/security/limits";
+import {
+  buildRateLimitKey,
+  checkRateLimit,
+} from "@/lib/security/rate-limit";
+import {
+  assertCustomerMessageLength,
+  BodyTooLargeError,
+  readJsonBodyWithLimit,
+  sanitizeProjectContext,
+} from "@/lib/security/validation";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-type CreativeDirectorRequestBody = {
-  customerMessage?: unknown;
-  projectContext?: unknown;
-};
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
@@ -29,12 +39,12 @@ function parseRequestBody(
   body: unknown,
 ):
   | { ok: true; input: CreateCreativeProposalInput }
-  | { ok: false; error: string } {
+  | { ok: false; error: string; status?: number } {
   if (!isPlainObject(body)) {
     return { ok: false, error: "Request body must be a JSON object." };
   }
 
-  const { customerMessage, projectContext } = body as CreativeDirectorRequestBody;
+  const { customerMessage, projectContext } = body;
 
   if (customerMessage === undefined || customerMessage === null) {
     return { ok: false, error: "customerMessage is required." };
@@ -44,23 +54,25 @@ function parseRequestBody(
     return { ok: false, error: "customerMessage must be a string." };
   }
 
-  if (!customerMessage.trim()) {
-    return { ok: false, error: "customerMessage is required." };
-  }
+  try {
+    const sanitizedMessage = assertCustomerMessageLength(customerMessage);
+    const sanitizedContext = sanitizeProjectContext(projectContext);
 
-  if (projectContext !== undefined && projectContext !== null) {
-    if (!isPlainObject(projectContext)) {
-      return { ok: false, error: "projectContext must be an object." };
-    }
+    return {
+      ok: true,
+      input: {
+        customerMessage: sanitizedMessage,
+        projectContext: sanitizedContext,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Invalid request body.",
+      status: 400,
+    };
   }
-
-  return {
-    ok: true,
-    input: {
-      customerMessage,
-      projectContext: projectContext as ProjectContext | undefined,
-    },
-  };
 }
 
 export async function POST(req: Request) {
@@ -68,27 +80,70 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
 
-  if (!user) {
-    return jsonError("Authentication required.", 401);
+  if (!isAuthenticated) {
+    const rateLimit = checkRateLimit(
+      buildRateLimitKey("creative-director", req),
+      ANON_DIRECTOR_RATE_LIMIT,
+    );
+
+    if (!rateLimit.allowed) {
+      return jsonError(
+        "Has alcanzado el límite de conversación anónima por ahora. Crea una cuenta gratuita para continuar.",
+        429,
+      );
+    }
   }
 
   let body: unknown;
 
   try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid request body.", 400);
+    body = await readJsonBodyWithLimit(req, MAX_JSON_BODY_BYTES);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid request body.";
+    const status = error instanceof BodyTooLargeError ? 413 : 400;
+    return jsonError(message, status);
   }
 
   const parsed = parseRequestBody(body);
 
   if (!parsed.ok) {
-    return jsonError(parsed.error, 400);
+    return jsonError(parsed.error, parsed.status ?? 400);
+  }
+
+  const preGuard = evaluateAnonymousDirectorGuard({
+    isAuthenticated,
+    projectContext: parsed.input.projectContext,
+  });
+
+  if (preGuard.action === "respond") {
+    return Response.json({
+      ...preGuard.response,
+      requiresRegistration: preGuard.requiresRegistration,
+    });
   }
 
   try {
-    const response = await createCreativeProposal(parsed.input);
+    const response = await createCreativeProposal(parsed.input, {
+      anonymousMode: preGuard.anonymousMode,
+    });
+
+    const postGuard = buildPostGenerationAnonymousGuard({
+      isAuthenticated,
+      anonymousMode: preGuard.anonymousMode,
+      response,
+      projectContext: parsed.input.projectContext,
+    });
+
+    if (postGuard?.action === "respond") {
+      return Response.json({
+        ...postGuard.response,
+        requiresRegistration: postGuard.requiresRegistration,
+      });
+    }
+
     return Response.json(response);
   } catch (error) {
     console.error("Creative Director route error:", error);

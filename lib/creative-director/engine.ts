@@ -51,7 +51,9 @@ export async function createCreativeProposal(
   }
 
   const response = await provider.generate({
-    systemPrompt: getCreativeDirectorSystemPrompt(),
+    systemPrompt: getCreativeDirectorSystemPrompt({
+      anonymousMode: options.anonymousMode,
+    }),
     customerMessage,
     projectContext,
   });

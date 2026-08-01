@@ -32,6 +32,8 @@ type PanelMessage = {
   modifications?: DirectorModification[];
 };
 
+export type SerializablePanelMessage = PanelMessage;
+
 export type CreativeDirectorPanelProps = {
   open: boolean;
   onClose: () => void;
@@ -42,6 +44,10 @@ export type CreativeDirectorPanelProps = {
   onCompanionMomentHandled?: (moment: CompanionMoment) => void;
   /** Changes when Studio starts a new commercial session. */
   sessionKey: string;
+  initialMessages?: SerializablePanelMessage[];
+  onMessagesChange?: (messages: SerializablePanelMessage[]) => void;
+  authRedirectTo?: string;
+  showRegistrationInvite?: boolean;
 };
 
 function createMessageId(): string {
@@ -90,8 +96,12 @@ export default function CreativeDirectorPanel({
   pendingCompanionMoment = null,
   onCompanionMomentHandled,
   sessionKey,
+  initialMessages = [],
+  onMessagesChange,
+  authRedirectTo = "/studio",
+  showRegistrationInvite = false,
 }: CreativeDirectorPanelProps) {
-  const [messages, setMessages] = useState<PanelMessage[]>([]);
+  const [messages, setMessages] = useState<PanelMessage[]>(initialMessages);
   const [composerValue, setComposerValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +111,7 @@ export default function CreativeDirectorPanel({
   const [editedProposalText, setEditedProposalText] = useState("");
   const [activeCompanionMoment, setActiveCompanionMoment] =
     useState<CompanionMoment | null>(null);
+  const [registrationRequired, setRegistrationRequired] = useState(false);
 
   const conversationRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -109,17 +120,22 @@ export default function CreativeDirectorPanel({
   const resetPanel = useCallback(() => {
     handledCompanionMomentsRef.current = new Set();
     setActiveCompanionMoment(null);
-    setMessages([]);
+    setMessages(initialMessages);
     setComposerValue("");
     setIsLoading(false);
     setError(null);
     setEditingProposalId(null);
     setEditedProposalText("");
-  }, []);
+    setRegistrationRequired(false);
+  }, [initialMessages]);
 
   useEffect(() => {
     resetPanel();
   }, [resetPanel, sessionKey]);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   const appendDirectorMessage = useCallback((content: string) => {
     setMessages((current) => [
@@ -231,6 +247,10 @@ export default function CreativeDirectorPanel({
         };
 
         setMessages((current) => [...current, directorMessage]);
+
+        if (response.requiresRegistration) {
+          setRegistrationRequired(true);
+        }
       } catch (sendError) {
         const message =
           mapCreationError(
@@ -273,6 +293,9 @@ export default function CreativeDirectorPanel({
     }
     return null;
   }, [messages]);
+
+  const shouldShowRegistrationInvite =
+    showRegistrationInvite || registrationRequired;
 
   const headerSubtitle = activeCompanionMoment
     ? getCompanionHeaderSubtitle(activeCompanionMoment)
@@ -408,11 +431,21 @@ export default function CreativeDirectorPanel({
 
         <footer className="border-t border-neutral-200 bg-white px-6 py-4">
           {error ? (
-            <div className="mb-3 space-y-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <p>{error}</p>
-              {error.includes("Inicia sesión") ? (
-                <GoogleSignInButton redirectTo="/studio" />
-              ) : null}
+            </div>
+          ) : null}
+
+          {shouldShowRegistrationInvite ? (
+            <div className="mb-4 space-y-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
+              <p className="text-sm leading-relaxed text-violet-950">
+                Crea tu cuenta gratuita para guardar este comercial y continuar
+                donde te quedaste.
+              </p>
+              <GoogleSignInButton
+                redirectTo={authRedirectTo}
+                label="Crear cuenta gratuita"
+              />
             </div>
           ) : null}
 
@@ -433,12 +466,12 @@ export default function CreativeDirectorPanel({
               }}
               rows={3}
               placeholder="Cuéntame tu objetivo comercial..."
-              disabled={isLoading}
+              disabled={isLoading || registrationRequired}
               className="w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="submit"
-              disabled={!composerValue.trim() || isLoading}
+              disabled={!composerValue.trim() || isLoading || registrationRequired}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-3.5 text-sm font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Enviar

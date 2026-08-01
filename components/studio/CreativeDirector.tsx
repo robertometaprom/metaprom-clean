@@ -49,8 +49,22 @@ import type { CompanionMoment } from "@/lib/studio/creative-director-companion";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import type { StudioDestination } from "@/lib/studio-destination";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
-
-const STUDIO_DRAFT_KEY = "metaprom_studio_draft";
+import {
+  buildAuthRedirectUrl,
+  claimStudioDraft,
+  fetchStudioDraft,
+  readResumeTokenFromLocation,
+  readStoredResumeToken,
+  saveStudioDraft,
+  stripResumeTokenFromUrl,
+} from "@/lib/studio-draft/client";
+import type {
+  StudioDraftPendingAction,
+  StudioDraftResponse,
+} from "@/lib/studio-draft/types";
+import type { ConversationMessage } from "@/lib/creative-director/types";
+import { createClient } from "@/lib/supabase/client";
+import type { SerializablePanelMessage } from "@/components/studio/CreativeDirectorPanel";
 
 type Phase =
   | "welcome"
@@ -134,6 +148,15 @@ export default function CreativeDirector({
   const [pendingCompanionMoment, setPendingCompanionMoment] =
     useState<CompanionMoment | null>(null);
   const [directorSessionKey, setDirectorSessionKey] = useState("initial");
+  const [resumeToken, setResumeToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [draftRecoveryError, setDraftRecoveryError] = useState<string | null>(
+    null,
+  );
+  const [showRegistrationInvite, setShowRegistrationInvite] = useState(false);
+  const [directorMessages, setDirectorMessages] = useState<
+    SerializablePanelMessage[]
+  >([]);
 
   const previewUrlRef = useRef<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
@@ -154,6 +177,9 @@ export default function CreativeDirector({
     destination?: StudioDestination | null;
   }>({});
   const destinationRef = useRef<StudioDestination | null>(null);
+  const teaserVideoBlobStore = useRef<Blob | null>(null);
+  const resumeHandledRef = useRef(false);
+  const authRedirectToRef = useRef("/studio");
 
   useEffect(() => {
     selectedFileRef.current = selectedFile;
@@ -162,6 +188,282 @@ export default function CreativeDirector({
   useEffect(() => {
     onWelcomeChange?.(phase === "welcome");
   }, [phase, onWelcomeChange]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(Boolean(user));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session?.user));
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const buildDraftPayload = useCallback(
+    (pendingAction?: StudioDraftPendingAction | null) => {
+      const product = matchedProductRef.current;
+      const conversationHistory: ConversationMessage[] = directorMessages.map(
+        (message) => ({
+          role: message.role,
+          content: message.content,
+        }),
+      );
+
+      return {
+        resumeToken: resumeToken ?? undefined,
+        phase: (phase === "checkout" ||
+        phase === "processing_payment" ||
+        phase === "processing_premium" ||
+        phase === "ready"
+          ? phase
+          : "preview") as "preview" | "checkout" | "processing_payment" | "processing_premium" | "ready",
+        customerIntent: customerIntentRef.current.trim(),
+        imagePrompt: imagePromptRef.current,
+        videoPrompt: videoPromptRef.current,
+        workflowId:
+          projectMetadataRef.current.workflow_id ?? product.id ?? null,
+        industry: projectMetadataRef.current.industry ?? null,
+        intendedDestination:
+          destinationRef.current?.platform ??
+          projectMetadataRef.current.intended_destination ??
+          null,
+        destination: destinationRef.current,
+        productMode: product.mode,
+        conversationHistory,
+        pendingAction: pendingAction ?? null,
+      };
+    },
+    [directorMessages, phase, resumeToken],
+  );
+
+  const persistAnonymousDraft = useCallback(
+    async (
+      pendingAction?: StudioDraftPendingAction | null,
+      overrides?: {
+        enhancedDataUrl?: string;
+        teaserVideoBlob?: Blob | null;
+      },
+    ) => {
+      const file = selectedFileRef.current;
+      const enhancedDataUrl = overrides?.enhancedDataUrl ?? premiumImage;
+      if (!file || !enhancedDataUrl) {
+        throw new Error("No hay suficiente información para guardar tu borrador.");
+      }
+
+      const result = await saveStudioDraft({
+        payload: buildDraftPayload(pendingAction),
+        originalFile: file,
+        enhancedDataUrl,
+        teaserVideoBlob:
+          overrides?.teaserVideoBlob ?? teaserVideoBlobStore.current,
+      });
+
+      setResumeToken(result.resumeToken);
+      authRedirectToRef.current = buildAuthRedirectUrl(result.resumeToken);
+      return result.resumeToken;
+    },
+    [buildDraftPayload, premiumImage],
+  );
+
+  const restoreStudioFromDraft = useCallback(
+    async (draftResponse: StudioDraftResponse) => {
+      const { draft, urls } = draftResponse;
+
+      setResumeToken(draft.resume_token);
+      authRedirectToRef.current = buildAuthRedirectUrl(draft.resume_token);
+      setDraftRecoveryError(null);
+
+      customerIntentRef.current = draft.customer_intent ?? "";
+      setInput(draft.customer_intent ?? "");
+      imagePromptRef.current = draft.image_prompt ?? "";
+      videoPromptRef.current = draft.video_prompt ?? "";
+      projectMetadataRef.current = {
+        workflow_id: draft.workflow_id,
+        industry: draft.industry,
+        intended_destination: draft.intended_destination,
+        destination: draft.destination,
+      };
+      destinationRef.current = draft.destination;
+      setDestination(draft.destination);
+
+      const productId = (draft.workflow_id ??
+        "premium-image") as keyof typeof PRODUCT_CATALOG;
+      const product =
+        PRODUCT_CATALOG[productId] ?? PRODUCT_CATALOG["premium-image"];
+      setMatchedProduct(product);
+      matchedProductRef.current = product;
+
+      if (urls.enhancedUrl) {
+        setPremiumImage(urls.enhancedUrl);
+      }
+
+      if (urls.teaserUrl) {
+        if (videoUrlRef.current?.startsWith("blob:")) {
+          URL.revokeObjectURL(videoUrlRef.current);
+        }
+        videoUrlRef.current = urls.teaserUrl;
+        setVideoUrl(urls.teaserUrl);
+      }
+
+      if (urls.originalUrl) {
+        if (previewUrlRef.current?.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrlRef.current);
+        }
+        previewUrlRef.current = urls.originalUrl;
+        setPreviewUrl(urls.originalUrl);
+
+        try {
+          const response = await fetch(urls.originalUrl);
+          const blob = await response.blob();
+          const file = new File(
+            [blob],
+            draft.original_name || "original.jpg",
+            {
+              type: draft.original_content_type || blob.type || "image/jpeg",
+            },
+          );
+          setSelectedFile(file);
+          selectedFileRef.current = file;
+        } catch (fetchError) {
+          console.error("Failed to restore original file from draft", fetchError);
+        }
+      }
+
+      if (draft.conversation_history?.length) {
+        setDirectorMessages(
+          draft.conversation_history.map((message, index) => ({
+            id: `restored-${index}-${draft.resume_token}`,
+            role: message.role,
+            content: message.content,
+          })),
+        );
+      }
+
+      const restoredPhase =
+        draft.phase === "checkout" ||
+        draft.phase === "processing_payment" ||
+        draft.phase === "processing_premium" ||
+        draft.phase === "ready"
+          ? draft.phase
+          : "preview";
+      setPhase(restoredPhase);
+      setAutoSaveStatus("local-only");
+      setDirectorPanelOpen(false);
+      setShowRegistrationInvite(false);
+    },
+    [],
+  );
+
+  const applyClaimResult = useCallback(
+    async (
+      claimResult: Awaited<ReturnType<typeof claimStudioDraft>>,
+    ) => {
+      savedProjectIdRef.current = claimResult.projectId;
+      savedAssetIdRef.current = claimResult.assetId;
+      setCheckoutAssetId(claimResult.assetId);
+      if (claimResult.shareSlug) {
+        setShareSlug(claimResult.shareSlug);
+      }
+      setAutoSaveStatus("saved");
+      markStudioHasProjects();
+      onLibraryUpdated?.({
+        projectId: claimResult.projectId,
+        assetId: claimResult.assetId,
+      });
+
+      if (claimResult.pendingAction === "unlock") {
+        setPhase("checkout");
+      } else {
+        setPhase("preview");
+        onOpenLibrary?.({
+          projectId: claimResult.projectId,
+          assetId: claimResult.assetId,
+        });
+      }
+
+      setShowRegistrationInvite(false);
+      setPendingCompanionMoment(null);
+    },
+    [onLibraryUpdated, onOpenLibrary],
+  );
+
+  const requestAuthentication = useCallback(
+    async (pendingAction: StudioDraftPendingAction) => {
+      setDraftRecoveryError(null);
+
+      try {
+        await persistAnonymousDraft(pendingAction);
+        setPendingCompanionMoment("save_invitation");
+        setShowRegistrationInvite(true);
+        setDirectorPanelOpen(true);
+      } catch (saveError) {
+        console.error(saveError);
+        setDraftRecoveryError(
+          saveError instanceof Error
+            ? saveError.message
+            : "No pudimos preparar tu borrador para continuar.",
+        );
+      }
+    },
+    [persistAnonymousDraft],
+  );
+
+  useEffect(() => {
+    if (resumeHandledRef.current) return;
+
+    const urlToken = readResumeTokenFromLocation();
+    const storedToken = readStoredResumeToken();
+    const token = urlToken ?? storedToken;
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const resume = async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const claimResult = await claimStudioDraft(token);
+          if (cancelled) return;
+          await applyClaimResult(claimResult);
+          resumeHandledRef.current = true;
+          return;
+        }
+
+        const draftResponse = await fetchStudioDraft(token);
+        if (cancelled) return;
+        await restoreStudioFromDraft(draftResponse);
+        resumeHandledRef.current = true;
+      } catch (resumeError) {
+        if (cancelled) return;
+        console.error(resumeError);
+        setDraftRecoveryError(
+          resumeError instanceof Error
+            ? resumeError.message
+            : "No pudimos recuperar tu sesión anterior.",
+        );
+        if (urlToken) {
+          stripResumeTokenFromUrl();
+        }
+      }
+    };
+
+    void resume();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyClaimResult, restoreStudioFromDraft]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -284,7 +586,6 @@ export default function CreativeDirector({
         },
         existingProjectId: savedProjectIdRef.current,
         existingAssetId: savedAssetIdRef.current,
-        localDraftKey: STUDIO_DRAFT_KEY,
       });
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
@@ -301,11 +602,35 @@ export default function CreativeDirector({
           projectId: result.projectId ?? undefined,
           assetId: result.assetId ?? undefined,
         });
+      } else if (result.status === "local-only") {
+        try {
+          await persistAnonymousDraft(null, {
+            enhancedDataUrl: input.enhancedDataUrl,
+            teaserVideoBlob: input.teaserVideoBlob,
+          });
+        } catch (draftError) {
+          console.error("Anonymous draft persistence failed", draftError);
+        }
       }
       setAutoSaveStatus(result.status);
     },
-    [onLibraryUpdated],
+    [onLibraryUpdated, persistAnonymousDraft],
   );
+
+  useEffect(() => {
+    if (!isAuthenticated || autoSaveStatus !== "local-only") return;
+
+    const file = selectedFileRef.current;
+    if (!file || !premiumImage || savedAssetIdRef.current) return;
+
+    void persistToLibrary({
+      originalFile: file,
+      enhancedDataUrl: premiumImage,
+      teaserVideoBlob: teaserVideoBlobStore.current ?? undefined,
+      imagePrompt: imagePromptRef.current,
+      videoPrompt: videoPromptRef.current,
+    });
+  }, [autoSaveStatus, isAuthenticated, persistToLibrary, premiumImage]);
 
   const runCreation = useCallback(async () => {
     const file = selectedFileRef.current;
@@ -352,6 +677,7 @@ export default function CreativeDirector({
       imagePromptRef.current = result.imagePrompt;
       videoPromptRef.current = result.videoPrompt;
       setPremiumImage(result.premiumImage);
+      teaserVideoBlobStore.current = result.videoBlob;
       videoUrlRef.current = result.videoUrl;
       setVideoUrl(result.videoUrl);
 
@@ -584,6 +910,13 @@ export default function CreativeDirector({
     setPendingCompanionMoment(null);
     setDirectorSessionKey(`${Date.now()}`);
     setCheckoutMessage(null);
+    setResumeToken(null);
+    setShowRegistrationInvite(false);
+    setDirectorMessages([]);
+    setDraftRecoveryError(null);
+    teaserVideoBlobStore.current = null;
+    authRedirectToRef.current = "/studio";
+    resumeHandledRef.current = false;
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
@@ -607,11 +940,25 @@ export default function CreativeDirector({
   };
 
   const handleOpenLibrary = useCallback(() => {
+    if (!isAuthenticated || autoSaveStatus === "local-only") {
+      void requestAuthentication("save");
+      return;
+    }
+
     onOpenLibrary?.({
       projectId: savedProjectIdRef.current ?? undefined,
       assetId: savedAssetIdRef.current ?? undefined,
     });
-  }, [onOpenLibrary]);
+  }, [autoSaveStatus, isAuthenticated, onOpenLibrary, requestAuthentication]);
+
+  const handleUnlock = useCallback(() => {
+    if (!isAuthenticated || !savedAssetIdRef.current) {
+      void requestAuthentication("unlock");
+      return;
+    }
+
+    setPhase("checkout");
+  }, [isAuthenticated, requestAuthentication]);
 
   const contextualUploadMessage = matchedProduct
     ? getUploadMessage(matchedProduct)
@@ -960,7 +1307,7 @@ export default function CreativeDirector({
               autoSaveMessage={autoSaveMessage}
               onAutoSaveClick={handleOpenLibrary}
               initialStage="fade"
-              onUnlock={() => setPhase("checkout")}
+              onUnlock={handleUnlock}
               onCreateNew={resetFlow}
               onDownloadImage={premiumImage ? handleDownloadImage : undefined}
               hasPremiumImage={Boolean(premiumImage)}
@@ -969,6 +1316,12 @@ export default function CreativeDirector({
               onOpenCreativeDirector={handleOpenDirectorPanel}
             />
           )}
+
+        {draftRecoveryError && (
+          <div className="mx-auto mb-4 max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {draftRecoveryError}
+          </div>
+        )}
 
         {(phase === "checkout" ||
           phase === "processing_payment" ||
@@ -990,11 +1343,11 @@ export default function CreativeDirector({
               onSuccess={handleCheckoutSuccess}
               onCancel={() => setPhase("preview")}
             />
-            {!checkoutAssetId && autoSaveStatus === "local-only" && (
+            {!checkoutAssetId && showRegistrationInvite && (
               <div className="mx-auto max-w-md">
                 <GoogleSignInButton
-                  redirectTo="/studio"
-                  label="Inicia sesión para comprar tu comercial HD"
+                  redirectTo={authRedirectToRef.current}
+                  label="Crear cuenta gratuita para continuar"
                 />
               </div>
             )}
@@ -1040,6 +1393,10 @@ export default function CreativeDirector({
         pendingCompanionMoment={pendingCompanionMoment}
         onCompanionMomentHandled={handleCompanionMomentHandled}
         sessionKey={directorSessionKey}
+        initialMessages={directorMessages}
+        onMessagesChange={setDirectorMessages}
+        authRedirectTo={authRedirectToRef.current}
+        showRegistrationInvite={showRegistrationInvite}
       />
     </>
   );

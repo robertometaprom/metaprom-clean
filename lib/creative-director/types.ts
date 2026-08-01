@@ -79,6 +79,8 @@ export type CreativeDirectorResponse = {
   clarifyingQuestions?: string[];
   /** Visible modifications made from the customer's original request. */
   modifications?: DirectorModification[];
+  /** Anonymous session ended — client should invite free account creation. */
+  requiresRegistration?: boolean;
 };
 
 export type CreateCreativeProposalInput = {
@@ -89,6 +91,7 @@ export type CreateCreativeProposalInput = {
 export type CreateCreativeProposalOptions = {
   provider?: CreativeDirectorProvider;
   validators?: CreativeValidator[];
+  anonymousMode?: boolean;
 };
 
 // --- Provider types ---

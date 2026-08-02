@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 
@@ -9,30 +10,68 @@ type StudioShellProps = {
   children: React.ReactNode;
   variant?: "welcome" | "flow";
   onOpenLibrary?: () => void;
+  authUser?: User | null;
 };
+
+function getStudioDisplayName(user: User | null | undefined): string {
+  if (!user) return "";
+
+  const name =
+    user.user_metadata?.full_name ??
+    user.user_metadata?.name ??
+    user.email?.split("@")[0] ??
+    "Usuario";
+
+  return name.split(" ")[0] ?? name;
+}
+
+export function useStudioAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
+      if (cancelled) return;
+      setUser(currentUser);
+      setReady(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+
+      // INITIAL_SESSION can emit session=null before cookies hydrate and would
+      // overwrite a valid getUser() result — only react to real auth transitions.
+      if (event === "INITIAL_SESSION") {
+        setReady(true);
+        return;
+      }
+
+      setUser(session?.user ?? null);
+      setReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return { user, ready };
+}
 
 export default function StudioShell({
   children,
   variant = "welcome",
   onOpenLibrary,
+  authUser,
 }: StudioShellProps) {
-  const [displayName, setDisplayName] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-
-      const name =
-        user.user_metadata?.full_name ??
-        user.user_metadata?.name ??
-        user.email?.split("@")[0] ??
-        "Usuario";
-
-      setDisplayName(name.split(" ")[0] ?? name);
-    });
-  }, []);
+  const displayName = getStudioDisplayName(authUser);
 
   return (
     <div

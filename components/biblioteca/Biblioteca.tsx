@@ -37,8 +37,6 @@ import { downloadFromUrl } from "@/lib/library-storage";
 
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
-import { createClient } from "@/lib/supabase/client";
-
 import { ShareCommercialActions } from "@/components/share";
 
 
@@ -58,6 +56,10 @@ export type BibliotecaProps = {
   resetToListToken?: number;
 
   onClearFocus?: () => void;
+
+  authUser: User | null;
+
+  authReady: boolean;
 
 };
 
@@ -319,6 +321,10 @@ export default function Biblioteca({
 
   onClearFocus,
 
+  authUser,
+
+  authReady,
+
 }: BibliotecaProps) {
 
   const [projects, setProjects] = useState<BibliotecaProject[]>([]);
@@ -345,10 +351,6 @@ export default function Biblioteca({
 
   const [highlightAssetId, setHighlightAssetId] = useState<string | null>(null);
 
-  const [authUser, setAuthUser] = useState<User | null>(null);
-
-  const [authReady, setAuthReady] = useState(false);
-
 
 
   const appliedFocusKeyRef = useRef<string | null>(null);
@@ -366,54 +368,6 @@ export default function Biblioteca({
   assetsByProjectRef.current = assetsByProject;
 
   selectedProjectIdRef.current = selectedProjectId;
-
-
-
-  useEffect(() => {
-
-    const supabase = createClient();
-
-    let cancelled = false;
-
-
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-
-      if (cancelled) return;
-
-      setAuthUser(user);
-
-      setAuthReady(true);
-
-    });
-
-
-
-    const {
-
-      data: { subscription },
-
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-
-      if (cancelled) return;
-
-      setAuthUser(session?.user ?? null);
-
-      setAuthReady(true);
-
-    });
-
-
-
-    return () => {
-
-      cancelled = true;
-
-      subscription.unsubscribe();
-
-    };
-
-  }, []);
 
 
 

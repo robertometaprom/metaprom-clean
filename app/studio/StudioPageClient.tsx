@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import CreativeDirector from "@/components/studio/CreativeDirector";
 import Biblioteca from "@/components/biblioteca/Biblioteca";
-import StudioShell from "@/components/studio/StudioShell";
+import StudioShell, { useStudioAuth } from "@/components/studio/StudioShell";
 import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
 import {
   clearBibliotecaQueryFromUrl,
@@ -19,6 +19,7 @@ type StudioPageClientProps = {
 export default function StudioPageClient({
   paymentProviderDisplay,
 }: StudioPageClientProps) {
+  const { user: authUser, ready: authReady } = useStudioAuth();
   const [isWelcome, setIsWelcome] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryFocus, setLibraryFocus] = useState<BibliotecaFocus | null>(null);
@@ -67,6 +68,7 @@ export default function StudioPageClient({
     <StudioShell
       variant={isWelcome ? "welcome" : "flow"}
       onOpenLibrary={() => handleOpenLibrary()}
+      authUser={authUser}
     >
       <CreativeDirector
         paymentProviderDisplay={paymentProviderDisplay}
@@ -82,6 +84,8 @@ export default function StudioPageClient({
         refreshToken={libraryRefreshToken}
         resetToListToken={libraryResetToListToken}
         onClearFocus={handleClearLibraryFocus}
+        authUser={authUser}
+        authReady={authReady}
       />
     </StudioShell>
   );

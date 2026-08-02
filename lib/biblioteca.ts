@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 import {
-  resolveLibraryStoragePath,
   resolveLibraryUrl,
 } from "@/lib/library-storage";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
@@ -247,11 +246,14 @@ async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset
   const [originalUrl, imageUrl, teaserUrl, premiumUrl] = await Promise.all([
     resolveLibraryUrl(asset.original_path, asset.original_url),
     resolveLibraryUrl(asset.image_path, asset.image_url),
-    resolveLibraryUrl(
-      asset.teaser_video_path,
-      asset.teaser_video_url ?? asset.video_url,
-    ),
-    resolveLibraryUrl(asset.premium_video_path, asset.premium_video_url),
+    asset.teaser_video_path
+      ? resolveLibraryUrl(asset.teaser_video_path, null)
+      : Promise.resolve(
+          asset.teaser_video_url ?? asset.video_url ?? null,
+        ),
+    asset.premium_video_path
+      ? resolveLibraryUrl(asset.premium_video_path, null)
+      : Promise.resolve(asset.premium_video_url ?? null),
   ]);
 
   return {
@@ -640,42 +642,40 @@ export function assetHasShareSlug(asset: BibliotecaAsset): boolean {
 
 export async function refreshAssetTeaserUrl(
   asset: BibliotecaAsset,
+  preserveUrl?: string | null,
 ): Promise<string | null> {
-  const path = resolveLibraryStoragePath(
-    asset.teaser_video_path,
-    asset.teaser_video_url ?? asset.video_url,
-  );
+  const path = asset.teaser_video_path;
 
   if (!path) {
-    return getTeaserPlaybackUrl(asset);
+    return preserveUrl ?? getTeaserPlaybackUrl(asset);
   }
 
-  const { createSignedLibraryUrl } = await import("@/lib/library-storage");
-  try {
-    return await createSignedLibraryUrl(path);
-  } catch (error) {
-    console.error("refreshAssetTeaserUrl failed", { assetId: asset.id, error });
-    return getTeaserPlaybackUrl(asset);
-  }
+  const { getSignedLibraryUrlCached } = await import(
+    "@/lib/library-signed-url-cache"
+  );
+  const result = await getSignedLibraryUrlCached(path, {
+    preserveUrl: preserveUrl ?? getTeaserPlaybackUrl(asset),
+    forceRefresh: true,
+  });
+  return result.url;
 }
 
 export async function refreshAssetPremiumUrl(
   asset: BibliotecaAsset,
+  preserveUrl?: string | null,
 ): Promise<string | null> {
-  const path = resolveLibraryStoragePath(
-    asset.premium_video_path,
-    asset.premium_video_url,
-  );
+  const path = asset.premium_video_path;
 
   if (!path) {
-    return asset.premium_video_url ?? null;
+    return preserveUrl ?? asset.premium_video_url ?? null;
   }
 
-  const { createSignedLibraryUrl } = await import("@/lib/library-storage");
-  try {
-    return await createSignedLibraryUrl(path);
-  } catch (error) {
-    console.error("refreshAssetPremiumUrl failed", { assetId: asset.id, error });
-    return asset.premium_video_url ?? null;
-  }
+  const { getSignedLibraryUrlCached } = await import(
+    "@/lib/library-signed-url-cache"
+  );
+  const result = await getSignedLibraryUrlCached(path, {
+    preserveUrl: preserveUrl ?? asset.premium_video_url ?? null,
+    forceRefresh: true,
+  });
+  return result.url;
 }

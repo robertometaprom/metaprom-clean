@@ -23,10 +23,6 @@ import {
 
   isAssetPremiumOwned,
 
-  refreshAssetPremiumUrl,
-
-  refreshAssetTeaserUrl,
-
   type BibliotecaAsset,
 
   type BibliotecaProject,
@@ -38,6 +34,8 @@ import {
 import { buildBibliotecaStudioUrl } from "@/lib/biblioteca-routing";
 
 import { downloadFromUrl } from "@/lib/library-storage";
+
+import { useSignedLibraryUrl } from "@/lib/use-signed-library-url";
 
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
@@ -1155,25 +1153,15 @@ function AssetDetailCard({
 
   const premiumRetryCountRef = useRef(0);
 
-  const [teaserUrl, setTeaserUrl] = useState<string | null>(() =>
-
+  const teaser = useSignedLibraryUrl(
+    asset.teaser_video_path,
     getTeaserPlaybackUrl(asset),
-
   );
 
-  const [premiumUrl, setPremiumUrl] = useState<string | null>(
-
-    () => asset.premium_video_url ?? null,
-
+  const premium = useSignedLibraryUrl(
+    asset.premium_video_path,
+    asset.premium_video_url ?? null,
   );
-
-  const [teaserLoading, setTeaserLoading] = useState(false);
-
-  const [premiumLoading, setPremiumLoading] = useState(false);
-
-  const [teaserError, setTeaserError] = useState(false);
-
-  const [premiumError, setPremiumError] = useState(false);
 
   const [downloading, setDownloading] = useState<string | null>(null);
 
@@ -1193,7 +1181,7 @@ function AssetDetailCard({
 
   const publicPreviewUrl = getPublicPreviewUrl(asset);
 
-  const hasPremium = Boolean(premiumUrl || asset.premium_video_path);
+  const hasPremium = Boolean(premium.url || asset.premium_video_path);
 
   const premiumOwned = isAssetPremiumOwned(asset);
 
@@ -1204,59 +1192,9 @@ function AssetDetailCard({
 
 
 
-  const retryTeaser = useCallback(async () => {
+  const retryTeaser = teaser.retry;
 
-    setTeaserLoading(true);
-
-    setTeaserError(false);
-
-    try {
-
-      const url = await refreshAssetTeaserUrl(asset);
-
-      setTeaserUrl(url);
-
-      if (!url) setTeaserError(true);
-
-    } catch {
-
-      setTeaserError(true);
-
-    } finally {
-
-      setTeaserLoading(false);
-
-    }
-
-  }, [asset]);
-
-
-
-  const retryPremium = useCallback(async () => {
-
-    setPremiumLoading(true);
-
-    setPremiumError(false);
-
-    try {
-
-      const url = await refreshAssetPremiumUrl(asset);
-
-      setPremiumUrl(url);
-
-      if (!url) setPremiumError(true);
-
-    } catch {
-
-      setPremiumError(true);
-
-    } finally {
-
-      setPremiumLoading(false);
-
-    }
-
-  }, [asset]);
+  const retryPremium = premium.retry;
 
 
 
@@ -1266,111 +1204,7 @@ function AssetDetailCard({
 
     premiumRetryCountRef.current = 0;
 
-    setTeaserUrl(getTeaserPlaybackUrl(asset));
-
-    setPremiumUrl(asset.premium_video_url ?? null);
-
-    setTeaserError(false);
-
-    setPremiumError(false);
-
-  }, [asset.id, asset.premium_video_url, asset.teaser_video_url, asset.video_url]);
-
-
-
-  useEffect(() => {
-
-    if (!asset.teaser_video_path || getTeaserPlaybackUrl(asset)) return;
-
-
-
-    let cancelled = false;
-
-    setTeaserLoading(true);
-
-    void refreshAssetTeaserUrl(asset)
-
-      .then((url) => {
-
-        if (cancelled) return;
-
-        if (url) {
-
-          setTeaserUrl(url);
-
-          setTeaserError(false);
-
-        } else if (!getTeaserPlaybackUrl(asset)) {
-
-          setTeaserError(true);
-
-        }
-
-      })
-
-      .finally(() => {
-
-        if (!cancelled) setTeaserLoading(false);
-
-      });
-
-
-
-    return () => {
-
-      cancelled = true;
-
-    };
-
-  }, [asset.id, asset.teaser_video_path, asset.teaser_video_url, asset.video_url]);
-
-
-
-  useEffect(() => {
-
-    if (!asset.premium_video_path || asset.premium_video_url) return;
-
-
-
-    let cancelled = false;
-
-    setPremiumLoading(true);
-
-    void refreshAssetPremiumUrl(asset)
-
-      .then((url) => {
-
-        if (cancelled) return;
-
-        if (url) {
-
-          setPremiumUrl(url);
-
-          setPremiumError(false);
-
-        } else if (!asset.premium_video_url) {
-
-          setPremiumError(true);
-
-        }
-
-      })
-
-      .finally(() => {
-
-        if (!cancelled) setPremiumLoading(false);
-
-      });
-
-
-
-    return () => {
-
-      cancelled = true;
-
-    };
-
-  }, [asset.id, asset.premium_video_path, asset.premium_video_url]);
+  }, [asset.id]);
 
 
 
@@ -1390,8 +1224,6 @@ function AssetDetailCard({
 
     if (teaserRetryCountRef.current >= 2) {
 
-      setTeaserError(true);
-
       return;
 
     }
@@ -1407,8 +1239,6 @@ function AssetDetailCard({
   const handlePremiumError = useCallback(() => {
 
     if (premiumRetryCountRef.current >= 2) {
-
-      setPremiumError(true);
 
       return;
 
@@ -1596,7 +1426,7 @@ function AssetDetailCard({
 
             <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-neutral-900 shadow-md">
 
-              {teaserLoading && (
+              {teaser.loading && (
 
                 <div className="absolute inset-0 flex items-center justify-center">
 
@@ -1606,13 +1436,13 @@ function AssetDetailCard({
 
               )}
 
-              {teaserUrl && !teaserLoading && (
+              {teaser.url && (
 
                 <video
 
-                  key={teaserUrl}
+                  key={teaser.url}
 
-                  src={teaserUrl}
+                  src={teaser.url}
 
                   controls
 
@@ -1628,11 +1458,11 @@ function AssetDetailCard({
 
               )}
 
-              {!teaserUrl && !teaserLoading && (
+              {!teaser.url && !teaser.loading && (
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {teaserError ? (
+                  {teaser.error ? (
 
                     <>
 
@@ -1662,17 +1492,17 @@ function AssetDetailCard({
 
                     </>
 
-                  ) : asset.teaser_video_path ? (
-
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-
-                  ) : (
+                  ) : teaser.missing ? (
 
                     <p className="text-sm text-white/50">
 
                       El avance se generará al crear tu comercial.
 
                     </p>
+
+                  ) : (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   )}
 
@@ -1708,7 +1538,7 @@ function AssetDetailCard({
 
             <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-neutral-900 shadow-md">
 
-              {premiumLoading && (
+              {premium.loading && (
 
                 <div className="absolute inset-0 flex items-center justify-center">
 
@@ -1718,13 +1548,13 @@ function AssetDetailCard({
 
               )}
 
-              {premiumUrl && !premiumLoading && (
+              {premium.url && (
 
                 <video
 
-                  key={premiumUrl}
+                  key={premium.url}
 
-                  src={premiumUrl}
+                  src={premium.url}
 
                   controls
 
@@ -1740,11 +1570,11 @@ function AssetDetailCard({
 
               )}
 
-              {!premiumUrl && !premiumLoading && (
+              {!premium.url && !premium.loading && (
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {premiumError ? (
+                  {premium.error ? (
 
                     <>
 
@@ -1774,11 +1604,7 @@ function AssetDetailCard({
 
                     </>
 
-                  ) : asset.premium_video_path ? (
-
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-
-                  ) : (
+                  ) : premium.missing ? (
 
                     <p className="text-sm text-white/50">
 
@@ -1789,6 +1615,10 @@ function AssetDetailCard({
                         : "Compra HD en el estudio para desbloquear."}
 
                     </p>
+
+                  ) : (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   )}
 
@@ -1822,7 +1652,7 @@ function AssetDetailCard({
 
         )}
 
-        {premiumUrl && (
+        {premium.url && (
 
           <button
 
@@ -1834,7 +1664,7 @@ function AssetDetailCard({
 
               void handleDownload(
 
-                premiumUrl,
+                premium.url,
 
                 `metaprom-${asset.id}-comercial-hd.mp4`,
 

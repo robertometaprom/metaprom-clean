@@ -1,3 +1,4 @@
+import { getSignedLibraryUrlCached } from "@/lib/library-signed-url-cache";
 import { createClient } from "@/lib/supabase/client";
 
 export const LIBRARY_BUCKET = "library";
@@ -105,18 +106,20 @@ export async function resolveLibraryUrl(
   const resolvedPath = resolveLibraryStoragePath(path, fallbackUrl);
 
   if (resolvedPath) {
-    try {
-      return await createSignedLibraryUrl(resolvedPath);
-    } catch (error) {
-      console.error("resolveLibraryUrl: signed URL failed", {
-        path: resolvedPath,
-        error,
-      });
-      if (fallbackUrl && !fallbackUrl.startsWith("blob:")) {
-        return fallbackUrl;
-      }
-      return null;
+    const preserveUrl =
+      isSignedLibraryObjectUrl(fallbackUrl) && fallbackUrl
+        ? fallbackUrl
+        : null;
+    const result = await getSignedLibraryUrlCached(resolvedPath, {
+      preserveUrl,
+    });
+    if (result.url) {
+      return result.url;
     }
+    if (fallbackUrl && !fallbackUrl.startsWith("blob:")) {
+      return fallbackUrl;
+    }
+    return null;
   }
 
   if (fallbackUrl?.startsWith("blob:")) {

@@ -48,6 +48,8 @@ export type CreativeDirectorPanelProps = {
   onMessagesChange?: (messages: SerializablePanelMessage[]) => void;
   authRedirectTo?: string;
   showRegistrationInvite?: boolean;
+  /** Raise above CinematicReveal (z-100) when the panel opens on the post-preview screen. */
+  stackLayer?: "default" | "elevated";
 };
 
 function createMessageId(): string {
@@ -100,7 +102,10 @@ export default function CreativeDirectorPanel({
   onMessagesChange,
   authRedirectTo = "/studio",
   showRegistrationInvite = false,
+  stackLayer = "default",
 }: CreativeDirectorPanelProps) {
+  const backdropZ = stackLayer === "elevated" ? "z-[110]" : "z-40";
+  const asideZ = stackLayer === "elevated" ? "z-[120]" : "z-50";
   const [messages, setMessages] = useState<PanelMessage[]>(initialMessages);
   const [composerValue, setComposerValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -307,12 +312,14 @@ export default function CreativeDirectorPanel({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+        className={`fixed inset-0 ${backdropZ} bg-black/20 backdrop-blur-[2px]`}
         aria-label="Cerrar Director Creativo"
         onClick={onClose}
       />
 
-      <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-neutral-200 bg-white shadow-2xl">
+      <aside
+        className={`fixed inset-y-0 right-0 ${asideZ} flex w-full max-w-md flex-col border-l border-neutral-200 bg-white shadow-2xl`}
+      >
         <header className="border-b border-neutral-200 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>

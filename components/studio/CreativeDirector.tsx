@@ -691,7 +691,6 @@ export default function CreativeDirector({
 
       setPhase("preview");
       setPendingCompanionMoment("preview");
-      setDirectorPanelOpen(true);
     } catch (createError) {
       console.error(createError);
       setError(
@@ -1387,6 +1386,7 @@ export default function CreativeDirector({
 
       <CreativeDirectorPanel
         open={directorPanelOpen}
+        stackLayer={phase === "preview" ? "elevated" : "default"}
         onClose={() => setDirectorPanelOpen(false)}
         projectContext={creativeDirectorProjectContext}
         onUseProposal={handleUseDirectorProposal}

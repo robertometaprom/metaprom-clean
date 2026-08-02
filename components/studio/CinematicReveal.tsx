@@ -358,9 +358,13 @@ export default function CinematicReveal({
 
   useEffect(() => {
 
-    if (stage === "offer") {
+    if (stage !== "offer") return;
 
-      videoRef.current?.pause();
+    videoRef.current?.pause();
+
+    if (document.fullscreenElement) {
+
+      void document.exitFullscreen().catch(() => undefined);
 
     }
 
@@ -400,17 +404,13 @@ export default function CinematicReveal({
 
         preload="auto"
 
-        className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ${
+        className={`absolute inset-0 z-0 h-full w-full object-contain transition-opacity duration-700 ${
 
           stage === "playback"
 
             ? "opacity-100"
 
-            : stage === "offer"
-
-              ? "pointer-events-none opacity-0"
-
-              : "pointer-events-none opacity-0"
+            : "pointer-events-none invisible opacity-0"
 
         }`}
 
@@ -426,7 +426,7 @@ export default function CinematicReveal({
 
       {!videoReady && stage !== "offer" && (
 
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-black">
 
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-violet-400" />
 
@@ -566,7 +566,7 @@ export default function CinematicReveal({
 
             transition={{ duration: 0.8, ease: EASE }}
 
-            className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-black via-black to-neutral-950 px-6 py-10"
+            className="pointer-events-auto absolute inset-0 z-10 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-black via-black to-neutral-950 px-6 py-10"
 
           >
 

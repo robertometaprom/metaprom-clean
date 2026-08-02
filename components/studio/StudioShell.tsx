@@ -48,7 +48,7 @@ export default function StudioShell({
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-10">
-          <Link href="/studio">
+          <Link href="/">
             <MetapromLogo variant={variant === "welcome" ? "light" : "dark"} />
           </Link>
 

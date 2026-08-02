@@ -3,6 +3,7 @@
 
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import type { User } from "@supabase/supabase-js";
 
 import {
 
@@ -30,7 +31,13 @@ import {
 
 } from "@/lib/biblioteca";
 
+import { buildBibliotecaStudioUrl } from "@/lib/biblioteca-routing";
+
 import { downloadFromUrl } from "@/lib/library-storage";
+
+import GoogleSignInButton from "@/components/GoogleSignInButton";
+
+import { createClient } from "@/lib/supabase/client";
 
 import { ShareCommercialActions } from "@/components/share";
 
@@ -338,6 +345,10 @@ export default function Biblioteca({
 
   const [highlightAssetId, setHighlightAssetId] = useState<string | null>(null);
 
+  const [authUser, setAuthUser] = useState<User | null>(null);
+
+  const [authReady, setAuthReady] = useState(false);
+
 
 
   const appliedFocusKeyRef = useRef<string | null>(null);
@@ -355,6 +366,54 @@ export default function Biblioteca({
   assetsByProjectRef.current = assetsByProject;
 
   selectedProjectIdRef.current = selectedProjectId;
+
+
+
+  useEffect(() => {
+
+    const supabase = createClient();
+
+    let cancelled = false;
+
+
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+
+      if (cancelled) return;
+
+      setAuthUser(user);
+
+      setAuthReady(true);
+
+    });
+
+
+
+    const {
+
+      data: { subscription },
+
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+
+      if (cancelled) return;
+
+      setAuthUser(session?.user ?? null);
+
+      setAuthReady(true);
+
+    });
+
+
+
+    return () => {
+
+      cancelled = true;
+
+      subscription.unsubscribe();
+
+    };
+
+  }, []);
 
 
 
@@ -522,11 +581,39 @@ export default function Biblioteca({
 
 
 
+    if (!authReady) {
+
+      return;
+
+    }
+
+
+
+    setError(null);
+
     setAssetsByProject({});
+
+
+
+    if (!authUser) {
+
+      setProjects([]);
+
+      setLoadingProjects(false);
+
+      setHasLoadedOnce(true);
+
+      setError("Inicia sesión para ver tu biblioteca.");
+
+      return;
+
+    }
+
+
 
     void loadLibrary({ awaitFocusProject: Boolean(focusProjectId) });
 
-  }, [open, refreshToken, loadLibrary, focusProjectId]);
+  }, [open, refreshToken, loadLibrary, focusProjectId, authReady, authUser]);
 
 
 
@@ -674,7 +761,17 @@ export default function Biblioteca({
 
   const showingFocusedProject = Boolean(selectedProjectId);
 
-  const showInitialSkeleton = loadingProjects && !hasLoadedOnce;
+  const awaitingAuth = open && !authReady;
+
+  const showInitialSkeleton = (loadingProjects || awaitingAuth) && !hasLoadedOnce;
+
+  const loginRedirectUrl = buildBibliotecaStudioUrl({
+
+    projectId: focusProjectId ?? undefined,
+
+    assetId: focusAssetId ?? undefined,
+
+  });
 
 
 
@@ -824,11 +921,27 @@ export default function Biblioteca({
 
           {error && (
 
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="space-y-3">
 
-              {error}
+              <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
 
-            </p>
+                {error}
+
+              </p>
+
+              {authReady && !authUser ? (
+
+                <GoogleSignInButton
+
+                  redirectTo={loginRedirectUrl}
+
+                  label="Iniciar sesión"
+
+                />
+
+              ) : null}
+
+            </div>
 
           )}
 

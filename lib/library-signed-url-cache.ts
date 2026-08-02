@@ -3,6 +3,9 @@ import { createSignedLibraryUrl } from "@/lib/library-storage";
 /** Slightly under Supabase TTL (3600s) so cached URLs stay playable. */
 const SIGNED_URL_CACHE_TTL_MS = 55 * 60 * 1000;
 
+const SIGNED_LIBRARY_URL_PATTERN =
+  /\/storage\/v1\/object\/sign\/library\//;
+
 type CacheEntry = {
   url: string;
   expiresAt: number;
@@ -34,6 +37,61 @@ export function resetSignedLibraryUrlMetrics(): void {
   signedLibraryUrlMetrics.requests = 0;
   signedLibraryUrlMetrics.cacheHits = 0;
   signedLibraryUrlMetrics.deduplicated = 0;
+}
+
+export function resetSignedLibraryUrlCache(): void {
+  cache.clear();
+  inflight.clear();
+}
+
+function parseJwtExpirationMs(token: string): number | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded)) as { exp?: number };
+    return typeof decoded.exp === "number" ? decoded.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Validates preserved/cached signed URLs before reuse on signing failure. */
+export function isValidSignedLibraryFallbackUrl(
+  url: string | null | undefined,
+): boolean {
+  if (!url) return false;
+  if (!SIGNED_LIBRARY_URL_PATTERN.test(url)) return false;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  const token = parsed.searchParams.get("token")?.trim();
+  if (!token) return false;
+
+  const expiresAtMs = parseJwtExpirationMs(token);
+  if (expiresAtMs !== null && expiresAtMs <= Date.now()) {
+    return false;
+  }
+
+  return true;
+}
+
+export function pickValidSignedLibraryFallbackUrl(
+  ...candidates: Array<string | null | undefined>
+): string | null {
+  for (const candidate of candidates) {
+    if (isValidSignedLibraryFallbackUrl(candidate)) {
+      return candidate!;
+    }
+  }
+  return null;
 }
 
 export function peekSignedLibraryUrlCache(path: string): string | null {
@@ -70,10 +128,13 @@ export async function getSignedLibraryUrlCached(
       const url = await existing;
       return { url, error: false, fromCache: false, deduplicated: true };
     } catch {
-      const preserved = options?.preserveUrl ?? cached?.url ?? null;
+      const fallbackUrl = pickValidSignedLibraryFallbackUrl(
+        options?.preserveUrl,
+        cached?.url,
+      );
       return {
-        url: preserved,
-        error: !preserved,
+        url: fallbackUrl,
+        error: !fallbackUrl,
         fromCache: false,
         deduplicated: true,
       };
@@ -91,10 +152,13 @@ export async function getSignedLibraryUrlCached(
     return { url, error: false, fromCache: false, deduplicated: false };
   } catch (error) {
     console.error("getSignedLibraryUrlCached failed", { path, error });
-    const preserved = options?.preserveUrl ?? cached?.url ?? null;
+    const fallbackUrl = pickValidSignedLibraryFallbackUrl(
+      options?.preserveUrl,
+      cached?.url,
+    );
     return {
-      url: preserved,
-      error: !preserved,
+      url: fallbackUrl,
+      error: !fallbackUrl,
       fromCache: false,
       deduplicated: false,
     };

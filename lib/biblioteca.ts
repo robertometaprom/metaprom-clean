@@ -205,6 +205,15 @@ async function requireUser(): Promise<User> {
   return user;
 }
 
+async function resolveBibliotecaUserId(userId?: string): Promise<string> {
+  if (userId) {
+    return userId;
+  }
+
+  const user = await requireUser();
+  return user.id;
+}
+
 async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset> {
   const [originalUrl, imageUrl, teaserUrl, premiumUrl] = await Promise.all([
     resolveLibraryUrl(asset.original_path, asset.original_url),
@@ -226,14 +235,16 @@ async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset
   };
 }
 
-export async function fetchBibliotecaProjects(): Promise<BibliotecaProject[]> {
+export async function fetchBibliotecaProjects(
+  userId?: string,
+): Promise<BibliotecaProject[]> {
   const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const resolvedUserId = await resolveBibliotecaUserId(userId);
 
   const { data, error } = await supabaseClient
     .from("projects")
     .select(PROJECT_SELECT)
-    .eq("user_id", user.id)
+    .eq("user_id", resolvedUserId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -334,15 +345,16 @@ export async function updateBibliotecaProject(
 
 export async function fetchBibliotecaAssets(
   projectId: string,
+  userId?: string,
 ): Promise<BibliotecaAsset[]> {
   const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const resolvedUserId = await resolveBibliotecaUserId(userId);
 
   const { data: project, error: projectError } = await supabaseClient
     .from("projects")
     .select("id")
     .eq("id", projectId)
-    .eq("user_id", user.id)
+    .eq("user_id", resolvedUserId)
     .maybeSingle();
 
   if (projectError) {

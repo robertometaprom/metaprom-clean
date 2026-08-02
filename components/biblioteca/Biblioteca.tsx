@@ -375,6 +375,16 @@ export default function Biblioteca({
 
     async (projectId: string, { force = false } = {}) => {
 
+      const userId = authUser?.id;
+
+      if (!userId) {
+
+        return [];
+
+      }
+
+
+
       if (!force && assetsByProjectRef.current[projectId]?.length) {
 
         return assetsByProjectRef.current[projectId];
@@ -387,7 +397,7 @@ export default function Biblioteca({
 
       try {
 
-        const assets = await fetchBibliotecaAssets(projectId);
+        const assets = await fetchBibliotecaAssets(projectId, userId);
 
         setAssetsByProject((current) => ({ ...current, [projectId]: assets }));
 
@@ -405,7 +415,7 @@ export default function Biblioteca({
 
     },
 
-    [],
+    [authUser?.id],
 
   );
 
@@ -415,6 +425,16 @@ export default function Biblioteca({
 
     async (options?: { awaitFocusProject?: boolean }) => {
 
+      const userId = authUser?.id;
+
+      if (!userId) {
+
+        return;
+
+      }
+
+
+
       setLoadingProjects(true);
 
       setError(null);
@@ -423,7 +443,7 @@ export default function Biblioteca({
 
       try {
 
-        let projectList = await fetchBibliotecaProjects();
+        let projectList = await fetchBibliotecaProjects(userId);
 
         const awaitedFocusProjectId = focusProjectIdRef.current;
 
@@ -445,7 +465,7 @@ export default function Biblioteca({
 
             );
 
-            projectList = await fetchBibliotecaProjects();
+            projectList = await fetchBibliotecaProjects(userId);
 
             if (!isFocusProjectMissing(projectList, awaitedFocusProjectId)) {
 
@@ -469,7 +489,7 @@ export default function Biblioteca({
 
             try {
 
-              const assets = await fetchBibliotecaAssets(project.id);
+              const assets = await fetchBibliotecaAssets(project.id, userId);
 
               setAssetsByProject((current) => ({
 
@@ -511,7 +531,7 @@ export default function Biblioteca({
 
     },
 
-    [],
+    [authUser?.id],
 
   );
 

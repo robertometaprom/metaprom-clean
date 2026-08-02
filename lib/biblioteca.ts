@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
-import { resolveLibraryUrl } from "@/lib/library-storage";
+import {
+  resolveLibraryStoragePath,
+  resolveLibraryUrl,
+} from "@/lib/library-storage";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 import type { PreviewVisibility } from "@/lib/preview/types";
 import type { User } from "@supabase/supabase-js";
@@ -214,6 +217,32 @@ async function resolveBibliotecaUserId(userId?: string): Promise<string> {
   return user.id;
 }
 
+async function ensureClientAuthReady(
+  supabaseClient: BibliotecaSupabaseClient,
+): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+
+    if (session?.access_token) {
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
+    if (user) {
+      return;
+    }
+
+    if (attempt < 4) {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    }
+  }
+}
+
 async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset> {
   const [originalUrl, imageUrl, teaserUrl, premiumUrl] = await Promise.all([
     resolveLibraryUrl(asset.original_path, asset.original_url),
@@ -375,6 +404,7 @@ export async function fetchBibliotecaAssets(
   }
 
   const assets = (data ?? []) as BibliotecaAsset[];
+  await ensureClientAuthReady(supabaseClient);
   return Promise.all(assets.map(hydrateAssetUrls));
 }
 
@@ -408,6 +438,7 @@ export async function fetchBibliotecaAssetById(
     return null;
   }
 
+  await ensureClientAuthReady(supabaseClient);
   return hydrateAssetUrls(data as BibliotecaAsset);
 }
 
@@ -576,10 +607,19 @@ export function getTeaserPlaybackUrl(asset: BibliotecaAsset): string | null {
   return asset.teaser_video_url ?? asset.video_url ?? null;
 }
 
+export function isAssetPremiumOwned(asset: BibliotecaAsset): boolean {
+  if (asset.payment_status === "paid") {
+    return true;
+  }
+
+  // Legacy records may have the HD file persisted before payment_status was set.
+  return Boolean(asset.premium_video_path);
+}
+
 export function getCommercialStatusLabel(
   asset: BibliotecaAsset,
 ): { label: string; tone: "free" | "pending" | "paid" } {
-  if (asset.payment_status === "paid") {
+  if (isAssetPremiumOwned(asset)) {
     return { label: "HD comprado", tone: "paid" };
   }
   if (asset.payment_status === "pending") {
@@ -603,13 +643,18 @@ export function assetHasShareSlug(asset: BibliotecaAsset): boolean {
 export async function refreshAssetTeaserUrl(
   asset: BibliotecaAsset,
 ): Promise<string | null> {
-  if (!asset.teaser_video_path) {
+  const path = resolveLibraryStoragePath(
+    asset.teaser_video_path,
+    asset.teaser_video_url ?? asset.video_url,
+  );
+
+  if (!path) {
     return getTeaserPlaybackUrl(asset);
   }
 
   const { createSignedLibraryUrl } = await import("@/lib/library-storage");
   try {
-    return await createSignedLibraryUrl(asset.teaser_video_path);
+    return await createSignedLibraryUrl(path);
   } catch (error) {
     console.error("refreshAssetTeaserUrl failed", { assetId: asset.id, error });
     return getTeaserPlaybackUrl(asset);
@@ -619,13 +664,18 @@ export async function refreshAssetTeaserUrl(
 export async function refreshAssetPremiumUrl(
   asset: BibliotecaAsset,
 ): Promise<string | null> {
-  if (!asset.premium_video_path) {
+  const path = resolveLibraryStoragePath(
+    asset.premium_video_path,
+    asset.premium_video_url,
+  );
+
+  if (!path) {
     return asset.premium_video_url ?? null;
   }
 
   const { createSignedLibraryUrl } = await import("@/lib/library-storage");
   try {
-    return await createSignedLibraryUrl(asset.premium_video_path);
+    return await createSignedLibraryUrl(path);
   } catch (error) {
     console.error("refreshAssetPremiumUrl failed", { assetId: asset.id, error });
     return asset.premium_video_url ?? null;

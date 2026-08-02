@@ -3,6 +3,37 @@ import { createClient } from "@/lib/supabase/client";
 export const LIBRARY_BUCKET = "library";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
+const LIBRARY_OBJECT_URL_PATTERN =
+  /\/storage\/v1\/object\/(?:sign|public)\/library\/([^?]+)/;
+
+export function extractLibraryObjectPathFromUrl(
+  url: string | null | undefined,
+): string | null {
+  if (!url) return null;
+
+  const match = url.match(LIBRARY_OBJECT_URL_PATTERN);
+  if (!match?.[1]) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+export function isSignedLibraryObjectUrl(
+  url: string | null | undefined,
+): boolean {
+  return Boolean(url && url.includes("/object/sign/library/"));
+}
+
+export function resolveLibraryStoragePath(
+  path: string | null | undefined,
+  fallbackUrl: string | null | undefined,
+): string | null {
+  if (path) return path;
+  return extractLibraryObjectPathFromUrl(fallbackUrl);
+}
 
 export type LibraryUploadInput = {
   userId: string;
@@ -67,16 +98,33 @@ export async function resolveLibraryUrl(
   path: string | null | undefined,
   fallbackUrl: string | null | undefined,
 ): Promise<string | null> {
-  if (path) {
+  const resolvedPath = resolveLibraryStoragePath(path, fallbackUrl);
+
+  if (resolvedPath) {
     try {
-      return await createSignedLibraryUrl(path);
+      return await createSignedLibraryUrl(resolvedPath);
     } catch (error) {
-      console.error("resolveLibraryUrl: signed URL failed", { path, error });
-      if (fallbackUrl && !fallbackUrl.startsWith("blob:")) {
+      console.error("resolveLibraryUrl: signed URL failed", {
+        path: resolvedPath,
+        error,
+      });
+      if (
+        fallbackUrl &&
+        !fallbackUrl.startsWith("blob:") &&
+        !isSignedLibraryObjectUrl(fallbackUrl)
+      ) {
         return fallbackUrl;
       }
       return null;
     }
+  }
+
+  if (fallbackUrl?.startsWith("blob:")) {
+    return null;
+  }
+
+  if (isSignedLibraryObjectUrl(fallbackUrl)) {
+    return null;
   }
 
   return fallbackUrl ?? null;

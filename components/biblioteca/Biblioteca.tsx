@@ -19,6 +19,8 @@ import {
 
   getTeaserPlaybackUrl,
 
+  isAssetPremiumOwned,
+
   refreshAssetPremiumUrl,
 
   refreshAssetTeaserUrl,
@@ -1185,9 +1187,12 @@ function AssetDetailCard({
 
   const hasPremium = Boolean(premiumUrl || asset.premium_video_path);
 
-  const premiumLocked =
+  const premiumOwned = isAssetPremiumOwned(asset);
 
-    !hasPremium && status.tone !== "paid" && !asset.premium_video_path;
+  const premiumLocked = !hasPremium && !premiumOwned;
+
+  const showPremiumSection =
+    hasPremium || premiumLocked || Boolean(asset.premium_video_path) || premiumOwned;
 
 
 
@@ -1267,7 +1272,7 @@ function AssetDetailCard({
 
   useEffect(() => {
 
-    if (!asset.teaser_video_path || getTeaserPlaybackUrl(asset)) return;
+    if (!asset.teaser_video_path) return;
 
 
 
@@ -1277,9 +1282,17 @@ function AssetDetailCard({
 
       if (cancelled) return;
 
-      if (url) setTeaserUrl(url);
+      if (url) {
 
-      else setTeaserError(true);
+        setTeaserUrl(url);
+
+        setTeaserError(false);
+
+      } else if (!getTeaserPlaybackUrl(asset)) {
+
+        setTeaserError(true);
+
+      }
 
     });
 
@@ -1291,13 +1304,17 @@ function AssetDetailCard({
 
     };
 
-  }, [asset]);
+  }, [asset.id, asset.teaser_video_path, asset.teaser_video_url, asset.video_url]);
 
 
 
   useEffect(() => {
 
-    if (!asset.premium_video_path || asset.premium_video_url) return;
+    const premiumPath = asset.premium_video_path;
+
+    const premiumFallback = asset.premium_video_url;
+
+    if (!premiumPath && !premiumFallback) return;
 
 
 
@@ -1307,9 +1324,17 @@ function AssetDetailCard({
 
       if (cancelled) return;
 
-      if (url) setPremiumUrl(url);
+      if (url) {
 
-      else setPremiumError(true);
+        setPremiumUrl(url);
+
+        setPremiumError(false);
+
+      } else if (!asset.premium_video_url) {
+
+        setPremiumError(true);
+
+      }
 
     });
 
@@ -1321,7 +1346,12 @@ function AssetDetailCard({
 
     };
 
-  }, [asset]);
+  }, [
+    asset.id,
+    asset.premium_video_path,
+    asset.premium_video_url,
+    asset.payment_status,
+  ]);
 
 
 
@@ -1635,7 +1665,7 @@ function AssetDetailCard({
 
 
 
-        {hasTeaser && (hasPremium || premiumLocked || asset.premium_video_path) && (
+        {hasTeaser && showPremiumSection && (
 
           <TimelineArrow />
 
@@ -1643,7 +1673,7 @@ function AssetDetailCard({
 
 
 
-        {(hasPremium || premiumLocked || asset.premium_video_path) && (
+        {showPremiumSection && (
 
           <TimelineStage
 
@@ -1725,7 +1755,7 @@ function AssetDetailCard({
 
                     <p className="text-sm text-white/50">
 
-                      {status.tone === "paid"
+                      {premiumOwned
 
                         ? "Tu comercial HD estará disponible pronto."
 

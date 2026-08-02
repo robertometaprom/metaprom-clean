@@ -217,9 +217,9 @@ async function resolveBibliotecaUserId(userId?: string): Promise<string> {
   return user.id;
 }
 
-async function ensureClientAuthReady(
-  supabaseClient: BibliotecaSupabaseClient,
-): Promise<void> {
+export async function ensureBibliotecaAuthReady(): Promise<void> {
+  const supabaseClient = getAuthenticatedClient();
+
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const {
       data: { session },
@@ -404,7 +404,6 @@ export async function fetchBibliotecaAssets(
   }
 
   const assets = (data ?? []) as BibliotecaAsset[];
-  await ensureClientAuthReady(supabaseClient);
   return Promise.all(assets.map(hydrateAssetUrls));
 }
 
@@ -438,7 +437,6 @@ export async function fetchBibliotecaAssetById(
     return null;
   }
 
-  await ensureClientAuthReady(supabaseClient);
   return hydrateAssetUrls(data as BibliotecaAsset);
 }
 

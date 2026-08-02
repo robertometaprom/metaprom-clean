@@ -98,6 +98,10 @@ export async function resolveLibraryUrl(
   path: string | null | undefined,
   fallbackUrl: string | null | undefined,
 ): Promise<string | null> {
+  if (isSignedLibraryObjectUrl(fallbackUrl)) {
+    return fallbackUrl ?? null;
+  }
+
   const resolvedPath = resolveLibraryStoragePath(path, fallbackUrl);
 
   if (resolvedPath) {
@@ -108,11 +112,7 @@ export async function resolveLibraryUrl(
         path: resolvedPath,
         error,
       });
-      if (
-        fallbackUrl &&
-        !fallbackUrl.startsWith("blob:") &&
-        !isSignedLibraryObjectUrl(fallbackUrl)
-      ) {
+      if (fallbackUrl && !fallbackUrl.startsWith("blob:")) {
         return fallbackUrl;
       }
       return null;
@@ -120,10 +120,6 @@ export async function resolveLibraryUrl(
   }
 
   if (fallbackUrl?.startsWith("blob:")) {
-    return null;
-  }
-
-  if (isSignedLibraryObjectUrl(fallbackUrl)) {
     return null;
   }
 

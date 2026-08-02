@@ -13,6 +13,8 @@ import {
 
   fetchBibliotecaProjects,
 
+  ensureBibliotecaAuthReady,
+
   getCommercialStatusLabel,
 
   getPublicPreviewUrl,
@@ -373,11 +375,15 @@ export default function Biblioteca({
 
 
 
+  const authUserId = authUser?.id;
+
+
+
   const loadAssetsForProject = useCallback(
 
     async (projectId: string, { force = false } = {}) => {
 
-      const userId = authUser?.id;
+      const userId = authUserId;
 
       if (!userId) {
 
@@ -417,7 +423,7 @@ export default function Biblioteca({
 
     },
 
-    [authUser?.id],
+    [authUserId],
 
   );
 
@@ -427,7 +433,7 @@ export default function Biblioteca({
 
     async (options?: { awaitFocusProject?: boolean }) => {
 
-      const userId = authUser?.id;
+      const userId = authUserId;
 
       if (!userId) {
 
@@ -444,6 +450,8 @@ export default function Biblioteca({
 
 
       try {
+
+        await ensureBibliotecaAuthReady();
 
         let projectList = await fetchBibliotecaProjects(userId);
 
@@ -533,7 +541,7 @@ export default function Biblioteca({
 
     },
 
-    [authUser?.id],
+    [authUserId],
 
   );
 
@@ -589,7 +597,7 @@ export default function Biblioteca({
 
     void loadLibrary({ awaitFocusProject: Boolean(focusProjectId) });
 
-  }, [open, refreshToken, loadLibrary, focusProjectId, authReady, authUser]);
+  }, [open, refreshToken, loadLibrary, focusProjectId, authReady, authUserId]);
 
 
 
@@ -631,7 +639,7 @@ export default function Biblioteca({
 
     if (focusAssetId) setHighlightAssetId(focusAssetId);
 
-    void loadAssetsForProject(focusProjectId, { force: true });
+    void loadAssetsForProject(focusProjectId);
 
   }, [open, focusProjectId, focusAssetId, loadAssetsForProject]);
 
@@ -677,7 +685,7 @@ export default function Biblioteca({
 
       setHighlightAssetId(null);
 
-      void loadAssetsForProject(projectId, { force: true });
+      void loadAssetsForProject(projectId);
 
     },
 
@@ -1272,29 +1280,39 @@ function AssetDetailCard({
 
   useEffect(() => {
 
-    if (!asset.teaser_video_path) return;
+    if (!asset.teaser_video_path || getTeaserPlaybackUrl(asset)) return;
 
 
 
     let cancelled = false;
 
-    void refreshAssetTeaserUrl(asset).then((url) => {
+    setTeaserLoading(true);
 
-      if (cancelled) return;
+    void refreshAssetTeaserUrl(asset)
 
-      if (url) {
+      .then((url) => {
 
-        setTeaserUrl(url);
+        if (cancelled) return;
 
-        setTeaserError(false);
+        if (url) {
 
-      } else if (!getTeaserPlaybackUrl(asset)) {
+          setTeaserUrl(url);
 
-        setTeaserError(true);
+          setTeaserError(false);
 
-      }
+        } else if (!getTeaserPlaybackUrl(asset)) {
 
-    });
+          setTeaserError(true);
+
+        }
+
+      })
+
+      .finally(() => {
+
+        if (!cancelled) setTeaserLoading(false);
+
+      });
 
 
 
@@ -1310,33 +1328,39 @@ function AssetDetailCard({
 
   useEffect(() => {
 
-    const premiumPath = asset.premium_video_path;
-
-    const premiumFallback = asset.premium_video_url;
-
-    if (!premiumPath && !premiumFallback) return;
+    if (!asset.premium_video_path || asset.premium_video_url) return;
 
 
 
     let cancelled = false;
 
-    void refreshAssetPremiumUrl(asset).then((url) => {
+    setPremiumLoading(true);
 
-      if (cancelled) return;
+    void refreshAssetPremiumUrl(asset)
 
-      if (url) {
+      .then((url) => {
 
-        setPremiumUrl(url);
+        if (cancelled) return;
 
-        setPremiumError(false);
+        if (url) {
 
-      } else if (!asset.premium_video_url) {
+          setPremiumUrl(url);
 
-        setPremiumError(true);
+          setPremiumError(false);
 
-      }
+        } else if (!asset.premium_video_url) {
 
-    });
+          setPremiumError(true);
+
+        }
+
+      })
+
+      .finally(() => {
+
+        if (!cancelled) setPremiumLoading(false);
+
+      });
 
 
 
@@ -1346,12 +1370,7 @@ function AssetDetailCard({
 
     };
 
-  }, [
-    asset.id,
-    asset.premium_video_path,
-    asset.premium_video_url,
-    asset.payment_status,
-  ]);
+  }, [asset.id, asset.premium_video_path, asset.premium_video_url]);
 
 
 
@@ -1613,7 +1632,7 @@ function AssetDetailCard({
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {teaserError || asset.teaser_video_path ? (
+                  {teaserError ? (
 
                     <>
 
@@ -1642,6 +1661,10 @@ function AssetDetailCard({
                       )}
 
                     </>
+
+                  ) : asset.teaser_video_path ? (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   ) : (
 
@@ -1721,7 +1744,7 @@ function AssetDetailCard({
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {premiumError || asset.premium_video_path ? (
+                  {premiumError ? (
 
                     <>
 
@@ -1750,6 +1773,10 @@ function AssetDetailCard({
                       )}
 
                     </>
+
+                  ) : asset.premium_video_path ? (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   ) : (
 

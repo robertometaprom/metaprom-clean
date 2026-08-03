@@ -35,8 +35,6 @@ import { buildBibliotecaStudioUrl } from "@/lib/biblioteca-routing";
 
 import { downloadFromUrl } from "@/lib/library-storage";
 
-import { useSignedLibraryUrl } from "@/lib/use-signed-library-url";
-
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 import { ShareCommercialActions } from "@/components/share";
@@ -1153,15 +1151,13 @@ function AssetDetailCard({
 
   const premiumRetryCountRef = useRef(0);
 
-  const teaser = useSignedLibraryUrl(
-    asset.teaser_video_path,
-    getTeaserPlaybackUrl(asset),
-  );
+  const [teaserRetryKey, setTeaserRetryKey] = useState(0);
 
-  const premium = useSignedLibraryUrl(
-    asset.premium_video_path,
-    asset.premium_video_url ?? null,
-  );
+  const [premiumRetryKey, setPremiumRetryKey] = useState(0);
+
+  const [teaserError, setTeaserError] = useState(false);
+
+  const [premiumError, setPremiumError] = useState(false);
 
   const [downloading, setDownloading] = useState<string | null>(null);
 
@@ -1181,9 +1177,13 @@ function AssetDetailCard({
 
   const publicPreviewUrl = getPublicPreviewUrl(asset);
 
-  const hasPremium = Boolean(premium.url || asset.premium_video_path);
-
   const premiumOwned = isAssetPremiumOwned(asset);
+
+  const teaserUrl = getTeaserPlaybackUrl(asset);
+
+  const premiumUrl = premiumOwned ? (asset.premium_video_url ?? null) : null;
+
+  const hasPremium = Boolean(premiumUrl || asset.premium_video_path);
 
   const premiumLocked = !hasPremium && !premiumOwned;
 
@@ -1192,17 +1192,15 @@ function AssetDetailCard({
 
 
 
-  const retryTeaser = teaser.retry;
-
-  const retryPremium = premium.retry;
-
-
-
   useEffect(() => {
 
     teaserRetryCountRef.current = 0;
 
     premiumRetryCountRef.current = 0;
+
+    setTeaserError(false);
+
+    setPremiumError(false);
 
   }, [asset.id]);
 
@@ -1224,15 +1222,17 @@ function AssetDetailCard({
 
     if (teaserRetryCountRef.current >= 2) {
 
+      setTeaserError(true);
+
       return;
 
     }
 
     teaserRetryCountRef.current += 1;
 
-    void retryTeaser();
+    setTeaserRetryKey((previous) => previous + 1);
 
-  }, [retryTeaser]);
+  }, []);
 
 
 
@@ -1240,15 +1240,41 @@ function AssetDetailCard({
 
     if (premiumRetryCountRef.current >= 2) {
 
+      setPremiumError(true);
+
       return;
 
     }
 
     premiumRetryCountRef.current += 1;
 
-    void retryPremium();
+    setPremiumRetryKey((previous) => previous + 1);
 
-  }, [retryPremium]);
+  }, []);
+
+
+
+  const retryTeaser = useCallback(() => {
+
+    setTeaserError(false);
+
+    teaserRetryCountRef.current = 0;
+
+    setTeaserRetryKey((previous) => previous + 1);
+
+  }, []);
+
+
+
+  const retryPremium = useCallback(() => {
+
+    setPremiumError(false);
+
+    premiumRetryCountRef.current = 0;
+
+    setPremiumRetryKey((previous) => previous + 1);
+
+  }, []);
 
 
 
@@ -1426,23 +1452,13 @@ function AssetDetailCard({
 
             <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-neutral-900 shadow-md">
 
-              {teaser.loading && (
-
-                <div className="absolute inset-0 flex items-center justify-center">
-
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-
-                </div>
-
-              )}
-
-              {teaser.url && (
+              {teaserUrl && !teaserError ? (
 
                 <video
 
-                  key={teaser.url}
+                  key={`${teaserUrl}-${teaserRetryKey}`}
 
-                  src={teaser.url}
+                  src={teaserUrl}
 
                   controls
 
@@ -1456,13 +1472,11 @@ function AssetDetailCard({
 
                 />
 
-              )}
-
-              {!teaser.url && !teaser.loading && (
+              ) : (
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {teaser.error ? (
+                  {teaserError ? (
 
                     <>
 
@@ -1478,7 +1492,7 @@ function AssetDetailCard({
 
                           type="button"
 
-                          onClick={() => void retryTeaser()}
+                          onClick={() => retryTeaser()}
 
                           className="cursor-pointer rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
 
@@ -1492,17 +1506,17 @@ function AssetDetailCard({
 
                     </>
 
-                  ) : teaser.missing ? (
+                  ) : teaserUrl ? (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+
+                  ) : (
 
                     <p className="text-sm text-white/50">
 
                       El avance se generará al crear tu comercial.
 
                     </p>
-
-                  ) : (
-
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   )}
 
@@ -1538,23 +1552,13 @@ function AssetDetailCard({
 
             <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-neutral-900 shadow-md">
 
-              {premium.loading && (
-
-                <div className="absolute inset-0 flex items-center justify-center">
-
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-
-                </div>
-
-              )}
-
-              {premium.url && (
+              {premiumUrl && !premiumError ? (
 
                 <video
 
-                  key={premium.url}
+                  key={`${premiumUrl}-${premiumRetryKey}`}
 
-                  src={premium.url}
+                  src={premiumUrl}
 
                   controls
 
@@ -1568,13 +1572,11 @@ function AssetDetailCard({
 
                 />
 
-              )}
-
-              {!premium.url && !premium.loading && (
+              ) : (
 
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
 
-                  {premium.error ? (
+                  {premiumError ? (
 
                     <>
 
@@ -1584,13 +1586,13 @@ function AssetDetailCard({
 
                       </p>
 
-                      {asset.premium_video_path && (
+                      {asset.premium_video_path && premiumOwned && (
 
                         <button
 
                           type="button"
 
-                          onClick={() => void retryPremium()}
+                          onClick={() => retryPremium()}
 
                           className="cursor-pointer rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
 
@@ -1604,7 +1606,11 @@ function AssetDetailCard({
 
                     </>
 
-                  ) : premium.missing ? (
+                  ) : premiumUrl ? (
+
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+
+                  ) : (
 
                     <p className="text-sm text-white/50">
 
@@ -1615,10 +1621,6 @@ function AssetDetailCard({
                         : "Compra HD en el estudio para desbloquear."}
 
                     </p>
-
-                  ) : (
-
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
 
                   )}
 
@@ -1652,7 +1654,7 @@ function AssetDetailCard({
 
         )}
 
-        {premium.url && (
+        {premiumUrl && (
 
           <button
 
@@ -1664,7 +1666,7 @@ function AssetDetailCard({
 
               void handleDownload(
 
-                premium.url,
+                premiumUrl,
 
                 `metaprom-${asset.id}-comercial-hd.mp4`,
 

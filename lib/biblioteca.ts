@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { buildBibliotecaMediaGatewayUrl } from "@/lib/biblioteca-media-gateway";
 import {
   resolveLibraryUrl,
 } from "@/lib/library-storage";
@@ -243,18 +244,20 @@ export async function ensureBibliotecaAuthReady(): Promise<void> {
 }
 
 async function hydrateAssetUrls(asset: BibliotecaAsset): Promise<BibliotecaAsset> {
-  const [originalUrl, imageUrl, teaserUrl, premiumUrl] = await Promise.all([
-    resolveLibraryUrl(asset.original_path, asset.original_url),
-    resolveLibraryUrl(asset.image_path, asset.image_url),
-    asset.teaser_video_path
-      ? resolveLibraryUrl(asset.teaser_video_path, null)
-      : Promise.resolve(
-          asset.teaser_video_url ?? asset.video_url ?? null,
-        ),
-    asset.premium_video_path
-      ? resolveLibraryUrl(asset.premium_video_path, null)
-      : Promise.resolve(asset.premium_video_url ?? null),
-  ]);
+  const imageUrl = await resolveLibraryUrl(asset.image_path, asset.image_url);
+
+  const originalUrl = asset.original_path
+    ? buildBibliotecaMediaGatewayUrl(asset.id, "original")
+    : (asset.original_url ?? null);
+
+  const teaserUrl = asset.teaser_video_path
+    ? buildBibliotecaMediaGatewayUrl(asset.id, "teaser")
+    : (asset.teaser_video_url ?? asset.video_url ?? null);
+
+  const premiumUrl =
+    asset.premium_video_path && isAssetPremiumOwned(asset)
+      ? buildBibliotecaMediaGatewayUrl(asset.id, "premium")
+      : (asset.premium_video_url ?? null);
 
   return {
     ...asset,

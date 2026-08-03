@@ -19,8 +19,6 @@ import {
 
   getPublicPreviewUrl,
 
-  getTeaserPlaybackUrl,
-
   isAssetPremiumOwned,
 
   type BibliotecaAsset,
@@ -1179,7 +1177,9 @@ function AssetDetailCard({
 
   const premiumOwned = isAssetPremiumOwned(asset);
 
-  const teaserUrl = getTeaserPlaybackUrl(asset);
+  const teaserUrl = asset.teaser_video_path
+    ? `/api/biblioteca/media?assetId=${asset.id}&type=teaser`
+    : null;
 
   const premiumUrl = premiumOwned ? (asset.premium_video_url ?? null) : null;
 

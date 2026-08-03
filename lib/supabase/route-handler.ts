@@ -1,9 +1,18 @@
+import {
+  cookieMetaFromOptions,
+  type PreparedCookieMeta,
+} from "@/lib/auth/oauth-callback-diagnostics";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+export type RouteHandlerDiagnostics = {
+  preparedCookies: PreparedCookieMeta[];
+};
 
 export function createRouteHandlerClient(
   request: NextRequest,
   getResponse: () => NextResponse,
+  diagnostics?: RouteHandlerDiagnostics,
 ) {
   let response = getResponse();
 
@@ -22,6 +31,14 @@ export function createRouteHandlerClient(
         return request.cookies.getAll();
       },
       setAll(cookiesToSet, headers) {
+        if (diagnostics) {
+          cookiesToSet.forEach(({ name, options }) => {
+            diagnostics.preparedCookies.push(
+              cookieMetaFromOptions(name, options),
+            );
+          });
+        }
+
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });

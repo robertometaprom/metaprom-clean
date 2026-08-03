@@ -143,6 +143,7 @@ export default function StudioShell({
                   </button>
                   <Link
                     href="/auth/signout"
+                    prefetch={false}
                     className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                     onClick={() => setMenuOpen(false)}
                   >

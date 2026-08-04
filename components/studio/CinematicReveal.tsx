@@ -131,6 +131,15 @@ export default function CinematicReveal({
         | "play_promise_resolved"
         | "play_promise_rejected"
         | "stage_playback"
+        | "stage_offer"
+        | "video_ended"
+        | "handle_video_ended_entered"
+        | "set_stage_offer_requested"
+        | "webkit_displaying_fullscreen"
+        | "document_fullscreen_element"
+        | "offer_ui_mounted"
+        | "offer_ui_visible_dimensions"
+        | "webkit_exit_fullscreen_called"
         | "spinner_visible"
         | "probe_timeout",
       extra?: { detail?: string; errorCode?: number | null; errorMessage?: string | null },
@@ -162,6 +171,35 @@ export default function CinematicReveal({
       });
     },
     [stage, videoReady, videoUrl],
+  );
+
+  const emitFullscreenStateProbes = useCallback(
+    (source: string) => {
+      const video = videoRef.current as
+        | (HTMLVideoElement & {
+            webkitDisplayingFullscreen?: boolean;
+          })
+        | null;
+      const webkitDisplayingFullscreen = Boolean(
+        video?.webkitDisplayingFullscreen,
+      );
+      const fullscreenEl =
+        typeof document !== "undefined" ? document.fullscreenElement : null;
+
+      emitProbe("webkit_displaying_fullscreen", {
+        detail: `source=${source};value=${webkitDisplayingFullscreen}`,
+      });
+      emitProbe("document_fullscreen_element", {
+        detail: `source=${source};value=${
+          fullscreenEl
+            ? `${fullscreenEl.tagName.toLowerCase()}${
+                fullscreenEl.id ? `#${fullscreenEl.id}` : ""
+              }`
+            : "null"
+        }`,
+      });
+    },
+    [emitProbe],
   );
 
   useEffect(() => {
@@ -422,6 +460,16 @@ export default function CinematicReveal({
 
 
   const handleVideoEnded = () => {
+    emitProbe("video_ended");
+    emitProbe("handle_video_ended_entered");
+    emitFullscreenStateProbes("handleVideoEnded");
+    // Observation only: webkitExitFullscreen is not invoked anywhere in this file today.
+    emitProbe("webkit_exit_fullscreen_called", {
+      detail: "called=false;source=handleVideoEnded;no_call_site",
+    });
+    emitProbe("set_stage_offer_requested", {
+      detail: "source=handleVideoEnded",
+    });
 
     videoRef.current?.pause();
 
@@ -435,6 +483,13 @@ export default function CinematicReveal({
 
     if (stage !== "offer") return;
 
+    emitProbe("stage_offer", { detail: "source=stage_effect" });
+    emitFullscreenStateProbes("stage_offer_effect");
+    // Observation only: existing effect exits document fullscreen only.
+    emitProbe("webkit_exit_fullscreen_called", {
+      detail: "called=false;source=stage_offer_effect;no_call_site",
+    });
+
     videoRef.current?.pause();
 
     if (document.fullscreenElement) {
@@ -443,7 +498,37 @@ export default function CinematicReveal({
 
     }
 
-  }, [stage]);
+  }, [stage, emitProbe, emitFullscreenStateProbes]);
+
+  const handleOfferUiRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node) return;
+
+      emitProbe("offer_ui_mounted", {
+        detail: "source=offer_motion_div",
+      });
+
+      const rect = node.getBoundingClientRect();
+      const styles = window.getComputedStyle(node);
+
+      emitProbe("offer_ui_visible_dimensions", {
+        detail: JSON.stringify({
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          opacity: styles.opacity,
+          visibility: styles.visibility,
+          display: styles.display,
+          zIndex: styles.zIndex,
+        }),
+      });
+      emitFullscreenStateProbes("offer_ui_mounted");
+    },
+    [emitProbe, emitFullscreenStateProbes],
+  );
 
 
 
@@ -638,6 +723,8 @@ export default function CinematicReveal({
           <motion.div
 
             key="offer"
+
+            ref={handleOfferUiRef}
 
             initial={{ opacity: 0 }}
 

@@ -11,11 +11,6 @@ import MetapromInfinityLogo from "@/components/studio/MetapromInfinityLogo";
 import { ShareCommercialActions } from "@/components/share";
 
 import { requestCinematicFullscreen } from "@/lib/cinematic-fullscreen";
-import {
-  createRevealProbeSessionId,
-  emitRevealVideoProbeEvent,
-  isRevealVideoProbeEnabled,
-} from "@/lib/diagnostics/reveal-video-probe";
 
 import { formatPriceMxn } from "@/lib/pricing";
 
@@ -115,102 +110,7 @@ export default function CinematicReveal({
 
   const playbackInitiatedRef = useRef(false);
 
-  const probeSessionIdRef = useRef<string | null>(null);
 
-  const emitProbe = useCallback(
-    (
-      event:
-        | "probe_mount"
-        | "video_loadstart"
-        | "video_loadedmetadata"
-        | "video_loadeddata"
-        | "video_canplay"
-        | "video_error"
-        | "video_ready_true"
-        | "start_playback_called"
-        | "play_promise_resolved"
-        | "play_promise_rejected"
-        | "stage_playback"
-        | "stage_offer"
-        | "video_ended"
-        | "handle_video_ended_entered"
-        | "set_stage_offer_requested"
-        | "webkit_displaying_fullscreen"
-        | "document_fullscreen_element"
-        | "offer_ui_mounted"
-        | "offer_ui_visible_dimensions"
-        | "webkit_exit_fullscreen_called"
-        | "spinner_visible"
-        | "probe_timeout",
-      extra?: { detail?: string; errorCode?: number | null; errorMessage?: string | null },
-    ) => {
-      if (!isRevealVideoProbeEnabled()) return;
-
-      if (!probeSessionIdRef.current) {
-        probeSessionIdRef.current = createRevealProbeSessionId();
-      }
-
-      const video = videoRef.current;
-
-      void emitRevealVideoProbeEvent({
-        sessionId: probeSessionIdRef.current,
-        event,
-        ts: Date.now(),
-        stage,
-        videoReady,
-        readyState: video?.readyState,
-        networkState: video?.networkState,
-        errorCode: extra?.errorCode ?? video?.error?.code ?? null,
-        errorMessage: extra?.errorMessage ?? video?.error?.message ?? null,
-        srcKind: videoUrl.startsWith("blob:") ? "blob" : "url",
-        userAgent:
-          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-        visibilityState:
-          typeof document !== "undefined" ? document.visibilityState : undefined,
-        detail: extra?.detail,
-      });
-    },
-    [stage, videoReady, videoUrl],
-  );
-
-  const emitFullscreenStateProbes = useCallback(
-    (source: string) => {
-      const video = videoRef.current as
-        | (HTMLVideoElement & {
-            webkitDisplayingFullscreen?: boolean;
-          })
-        | null;
-      const webkitDisplayingFullscreen = Boolean(
-        video?.webkitDisplayingFullscreen,
-      );
-      const fullscreenEl =
-        typeof document !== "undefined" ? document.fullscreenElement : null;
-
-      emitProbe("webkit_displaying_fullscreen", {
-        detail: `source=${source};value=${webkitDisplayingFullscreen}`,
-      });
-      emitProbe("document_fullscreen_element", {
-        detail: `source=${source};value=${
-          fullscreenEl
-            ? `${fullscreenEl.tagName.toLowerCase()}${
-                fullscreenEl.id ? `#${fullscreenEl.id}` : ""
-              }`
-            : "null"
-        }`,
-      });
-    },
-    [emitProbe],
-  );
-
-  useEffect(() => {
-    emitProbe("probe_mount", { detail: `src=${videoUrl.slice(0, 48)}` });
-
-    const timer = window.setTimeout(() => {
-      emitProbe("probe_timeout", { detail: `videoReady=${videoReady}` });
-    }, 12000);
-
-    return () => window.clearTimeout(timer);
-  }, [emitProbe, videoReady, videoUrl]);
 
   useEffect(() => {
 
@@ -281,7 +181,6 @@ export default function CinematicReveal({
 
 
     playbackInitiatedRef.current = true;
-    emitProbe("start_playback_called");
 
     video.currentTime = 0;
 
@@ -298,7 +197,6 @@ export default function CinematicReveal({
     try {
 
       await video.play();
-      emitProbe("play_promise_resolved");
 
       video.muted = false;
 
@@ -318,14 +216,7 @@ export default function CinematicReveal({
 
       }
 
-    } catch (playError) {
-
-      emitProbe("play_promise_rejected", {
-        detail:
-          playError instanceof Error
-            ? `${playError.name}: ${playError.message}`
-            : String(playError),
-      });
+    } catch {
 
       try {
 
@@ -347,7 +238,7 @@ export default function CinematicReveal({
 
     window.setTimeout(() => setShowControls(true), CONTROLS_DELAY_MS);
 
-  }, [enterFullscreen, emitProbe]);
+  }, [enterFullscreen]);
 
 
 
@@ -369,11 +260,10 @@ export default function CinematicReveal({
 
     if (stage !== "playback") return;
 
-    emitProbe("stage_playback");
     void enterFullscreen();
     void startPlayback();
 
-  }, [stage, enterFullscreen, emitProbe, startPlayback]);
+  }, [stage, enterFullscreen, startPlayback]);
 
 
 
@@ -408,12 +298,10 @@ export default function CinematicReveal({
   const handleVideoCanPlay = useCallback(() => {
 
     setVideoReady(true);
-    emitProbe("video_canplay");
-    emitProbe("video_ready_true");
 
     void startPlayback();
 
-  }, [startPlayback, emitProbe]);
+  }, [startPlayback]);
 
 
 
@@ -460,16 +348,6 @@ export default function CinematicReveal({
 
 
   const handleVideoEnded = () => {
-    emitProbe("video_ended");
-    emitProbe("handle_video_ended_entered");
-    emitFullscreenStateProbes("handleVideoEnded");
-    // Observation only: webkitExitFullscreen is not invoked anywhere in this file today.
-    emitProbe("webkit_exit_fullscreen_called", {
-      detail: "called=false;source=handleVideoEnded;no_call_site",
-    });
-    emitProbe("set_stage_offer_requested", {
-      detail: "source=handleVideoEnded",
-    });
 
     videoRef.current?.pause();
 
@@ -483,13 +361,6 @@ export default function CinematicReveal({
 
     if (stage !== "offer") return;
 
-    emitProbe("stage_offer", { detail: "source=stage_effect" });
-    emitFullscreenStateProbes("stage_offer_effect");
-    // Observation only: existing effect exits document fullscreen only.
-    emitProbe("webkit_exit_fullscreen_called", {
-      detail: "called=false;source=stage_offer_effect;no_call_site",
-    });
-
     videoRef.current?.pause();
 
     if (document.fullscreenElement) {
@@ -498,37 +369,7 @@ export default function CinematicReveal({
 
     }
 
-  }, [stage, emitProbe, emitFullscreenStateProbes]);
-
-  const handleOfferUiRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (!node) return;
-
-      emitProbe("offer_ui_mounted", {
-        detail: "source=offer_motion_div",
-      });
-
-      const rect = node.getBoundingClientRect();
-      const styles = window.getComputedStyle(node);
-
-      emitProbe("offer_ui_visible_dimensions", {
-        detail: JSON.stringify({
-          width: rect.width,
-          height: rect.height,
-          top: rect.top,
-          left: rect.left,
-          right: rect.right,
-          bottom: rect.bottom,
-          opacity: styles.opacity,
-          visibility: styles.visibility,
-          display: styles.display,
-          zIndex: styles.zIndex,
-        }),
-      });
-      emitFullscreenStateProbes("offer_ui_mounted");
-    },
-    [emitProbe, emitFullscreenStateProbes],
-  );
+  }, [stage]);
 
 
 
@@ -574,20 +415,10 @@ export default function CinematicReveal({
 
         }`}
 
-        onLoadStart={() => emitProbe("video_loadstart")}
-        onLoadedMetadata={() => emitProbe("video_loadedmetadata")}
         onCanPlay={handleVideoCanPlay}
-        onLoadedData={() => {
-          setVideoReady(true);
-          emitProbe("video_loadeddata");
-          emitProbe("video_ready_true");
-        }}
-        onError={() =>
-          emitProbe("video_error", {
-            errorCode: videoRef.current?.error?.code ?? null,
-            errorMessage: videoRef.current?.error?.message ?? null,
-          })
-        }
+
+        onLoadedData={() => setVideoReady(true)}
+
         onEnded={handleVideoEnded}
 
       />
@@ -595,7 +426,13 @@ export default function CinematicReveal({
 
 
       {!videoReady && stage !== "offer" && (
-        <SpinnerOverlay onVisible={() => emitProbe("spinner_visible")} />
+
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-black">
+
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-violet-400" />
+
+        </div>
+
       )}
 
 
@@ -723,8 +560,6 @@ export default function CinematicReveal({
           <motion.div
 
             key="offer"
-
-            ref={handleOfferUiRef}
 
             initial={{ opacity: 0 }}
 
@@ -937,17 +772,5 @@ export default function CinematicReveal({
 
   );
 
-}
-
-function SpinnerOverlay({ onVisible }: { onVisible: () => void }) {
-  useEffect(() => {
-    onVisible();
-  }, [onVisible]);
-
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-black">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-violet-400" />
-    </div>
-  );
 }
 

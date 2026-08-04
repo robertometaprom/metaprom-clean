@@ -11,6 +11,11 @@ import MetapromInfinityLogo from "@/components/studio/MetapromInfinityLogo";
 import { ShareCommercialActions } from "@/components/share";
 
 import { requestCinematicFullscreen } from "@/lib/cinematic-fullscreen";
+import {
+  createRevealProbeSessionId,
+  emitRevealVideoProbeEvent,
+  isRevealVideoProbeEnabled,
+} from "@/lib/diagnostics/reveal-video-probe";
 
 import { formatPriceMxn } from "@/lib/pricing";
 
@@ -110,7 +115,64 @@ export default function CinematicReveal({
 
   const playbackInitiatedRef = useRef(false);
 
+  const probeSessionIdRef = useRef<string | null>(null);
 
+  const emitProbe = useCallback(
+    (
+      event:
+        | "probe_mount"
+        | "video_loadstart"
+        | "video_loadedmetadata"
+        | "video_loadeddata"
+        | "video_canplay"
+        | "video_error"
+        | "video_ready_true"
+        | "start_playback_called"
+        | "play_promise_resolved"
+        | "play_promise_rejected"
+        | "stage_playback"
+        | "spinner_visible"
+        | "probe_timeout",
+      extra?: { detail?: string; errorCode?: number | null; errorMessage?: string | null },
+    ) => {
+      if (!isRevealVideoProbeEnabled()) return;
+
+      if (!probeSessionIdRef.current) {
+        probeSessionIdRef.current = createRevealProbeSessionId();
+      }
+
+      const video = videoRef.current;
+
+      void emitRevealVideoProbeEvent({
+        sessionId: probeSessionIdRef.current,
+        event,
+        ts: Date.now(),
+        stage,
+        videoReady,
+        readyState: video?.readyState,
+        networkState: video?.networkState,
+        errorCode: extra?.errorCode ?? video?.error?.code ?? null,
+        errorMessage: extra?.errorMessage ?? video?.error?.message ?? null,
+        srcKind: videoUrl.startsWith("blob:") ? "blob" : "url",
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        visibilityState:
+          typeof document !== "undefined" ? document.visibilityState : undefined,
+        detail: extra?.detail,
+      });
+    },
+    [stage, videoReady, videoUrl],
+  );
+
+  useEffect(() => {
+    emitProbe("probe_mount", { detail: `src=${videoUrl.slice(0, 48)}` });
+
+    const timer = window.setTimeout(() => {
+      emitProbe("probe_timeout", { detail: `videoReady=${videoReady}` });
+    }, 12000);
+
+    return () => window.clearTimeout(timer);
+  }, [emitProbe, videoReady, videoUrl]);
 
   useEffect(() => {
 
@@ -181,6 +243,7 @@ export default function CinematicReveal({
 
 
     playbackInitiatedRef.current = true;
+    emitProbe("start_playback_called");
 
     video.currentTime = 0;
 
@@ -197,6 +260,7 @@ export default function CinematicReveal({
     try {
 
       await video.play();
+      emitProbe("play_promise_resolved");
 
       video.muted = false;
 
@@ -216,7 +280,14 @@ export default function CinematicReveal({
 
       }
 
-    } catch {
+    } catch (playError) {
+
+      emitProbe("play_promise_rejected", {
+        detail:
+          playError instanceof Error
+            ? `${playError.name}: ${playError.message}`
+            : String(playError),
+      });
 
       try {
 
@@ -238,7 +309,7 @@ export default function CinematicReveal({
 
     window.setTimeout(() => setShowControls(true), CONTROLS_DELAY_MS);
 
-  }, [enterFullscreen]);
+  }, [enterFullscreen, emitProbe]);
 
 
 
@@ -260,9 +331,10 @@ export default function CinematicReveal({
 
     if (stage !== "playback") return;
 
+    emitProbe("stage_playback");
     void enterFullscreen();
 
-  }, [stage, enterFullscreen]);
+  }, [stage, enterFullscreen, emitProbe]);
 
 
 
@@ -297,10 +369,12 @@ export default function CinematicReveal({
   const handleVideoCanPlay = useCallback(() => {
 
     setVideoReady(true);
+    emitProbe("video_canplay");
+    emitProbe("video_ready_true");
 
     void startPlayback();
 
-  }, [startPlayback]);
+  }, [startPlayback, emitProbe]);
 
 
 
@@ -414,10 +488,20 @@ export default function CinematicReveal({
 
         }`}
 
+        onLoadStart={() => emitProbe("video_loadstart")}
+        onLoadedMetadata={() => emitProbe("video_loadedmetadata")}
         onCanPlay={handleVideoCanPlay}
-
-        onLoadedData={() => setVideoReady(true)}
-
+        onLoadedData={() => {
+          setVideoReady(true);
+          emitProbe("video_loadeddata");
+          emitProbe("video_ready_true");
+        }}
+        onError={() =>
+          emitProbe("video_error", {
+            errorCode: videoRef.current?.error?.code ?? null,
+            errorMessage: videoRef.current?.error?.message ?? null,
+          })
+        }
         onEnded={handleVideoEnded}
 
       />
@@ -425,13 +509,7 @@ export default function CinematicReveal({
 
 
       {!videoReady && stage !== "offer" && (
-
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-black">
-
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-violet-400" />
-
-        </div>
-
+        <SpinnerOverlay onVisible={() => emitProbe("spinner_visible")} />
       )}
 
 
@@ -771,5 +849,17 @@ export default function CinematicReveal({
 
   );
 
+}
+
+function SpinnerOverlay({ onVisible }: { onVisible: () => void }) {
+  useEffect(() => {
+    onVisible();
+  }, [onVisible]);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-black">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-violet-400" />
+    </div>
+  );
 }
 

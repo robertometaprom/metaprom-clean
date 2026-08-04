@@ -333,8 +333,9 @@ export default function CinematicReveal({
 
     emitProbe("stage_playback");
     void enterFullscreen();
+    void startPlayback();
 
-  }, [stage, enterFullscreen, emitProbe]);
+  }, [stage, enterFullscreen, emitProbe, startPlayback]);
 
 
 

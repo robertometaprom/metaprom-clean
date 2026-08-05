@@ -51,7 +51,7 @@ export default function PublicOriginalPhoto({
             src={src}
             alt={alt}
             className="h-full w-full object-cover"
-            loading="lazy"
+            loading="eager"
             decoding="async"
             onError={() => setFailed(true)}
           />

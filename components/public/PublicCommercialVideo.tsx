@@ -58,11 +58,13 @@ export default function PublicCommercialVideo({
     audioUnlockedRef.current = false;
     if (video && video.readyState >= 2) {
       setPlaybackState("ready");
+      setShowUnmuteHint(true);
+      setIsMuted(true);
     } else {
       setPlaybackState("loading");
+      setShowUnmuteHint(false);
+      setIsMuted(true);
     }
-    setShowUnmuteHint(false);
-    setIsMuted(true);
   }, [streamPath]);
 
   const handleCanPlay = () => {

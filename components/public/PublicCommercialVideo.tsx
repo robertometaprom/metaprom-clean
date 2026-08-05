@@ -25,6 +25,7 @@ export default function PublicCommercialVideo({
   labels,
 }: PublicCommercialVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioUnlockedRef = useRef(false);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("loading");
   const [isMuted, setIsMuted] = useState(true);
   const [showUnmuteHint, setShowUnmuteHint] = useState(false);
@@ -35,6 +36,11 @@ export default function PublicCommercialVideo({
       return;
     }
 
+    if (audioUnlockedRef.current) {
+      setPlaybackState("ready");
+      return;
+    }
+
     video.muted = true;
     setIsMuted(true);
 
@@ -42,17 +48,6 @@ export default function PublicCommercialVideo({
       await video.play();
       setPlaybackState("ready");
       setShowUnmuteHint(true);
-
-      video.muted = false;
-      setIsMuted(false);
-
-      try {
-        await video.play();
-        setShowUnmuteHint(false);
-      } catch {
-        video.muted = true;
-        setIsMuted(true);
-      }
     } catch {
       setPlaybackState("paused");
     }
@@ -60,12 +55,14 @@ export default function PublicCommercialVideo({
 
   useEffect(() => {
     const video = videoRef.current;
+    audioUnlockedRef.current = false;
     if (video && video.readyState >= 2) {
       setPlaybackState("ready");
     } else {
       setPlaybackState("loading");
     }
     setShowUnmuteHint(false);
+    setIsMuted(true);
   }, [streamPath]);
 
   const handleCanPlay = () => {
@@ -106,15 +103,19 @@ export default function PublicCommercialVideo({
       return;
     }
 
+    video.defaultMuted = false;
     video.muted = false;
+    video.volume = 1;
     setIsMuted(false);
 
     try {
       await video.play();
+      audioUnlockedRef.current = true;
       setShowUnmuteHint(false);
     } catch {
       video.muted = true;
       setIsMuted(true);
+      setShowUnmuteHint(true);
     }
   };
 

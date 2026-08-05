@@ -1,19 +1,6 @@
-import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
 import { mapCreationError } from "@/lib/creation-errors";
-import {
-  logDestinationGenerationDebug,
-  parseStudioDestination,
-  resolveVeoGenerationParams,
-} from "@/lib/destination-generation";
-import { updateAssetPremiumVideoServer } from "@/lib/library-storage-server";
+import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
 import { createClient } from "@/lib/supabase/server";
-import {
-  generateCommercialVideo,
-  isVertexVideoConfigured,
-  resolveWorkflow,
-} from "@/lib/video";
-import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
-import type { StudioDestination } from "@/lib/studio-destination";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -33,109 +20,6 @@ function parseAssetId(value: unknown): string | undefined {
   }
 
   return undefined;
-}
-
-function isMissingSchemaColumnError(
-  error: { code?: string; message?: string } | null | undefined,
-): boolean {
-  if (!error) return false;
-
-  if (error.code === "42703" || error.code === "PGRST204") {
-    return true;
-  }
-
-  return (
-    typeof error.message === "string" &&
-    (error.message.includes("does not exist") ||
-      (error.message.includes("Could not find the") &&
-        error.message.includes("column")))
-  );
-}
-
-async function fetchOwnedProjectForAsset(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  projectId: string | number,
-) {
-  const withDestination = await supabase
-    .from("projects")
-    .select("id, destination")
-    .eq("id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!withDestination.error) {
-    return withDestination.data;
-  }
-
-  if (!isMissingSchemaColumnError(withDestination.error)) {
-    return null;
-  }
-
-  const fallback = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (fallback.error || !fallback.data) {
-    return null;
-  }
-
-  return { ...fallback.data, destination: null };
-}
-
-async function generatePremiumVideoBuffer(
-  imageBuffer: Buffer,
-  customerIntent: string,
-  destination: StudioDestination | null,
-): Promise<Buffer> {
-  if (!isVertexVideoConfigured()) {
-    throw new Error(
-      "Vertex video is not configured. Set GOOGLE_CLOUD_PROJECT, VERTEX_OUTPUT_GCS_URI, " +
-        "and VERTEX_SERVICE_ACCOUNT_JSON (or GOOGLE_APPLICATION_CREDENTIALS).",
-    );
-  }
-
-  const workflow = "premium" as const;
-  const workflowConfig = resolveWorkflow(workflow);
-  const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
-  const veoParams = resolveVeoGenerationParams(destination);
-  const durationSeconds = resolvePremiumVeoDurationSeconds();
-
-  logDestinationGenerationDebug({
-    stage: "premium-video",
-    destination,
-    veoParams,
-    finalPrompt: prompt,
-    generationParameters: {
-      workflow,
-      tier: workflowConfig.tier,
-      vertexModel: workflowConfig.vertexModel,
-      aspectRatio: veoParams.aspectRatio,
-      requestedAspectRatio: veoParams.requestedAspectRatio,
-      durationSeconds,
-      provider: "vertex-veo",
-      veoRequestPayload: {
-        model: workflowConfig.vertexModel,
-        config: {
-          aspectRatio: veoParams.aspectRatio,
-          numberOfVideos: 1,
-          durationSeconds,
-        },
-      },
-    },
-  });
-
-  const generation = await generateCommercialVideo({
-    workflow,
-    prompt,
-    imageBuffer,
-    aspectRatio: veoParams.aspectRatio,
-  });
-
-  return generation.buffer;
 }
 
 export async function POST(req: Request) {
@@ -162,79 +46,24 @@ export async function POST(req: Request) {
     return jsonError("assetId is required.", 400);
   }
 
-  const { data: asset, error: assetError } = await supabase
-    .from("assets")
-    .select(
-      "id, project_id, image_url, image_path, ai_instructions, payment_status, premium_video_path",
-    )
-    .eq("id", assetId)
-    .maybeSingle();
+  const result = await fulfillPremiumVideoAfterPayment(supabase, assetId, {
+    requireUserId: user.id,
+  });
 
-  if (assetError || !asset) {
-    return jsonError("Asset not found.", 404);
+  if (result.status === "skipped") {
+    return jsonError(result.reason, 402);
   }
 
-  const project = await fetchOwnedProjectForAsset(
-    supabase,
-    user.id,
-    asset.project_id,
-  );
-
-  if (!project) {
-    return jsonError("Asset not found.", 404);
-  }
-
-  if (asset.payment_status !== "paid") {
-    return jsonError("Premium video requires completed payment.", 402);
-  }
-
-  if (asset.premium_video_path) {
-    return Response.json({ status: "ready", assetId });
-  }
-
-  let imageBuffer: Buffer | null = null;
-
-  if (asset.image_url?.startsWith("data:")) {
-    const base64 = asset.image_url.split(",")[1];
-    imageBuffer = Buffer.from(base64, "base64");
-  } else if (asset.image_path) {
-    const { data, error } = await supabase.storage
-      .from("library")
-      .download(asset.image_path);
-
-    if (error || !data) {
-      return jsonError("Unable to load enhanced image.", 500);
+  if (result.status === "failed") {
+    if (result.reason === "Asset not found." || result.reason === "Project not found.") {
+      return jsonError("Asset not found.", 404);
     }
 
-    imageBuffer = Buffer.from(await data.arrayBuffer());
-  }
-
-  if (!imageBuffer) {
-    return jsonError("Enhanced image unavailable.", 500);
-  }
-
-  try {
-    const videoBuffer = await generatePremiumVideoBuffer(
-      imageBuffer,
-      asset.ai_instructions ?? "",
-      parseStudioDestination(project?.destination),
-    );
-
-    await updateAssetPremiumVideoServer({
-      assetId,
-      userId: user.id,
-      projectId: asset.project_id,
-      videoBuffer,
-    });
-
-    return Response.json({ status: "ready", assetId });
-  } catch (error) {
-    console.error("Premium video generation failed:", error);
     return jsonError(
-      mapCreationError(
-        error instanceof Error ? error.message : "Premium video generation failed.",
-      ) || "No pudimos producir tu comercial HD.",
+      mapCreationError(result.reason) || "No pudimos producir tu comercial HD.",
       500,
     );
   }
+
+  return Response.json({ status: "ready", assetId: result.assetId });
 }

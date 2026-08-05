@@ -1,5 +1,10 @@
 import Stripe from "stripe";
 
+import {
+  getStripeTestPriceId,
+  getStripeTestSecretKey,
+  getStripeWebhookSecret,
+} from "../stripe-config";
 import type {
   CheckoutRequest,
   CheckoutSession,
@@ -14,15 +19,7 @@ import { PaymentProviderError } from "../types";
 const DEFAULT_APP_URL = "http://localhost:3000";
 
 function getStripeClient(): Stripe {
-  const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
-
-  if (!secretKey) {
-    throw new PaymentProviderError(
-      "Stripe is not configured. Set STRIPE_SECRET_KEY or use PAYMENT_PROVIDER=mock.",
-    );
-  }
-
-  return new Stripe(secretKey);
+  return new Stripe(getStripeTestSecretKey());
 }
 
 function getAppUrl(): string {
@@ -113,6 +110,7 @@ export const stripePaymentProvider: PaymentProvider = {
     const appUrl = getAppUrl();
     const paymentMethodTypes = getPaymentMethodTypes(request.paymentMethod);
     const isOxxo = paymentMethodTypes.includes("oxxo");
+    const priceId = getStripeTestPriceId(request.productId);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -125,16 +123,7 @@ export const stripePaymentProvider: PaymentProvider = {
       line_items: [
         {
           quantity: 1,
-          price_data: {
-            currency: request.currency ?? "mxn",
-            unit_amount: request.amountMxn * 100,
-            product_data: {
-              name: "Metaprom comercial HD",
-              metadata: {
-                productId: request.productId,
-              },
-            },
-          },
+          price: priceId,
         },
       ],
       metadata: {
@@ -143,6 +132,7 @@ export const stripePaymentProvider: PaymentProvider = {
         productId: request.productId,
         userId: request.userId,
         paymentMethod: request.paymentMethod,
+        amountMxn: String(request.amountMxn),
       },
       success_url: `${appUrl}/studio?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/studio?payment=cancelled&purchase=${purchaseId}`,
@@ -171,11 +161,11 @@ export const stripePaymentProvider: PaymentProvider = {
     const rawBody = webhookPayload.rawBody;
     const signature =
       webhookPayload.signature ?? webhookPayload.headers?.get("stripe-signature");
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+    const webhookSecret = getStripeWebhookSecret();
 
-    if (!rawBody || !signature || !webhookSecret) {
+    if (!rawBody || !signature) {
       throw new PaymentProviderError(
-        "Stripe webhook verification requires raw body, stripe-signature, and STRIPE_WEBHOOK_SECRET.",
+        "Stripe webhook verification requires raw body and stripe-signature header.",
       );
     }
 

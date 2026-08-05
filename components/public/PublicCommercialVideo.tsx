@@ -170,9 +170,24 @@ export default function PublicCommercialVideo({
         <button
           type="button"
           onClick={() => void handleUnmute()}
-          className="absolute bottom-4 right-4 z-20 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-xs font-medium text-[#F5F5F0] backdrop-blur-sm"
+          className="absolute bottom-6 left-1/2 z-30 flex min-h-12 w-[min(92%,20rem)] -translate-x-1/2 items-center justify-center gap-2.5 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black shadow-[0_4px_24px_rgba(0,0,0,0.45)] md:bottom-5 md:min-h-11 md:w-auto md:px-5 md:text-[13px]"
+          aria-label="Toca para activar sonido"
         >
-          {labels.unmuteLabel}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5 shrink-0 md:h-4 md:w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M11 5L6 9H3v6h3l5 4V5z" />
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
+          </svg>
+          <span>Toca para activar sonido</span>
         </button>
       ) : null}
     </div>

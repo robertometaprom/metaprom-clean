@@ -141,7 +141,7 @@ export default function PublicCommercialVideo({
         aria-label={title}
         className="aspect-[9/16] h-auto w-full bg-black object-contain md:aspect-video"
         autoPlay
-        muted
+        muted={isMuted}
         loop
         playsInline
         preload="auto"

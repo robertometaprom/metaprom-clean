@@ -59,7 +59,12 @@ export default function PublicCommercialVideo({
   }, []);
 
   useEffect(() => {
-    setPlaybackState("loading");
+    const video = videoRef.current;
+    if (video && video.readyState >= 2) {
+      setPlaybackState("ready");
+    } else {
+      setPlaybackState("loading");
+    }
     setShowUnmuteHint(false);
   }, [streamPath]);
 

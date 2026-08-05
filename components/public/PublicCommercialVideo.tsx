@@ -140,6 +140,7 @@ export default function PublicCommercialVideo({
         loop
         playsInline
         preload="auto"
+        onLoadedData={handleCanPlay}
         onCanPlay={handleCanPlay}
         onPlay={handlePlay}
         onPause={handlePause}

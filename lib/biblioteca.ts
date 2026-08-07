@@ -628,6 +628,10 @@ export function getCommercialStatusLabel(
   if (asset.payment_status === "pending") {
     return { label: "Pago pendiente", tone: "pending" };
   }
+  // Standalone Advertising Image (no teaser/commercial hierarchy).
+  if (!assetHasTeaser(asset)) {
+    return { label: "Imagen lista", tone: "paid" };
+  }
   return { label: "Avance gratis", tone: "free" };
 }
 

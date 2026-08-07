@@ -30,12 +30,14 @@ import {
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
   completeCheckoutAfterRedirect,
+  createAdvertisingImage,
   createCommercialAssets,
   getAutoSaveMessage,
   mapCreationError,
   persistCreationToLibrary,
   purchaseHdCommercial,
   type AutoSaveStatus,
+  type CreationMode,
   type CreationStep,
 } from "@/lib/studio-creation";
 import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
@@ -71,10 +73,13 @@ type Phase =
   | "welcome"
   | "unavailable"
   | "upload"
+  | "creation_mode"
   | "destination"
   | "intent"
   | "creating"
   | "preview"
+  | "image_result"
+  | "image_ready"
   | "checkout"
   | "processing_payment"
   | "processing_premium"
@@ -93,6 +98,19 @@ const CHECKOUT_PAYMENT_METHODS = [
 ];
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+/** Lightweight image-purpose chips — not separate workflows. */
+const ADVERTISING_IMAGE_INTENT_CHIPS = [
+  { id: "product", label: "Foto de producto", prompt: "Foto de producto profesional para vender" },
+  { id: "mercado-libre", label: "Mercado Libre", prompt: "Imagen optimizada para Mercado Libre" },
+  { id: "amazon", label: "Amazon", prompt: "Imagen de producto para Amazon" },
+  { id: "social", label: "Redes sociales", prompt: "Imagen publicitaria para Instagram y Facebook" },
+  { id: "flyer", label: "Flyer", prompt: "Flyer publicitario atractivo" },
+  { id: "poster", label: "Póster", prompt: "Póster publicitario de alto impacto" },
+  { id: "menu", label: "Menú", prompt: "Foto apetitosa para menú de restaurante" },
+  { id: "banner", label: "Banner", prompt: "Banner publicitario para sitio web" },
+  { id: "catalog", label: "Catálogo", prompt: "Imagen de catálogo profesional" },
+] as const;
 
 function describeRuntimeError(error: unknown): string {
   if (error instanceof Error) {
@@ -130,6 +148,8 @@ export default function CreativeDirector({
   const [matchedProduct, setMatchedProduct] = useState<CatalogProduct | null>(
     null,
   );
+  /** Dual Creation intent — set by chooser now; Director may set later. */
+  const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -179,9 +199,15 @@ export default function CreativeDirector({
     destination?: StudioDestination | null;
   }>({});
   const destinationRef = useRef<StudioDestination | null>(null);
+  const creationModeRef = useRef<CreationMode | null>(null);
   const teaserVideoBlobStore = useRef<Blob | null>(null);
   const resumeHandledRef = useRef(false);
   const authRedirectToRef = useRef("/studio");
+  const finalizingImageRef = useRef(false);
+
+  useEffect(() => {
+    creationModeRef.current = creationMode;
+  }, [creationMode]);
 
   useEffect(() => {
     selectedFileRef.current = selectedFile;
@@ -311,6 +337,12 @@ export default function CreativeDirector({
         }
         videoUrlRef.current = urls.teaserUrl;
         setVideoUrl(urls.teaserUrl);
+        setCreationMode("commercial");
+        creationModeRef.current = "commercial";
+      } else if (urls.enhancedUrl) {
+        // Image-only draft → standalone Advertising Image journey.
+        setCreationMode("advertising_image");
+        creationModeRef.current = "advertising_image";
       }
 
       if (urls.originalUrl) {
@@ -347,13 +379,16 @@ export default function CreativeDirector({
         );
       }
 
+      const isAdvertisingDraft = !urls.teaserUrl && Boolean(urls.enhancedUrl);
       const restoredPhase =
         draft.phase === "checkout" ||
         draft.phase === "processing_payment" ||
         draft.phase === "processing_premium" ||
         draft.phase === "ready"
           ? draft.phase
-          : "preview";
+          : isAdvertisingDraft
+            ? "image_result"
+            : "preview";
       setPhase(restoredPhase);
       setAutoSaveStatus("local-only");
       setDirectorPanelOpen(false);
@@ -379,9 +414,25 @@ export default function CreativeDirector({
         assetId: claimResult.assetId,
       });
 
+      const isAdvertisingClaim =
+        !claimResult.hadTeaser ||
+        creationModeRef.current === "advertising_image";
+
       if (claimResult.pendingAction === "unlock") {
+        setCreationMode("commercial");
+        creationModeRef.current = "commercial";
         setPhase("checkout");
+      } else if (isAdvertisingClaim) {
+        setCreationMode("advertising_image");
+        creationModeRef.current = "advertising_image";
+        setPhase("image_ready");
+        onOpenLibrary?.({
+          projectId: claimResult.projectId,
+          assetId: claimResult.assetId,
+        });
       } else {
+        setCreationMode("commercial");
+        creationModeRef.current = "commercial";
         setPhase("preview");
         onOpenLibrary?.({
           projectId: claimResult.projectId,
@@ -564,9 +615,11 @@ export default function CreativeDirector({
       teaserVideoBlob?: Blob;
       imagePrompt: string;
       videoPrompt: string;
+      billAdvertisingAsset?: boolean;
     }) => {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
+      const billAdvertisingAsset = input.billAdvertisingAsset ?? false;
 
       setAutoSaveStatus("saving");
 
@@ -588,9 +641,8 @@ export default function CreativeDirector({
         },
         existingProjectId: savedProjectIdRef.current,
         existingAssetId: savedAssetIdRef.current,
-        // Commercial production: image enhancement is internal; do not require
-        // Advertising Image packages.
-        billAdvertisingAsset: false,
+        // Commercial: false. Standalone Advertising Image finalize: true.
+        billAdvertisingAsset,
       });
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
@@ -623,6 +675,7 @@ export default function CreativeDirector({
         );
       }
       setAutoSaveStatus(result.status);
+      return result;
     },
     [onLibraryUpdated, persistAnonymousDraft],
   );
@@ -633,12 +686,18 @@ export default function CreativeDirector({
     const file = selectedFileRef.current;
     if (!file || !premiumImage || savedAssetIdRef.current) return;
 
+    const isAdvertising =
+      creationModeRef.current === "advertising_image";
+
     void persistToLibrary({
       originalFile: file,
       enhancedDataUrl: premiumImage,
-      teaserVideoBlob: teaserVideoBlobStore.current ?? undefined,
+      teaserVideoBlob: isAdvertising
+        ? undefined
+        : (teaserVideoBlobStore.current ?? undefined),
       imagePrompt: imagePromptRef.current,
-      videoPrompt: videoPromptRef.current,
+      videoPrompt: isAdvertising ? "" : videoPromptRef.current,
+      billAdvertisingAsset: isAdvertising,
     });
   }, [autoSaveStatus, isAuthenticated, persistToLibrary, premiumImage]);
 
@@ -650,16 +709,27 @@ export default function CreativeDirector({
       return;
     }
 
-    primeCinematicFullscreen();
+    const mode = creationModeRef.current ?? "commercial";
+    const isAdvertising = mode === "advertising_image";
+
+    if (!isAdvertising) {
+      primeCinematicFullscreen();
+    }
 
     setPhase("creating");
     setCreationStep("image");
-    setCreationMessage("Preparando tu escena comercial...");
+    setCreationMessage(
+      isAdvertising
+        ? "Preparando tu imagen publicitaria..."
+        : "Preparando tu escena comercial...",
+    );
     setError(null);
     setPremiumImage(null);
     setVideoUrl(null);
     setAutoSaveStatus("idle");
     setShareSlug(null);
+    // New generation attempt: clear ids so first finalize can bill once.
+    // Refinements before finalize never hit persist/billing.
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
@@ -668,10 +738,30 @@ export default function CreativeDirector({
       URL.revokeObjectURL(videoUrlRef.current);
     }
     videoUrlRef.current = null;
+    teaserVideoBlobStore.current = null;
 
     try {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
+
+      if (isAdvertising) {
+        const result = await createAdvertisingImage({
+          file,
+          customerIntent,
+          productMode: product.mode,
+          onStep: (step, message) => {
+            setCreationStep(step);
+            setCreationMessage(message);
+          },
+        });
+
+        imagePromptRef.current = result.imagePrompt;
+        videoPromptRef.current = "";
+        setPremiumImage(result.premiumImage);
+        // Image-only: do not persist or consume until Finalizar Imagen.
+        setPhase("image_result");
+        return;
+      }
 
       const result = await createCommercialAssets({
         file,
@@ -697,6 +787,7 @@ export default function CreativeDirector({
         teaserVideoBlob: result.videoBlob,
         imagePrompt: result.imagePrompt,
         videoPrompt: result.videoPrompt,
+        billAdvertisingAsset: false,
       });
 
       setPhase("preview");
@@ -708,7 +799,8 @@ export default function CreativeDirector({
           createError instanceof Error ? createError.message : undefined,
         ) || "Algo salió mal. Intenta de nuevo.",
       );
-      setPhase("upload");
+      // Advertising: back to intent. Commercial: preserve prior upload recovery.
+      setPhase(isAdvertising ? "intent" : "upload");
     }
   }, [persistToLibrary]);
 
@@ -764,6 +856,33 @@ export default function CreativeDirector({
     [input, runCreation],
   );
 
+  const routeAfterCreationMode = useCallback((mode: CreationMode) => {
+    if (mode === "commercial") {
+      setPhase("destination");
+      return;
+    }
+    setPhase("intent");
+  }, []);
+
+  const selectCreationMode = useCallback(
+    (mode: CreationMode) => {
+      setCreationMode(mode);
+      creationModeRef.current = mode;
+      setError(null);
+      routeAfterCreationMode(mode);
+    },
+    [routeAfterCreationMode],
+  );
+
+  const continueAfterPhoto = useCallback(() => {
+    const knownMode = creationModeRef.current;
+    if (knownMode) {
+      routeAfterCreationMode(knownMode);
+      return;
+    }
+    setPhase("creation_mode");
+  }, [routeAfterCreationMode]);
+
   const handleDestinationContinue = useCallback(
     (selected: StudioDestination) => {
       setDestination(selected);
@@ -797,9 +916,9 @@ export default function CreativeDirector({
 
       if (!options?.autoContinue || phase !== "upload") return;
 
-      setPhase("destination");
+      continueAfterPhoto();
     },
-    [phase],
+    [continueAfterPhoto, phase],
   );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -820,8 +939,69 @@ export default function CreativeDirector({
 
   const handleCreateWow = () => {
     if (!selectedFile) return;
-    setPhase("destination");
+    continueAfterPhoto();
   };
+
+  const handleFinalizeAdvertisingImage = useCallback(async () => {
+    const file = selectedFileRef.current;
+    if (!file || !premiumImage) {
+      setError("Genera tu imagen publicitaria para continuar.");
+      return;
+    }
+
+    if (finalizingImageRef.current) return;
+    finalizingImageRef.current = true;
+    setError(null);
+
+    try {
+      if (!isAuthenticated) {
+        await requestAuthentication("save");
+        return;
+      }
+
+      const result = await persistToLibrary({
+        originalFile: file,
+        enhancedDataUrl: premiumImage,
+        // Standalone image: no teaser / no video.
+        imagePrompt: imagePromptRef.current,
+        videoPrompt: "",
+        billAdvertisingAsset: true,
+      });
+
+      if (result.status === "requires-package") {
+        setPhase("image_result");
+        return;
+      }
+
+      if (result.status === "local-only") {
+        setPhase("image_result");
+        return;
+      }
+
+      if (result.status === "saved") {
+        setPhase("image_ready");
+        onOpenLibrary?.({
+          projectId: result.projectId ?? undefined,
+          assetId: result.assetId ?? undefined,
+        });
+      }
+    } catch (finalizeError) {
+      console.error(finalizeError);
+      setError(
+        mapCreationError(
+          finalizeError instanceof Error ? finalizeError.message : undefined,
+        ) || "No pudimos finalizar tu imagen. Intenta de nuevo.",
+      );
+    } finally {
+      finalizingImageRef.current = false;
+    }
+  }, [
+    isAuthenticated,
+    onOpenLibrary,
+    persistToLibrary,
+    premiumImage,
+    requestAuthentication,
+  ]);
 
   const handleDownloadImage = () => {
     if (!premiumImage) return;
@@ -915,6 +1095,8 @@ export default function CreativeDirector({
     setPremiumReady(false);
     setDestination(null);
     destinationRef.current = null;
+    setCreationMode(null);
+    creationModeRef.current = null;
     setDirectorPanelOpen(false);
     setPendingCompanionMoment(null);
     setDirectorSessionKey(`${Date.now()}`);
@@ -926,6 +1108,7 @@ export default function CreativeDirector({
     teaserVideoBlobStore.current = null;
     authRedirectToRef.current = "/studio";
     resumeHandledRef.current = false;
+    finalizingImageRef.current = false;
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
@@ -1180,7 +1363,60 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
-        {phase === "destination" && (
+        {phase === "creation_mode" && (
+          <motion.div
+            key="creation_mode"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="space-y-8 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
+          >
+            {previewUrl && (
+              <div className="flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt="Vista previa"
+                  className="max-h-28 rounded-xl border border-neutral-200 object-contain"
+                />
+              </div>
+            )}
+            <div className="space-y-3 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+                ¿Qué quieres crear?
+              </h2>
+              <p className="text-sm text-neutral-500 sm:text-base">
+                Elige el tipo de pieza. Puedes cambiar después.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => selectCreationMode("commercial")}
+                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+              >
+                Un Comercial
+              </button>
+              <button
+                type="button"
+                onClick={() => selectCreationMode("advertising_image")}
+                className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-4 text-base font-semibold text-neutral-900 transition hover:border-violet-200 hover:bg-violet-50/50"
+              >
+                Una Imagen Publicitaria
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPhase("upload")}
+              className="w-full rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+            >
+              Volver
+            </button>
+          </motion.div>
+        )}
+
+        {phase === "destination" && creationMode === "commercial" && (
           <motion.div
             key="destination"
             initial={{ opacity: 0, y: 16 }}
@@ -1200,7 +1436,7 @@ export default function CreativeDirector({
             )}
             <DestinationStep
               onContinue={handleDestinationContinue}
-              onBack={() => setPhase("upload")}
+              onBack={() => setPhase("creation_mode")}
             />
           </motion.div>
         )}
@@ -1215,16 +1451,20 @@ export default function CreativeDirector({
             className="-mx-6 space-y-8 rounded-3xl bg-black px-6 py-8 sm:-mx-0"
           >
             <div className="space-y-3 text-center">
-              {destination && (
+              {creationMode === "commercial" && destination && (
                 <p className="text-sm text-white/45">
                   {destination.platform} · {destination.aspectRatio}
                 </p>
               )}
               <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                ¿Qué te gustaría crear hoy?
+                {creationMode === "advertising_image"
+                  ? "¿Qué imagen necesitas?"
+                  : "¿Qué te gustaría crear hoy?"}
               </h2>
               <p className="text-base text-white/55">
-                Describe tu comercial. Metaprom interpreta tu intención.
+                {creationMode === "advertising_image"
+                  ? "Describe el uso: producto, Amazon, Mercado Libre, flyer, redes…"
+                  : "Describe tu comercial. Metaprom interpreta tu intención."}
               </p>
             </div>
 
@@ -1233,7 +1473,11 @@ export default function CreativeDirector({
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe tu comercial. Ej: hamburguesa artesanal en cámara lenta..."
+                  placeholder={
+                    creationMode === "advertising_image"
+                      ? "Ej: foto de producto para Mercado Libre..."
+                      : "Describe tu comercial. Ej: hamburguesa artesanal en cámara lenta..."
+                  }
                   className="w-full bg-transparent py-4 pl-5 pr-36 text-base text-white placeholder:text-white/35 focus:outline-none"
                 />
                 <div className="absolute inset-y-0 right-2 flex items-center">
@@ -1275,22 +1519,39 @@ export default function CreativeDirector({
               </div>
 
               <div className="flex flex-wrap justify-center gap-2">
-                {PROMPT_CATEGORY_CHIPS.map((chip) => (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    onClick={() => handleExampleClick(chip.prompt)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <PromptCategoryIcon type={chip.icon} />
-                    {chip.label}
-                  </button>
-                ))}
+                {creationMode === "advertising_image"
+                  ? ADVERTISING_IMAGE_INTENT_CHIPS.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => handleExampleClick(chip.prompt)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                      >
+                        {chip.label}
+                      </button>
+                    ))
+                  : PROMPT_CATEGORY_CHIPS.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => handleExampleClick(chip.prompt)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <PromptCategoryIcon type={chip.icon} />
+                        {chip.label}
+                      </button>
+                    ))}
               </div>
 
               <button
                 type="button"
-                onClick={() => setPhase("destination")}
+                onClick={() =>
+                  setPhase(
+                    creationMode === "advertising_image"
+                      ? "creation_mode"
+                      : "destination",
+                  )
+                }
                 className="w-full rounded-2xl py-3 text-sm font-semibold text-white/50 transition hover:text-white/80"
               >
                 Volver
@@ -1322,17 +1583,156 @@ export default function CreativeDirector({
             <div className="space-y-2">
               <p className="text-xl font-semibold text-neutral-900">{creationMessage}</p>
               <p className="text-sm text-neutral-500">
-                {creationStep === "image"
-                  ? "Preparando la escena de tu comercial..."
-                  : creationStep === "video"
-                    ? "Produciendo tu comercial..."
-                    : "¡Tu comercial está listo!"}
+                {creationMode === "advertising_image"
+                  ? creationStep === "done"
+                    ? "¡Tu imagen publicitaria está lista!"
+                    : "Creando tu imagen publicitaria..."
+                  : creationStep === "image"
+                    ? "Preparando la escena de tu comercial..."
+                    : creationStep === "video"
+                      ? "Produciendo tu comercial..."
+                      : "¡Tu comercial está listo!"}
               </p>
             </div>
           </motion.div>
         )}
 
+        {phase === "image_result" && premiumImage && (
+          <motion.div
+            key="image_result"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg sm:p-8"
+          >
+            <div className="space-y-2 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                Tu imagen publicitaria
+              </h2>
+              <p className="text-sm text-neutral-500">
+                Revisa el resultado. Puedes refinar o finalizar.
+              </p>
+            </div>
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={premiumImage}
+              alt="Imagen publicitaria premium"
+              className="mx-auto max-h-[28rem] w-full rounded-2xl border border-neutral-200 object-contain"
+            />
+
+            {error && (
+              <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <p className="whitespace-pre-line">{error}</p>
+                {autoSaveStatus === "requires-package" && (
+                  <Link
+                    href="/planes"
+                    className="inline-flex font-semibold text-red-700 underline underline-offset-2"
+                  >
+                    Ver planes
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {autoSaveMessage && autoSaveStatus !== "requires-package" && (
+              <p className="text-center text-sm text-neutral-500">
+                {autoSaveMessage}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => void handleFinalizeAdvertisingImage()}
+                disabled={autoSaveStatus === "saving"}
+                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {autoSaveStatus === "saving"
+                  ? "Finalizando..."
+                  : "Finalizar Imagen"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void runCreation()}
+                disabled={autoSaveStatus === "saving"}
+                className="rounded-2xl border border-neutral-200 bg-neutral-50 py-3 text-sm font-semibold text-neutral-800 transition hover:border-violet-200 hover:bg-violet-50/40 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Generar de nuevo
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadImage}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+              >
+                Descargar vista previa
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhase("intent")}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-400 transition hover:text-neutral-700"
+              >
+                Cambiar descripción
+              </button>
+            </div>
+
+            {showRegistrationInvite && (
+              <div className="mx-auto max-w-md space-y-3 text-center">
+                <p className="text-sm text-neutral-600">
+                  Inicia sesión para guardar tu imagen en Biblioteca.
+                </p>
+                <GoogleSignInButton
+                  redirectTo={authRedirectToRef.current}
+                  label="Crear cuenta gratuita para continuar"
+                />
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {phase === "image_ready" && premiumImage && (
+          <motion.div
+            key="image_ready"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-lg sm:p-8"
+          >
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                Imagen guardada
+              </h2>
+              <p className="text-sm text-neutral-500">
+                Tu imagen publicitaria está en Biblioteca.
+              </p>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={premiumImage}
+              alt="Imagen publicitaria finalizada"
+              className="mx-auto max-h-64 w-full rounded-2xl border border-neutral-200 object-contain"
+            />
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleOpenLibrary}
+                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+              >
+                Ver en Biblioteca
+              </button>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+              >
+                Crear otra pieza
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {phase === "preview" &&
+          creationMode !== "advertising_image" &&
           videoUrl && (
             <CinematicReveal
               videoUrl={videoUrl}

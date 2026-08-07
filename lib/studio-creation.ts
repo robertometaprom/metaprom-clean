@@ -23,6 +23,13 @@ import { createClient } from "@/lib/supabase/client";
 
 export type CreationStep = "image" | "video" | "done";
 
+/**
+ * Studio Dual Creation routing intent.
+ * Deterministic ownership lives in Studio / CreativeDirector orchestration.
+ * Director may set/infer this later without rewriting downstream flows.
+ */
+export type CreationMode = "commercial" | "advertising_image";
+
 export type AutoSaveStatus =
   | "idle"
   | "saving"
@@ -44,6 +51,18 @@ export type CreateCommercialResult = {
   videoUrl: string;
   imagePrompt: string;
   videoPrompt: string;
+};
+
+export type CreateAdvertisingImageInput = {
+  file: File;
+  customerIntent: string;
+  productMode: Mode;
+  onStep?: (step: CreationStep, message: string) => void;
+};
+
+export type CreateAdvertisingImageResult = {
+  premiumImage: string;
+  imagePrompt: string;
 };
 
 export type PersistCreationInput = {
@@ -314,6 +333,49 @@ export async function createCommercialAssets(
     videoUrl: URL.createObjectURL(blob),
     imagePrompt,
     videoPrompt,
+  };
+}
+
+/**
+ * Standalone Advertising Image generation — Premium Image only.
+ * Must never call /api/video or enter Commercial destination/video flows.
+ */
+export async function createAdvertisingImage(
+  input: CreateAdvertisingImageInput,
+): Promise<CreateAdvertisingImageResult> {
+  const customerIntent = input.customerIntent.trim();
+  const imagePrompt = buildStudioImagePrompt(
+    customerIntent,
+    input.productMode,
+    null,
+  );
+
+  input.onStep?.("image", "Preparando tu imagen publicitaria...");
+
+  const formData = new FormData();
+  formData.append("image", input.file);
+  formData.append("mode", "custom");
+  formData.append("aiInstructions", imagePrompt);
+
+  const response = await fetch("/api/enhancement", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok || !data.image) {
+    throw new Error(
+      mapCreationError(data.error) ||
+        "No pudimos crear tu imagen publicitaria.",
+    );
+  }
+
+  input.onStep?.("done", "¡Listo!");
+
+  return {
+    premiumImage: data.image,
+    imagePrompt,
   };
 }
 

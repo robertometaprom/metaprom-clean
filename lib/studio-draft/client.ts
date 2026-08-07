@@ -129,6 +129,7 @@ export async function claimStudioDraft(token: string): Promise<{
   shareSlug: string | null;
   pendingAction: StudioDraftPayload["pendingAction"];
   phase: StudioDraftPayload["phase"];
+  hadTeaser: boolean;
 }> {
   const response = await fetch("/api/studio/draft/claim", {
     method: "POST",
@@ -144,6 +145,7 @@ export async function claimStudioDraft(token: string): Promise<{
     shareSlug?: string | null;
     pendingAction?: StudioDraftPayload["pendingAction"];
     phase?: StudioDraftPayload["phase"];
+    hadTeaser?: boolean;
     error?: string;
   };
 
@@ -160,6 +162,7 @@ export async function claimStudioDraft(token: string): Promise<{
     shareSlug: body.shareSlug ?? null,
     pendingAction: body.pendingAction ?? null,
     phase: body.phase ?? "preview",
+    hadTeaser: Boolean(body.hadTeaser),
   };
 }
 

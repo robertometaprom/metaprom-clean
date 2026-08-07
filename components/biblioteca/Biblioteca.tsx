@@ -209,43 +209,43 @@ function TransformationPipeline({
 
 
 
-      <svg
+      {hasTeaser ? (
 
-        className={`${arrowSize} shrink-0 text-violet-300`}
+        <>
 
-        fill="none"
+          <svg
 
-        viewBox="0 0 24 24"
+            className={`${arrowSize} shrink-0 text-violet-300`}
 
-        stroke="currentColor"
+            fill="none"
 
-        strokeWidth={2}
+            viewBox="0 0 24 24"
 
-      >
+            stroke="currentColor"
 
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            strokeWidth={2}
 
-      </svg>
+          >
+
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+
+          </svg>
 
 
 
-      <div
+          <div
 
-        className={`${thumbSize} flex shrink-0 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-white`}
+            className={`${thumbSize} flex shrink-0 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-white`}
 
-      >
+          >
 
-        {hasTeaser ? (
+            <span className="text-[10px] font-bold">▶</span>
 
-          <span className="text-[10px] font-bold">▶</span>
+          </div>
 
-        ) : (
+        </>
 
-          <span className="text-[9px] text-white/40">▶</span>
-
-        )}
-
-      </div>
+      ) : null}
 
     </div>
 
@@ -1410,7 +1410,10 @@ function AssetDetailCard({
 
         {hasEnhanced && (
 
-          <TimelineStage label="Escena premium" featured>
+          <TimelineStage
+            label={hasTeaser ? "Escena premium" : "Imagen publicitaria"}
+            featured
+          >
 
             {enhancedUrl ? (
 
@@ -1420,7 +1423,11 @@ function AssetDetailCard({
 
                 src={enhancedUrl}
 
-                alt="Escena comercial premium"
+                alt={
+                  hasTeaser
+                    ? "Escena comercial premium"
+                    : "Imagen publicitaria premium"
+                }
 
                 className="aspect-square w-full rounded-xl border border-violet-100 object-cover shadow-md"
 

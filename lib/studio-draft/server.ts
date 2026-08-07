@@ -265,6 +265,8 @@ export type ClaimStudioDraftResult = {
   shareSlug: string | null;
   pendingAction: StudioDraftRecord["pending_action"];
   phase: StudioDraftRecord["phase"];
+  /** False for standalone Advertising Image drafts (no teaser video). */
+  hadTeaser: boolean;
 };
 
 export async function claimStudioDraftServer(
@@ -387,6 +389,7 @@ export async function claimStudioDraftServer(
       shareSlug: result.asset.share_slug ?? null,
       pendingAction: draft.pending_action,
       phase: draft.phase,
+      hadTeaser: Boolean(teaserVideoBlob),
     };
   } catch (error) {
     await revertDraftClaim(validatedToken, userId);

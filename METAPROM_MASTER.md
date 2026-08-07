@@ -14,15 +14,82 @@ Infrastructure is no longer the primary challenge.
 
 Current focus:
 
+* Dual Creation Architecture (Commercials + Advertising Images)
+* Creative Director as central commercial orchestrator
 * Product Experience
 * Product Quality
 * Product Personality
 * Customer Confidence
 * Commercial Quality
 
-The **Creative Director** is no longer an experimental feature. It is one of Metaprom's primary competitive advantages and is expected to become the primary customer interface across the platform. Future product decisions should prioritize protecting the Director experience.
+The **Creative Director** is no longer an experimental feature. It is one of Metaprom's primary competitive advantages and is expected to become the **primary intelligent interface and commercial orchestrator** across the platform. Future product decisions should prioritize protecting the Director experience.
+
+Metaprom is evolving from an **AI Commercial generator** toward an **AI advertising asset platform orchestrated by an intelligent Creative Director**.
 
 We are no longer building an AI. We are building a product — perfected in the real market through launch, learn, improve, repeat.
+
+### Official Product Principles
+
+> Preview belongs to Metaprom.
+> Premium belongs to the customer.
+
+> No barriers, no nonsense.
+
+Do not make the user learn Metaprom's internal architecture. Director determines what the customer is trying to create and coordinates the correct generation, refinement, purchase, and delivery flow.
+
+### Stripe V1 — Verified State (August 2026)
+
+**Commercial Stripe V1:** E2E TEST MODE — **VERIFIED SUCCESSFULLY** on [https://www.metaprom.com](https://www.metaprom.com).
+
+Verified Commercial E2E path:
+
+```
+www.metaprom.com
+→ Studio / Commercial flow
+→ Stripe Checkout
+→ 1 Commercial — MXN $180
+→ Test Mode payment
+→ successful return
+→ server-side fulfillment
+→ entitlement grant
+→ current-project consumption
+→ success
+```
+
+Stripe remains **TEST MODE**. Live Mode is **not** enabled.
+
+Current production commit after legacy checkout removal and entitlement fulfillment fix:
+
+`1378eb4fbd349ac4fddc03b8f09b4abeff805c1e`
+
+Full package catalog, entitlement architecture, fulfillment security, and Live Mode plan are recorded in **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+
+### Advertising Image Infrastructure Status
+
+| Capability | Status |
+| --- | --- |
+| Generation | Available |
+| Persistence | Available |
+| Package catalog (`/planes`) | Available |
+| Stripe Test checkout | Available |
+| Entitlements | Implemented |
+| Idempotent consumption | Implemented |
+| Hard entitlement gate | Implemented |
+| Standalone customer journey | **NOT COMPLETE** |
+
+Advertising Image Stripe checkout infrastructure exists, but full product E2E is **not** complete until Dual Creation Architecture corrects the UX/product orchestration.
+
+### Current Stopping Point
+
+* Commercial Stripe V1 — E2E TEST MODE verified on www.metaprom.com
+* Advertising Image customer journey — **not complete**
+* Stripe Live Mode — **do not enable yet**
+
+### Active Next Objective
+
+**METAPROM DUAL CREATION ARCHITECTURE — COMMERCIALS + ADVERTISING IMAGES**
+
+One intelligent entry point through Director, with separate downstream product journeys. Advertising Image route must terminate as an image product and must not auto-proceed into video/commercial flows.
 
 ### Completed (RC2)
 
@@ -36,13 +103,14 @@ We are no longer building an AI. We are building a product — perfected in the 
 * Creative Director integration after Premium
 * Creative Director product refinement
 * Creative Director personality redesign
+* Stripe V1 package catalog (8 packages) in Test Mode
+* Commercial package checkout E2E on production domain (Test Mode)
+* Legacy single Commercial `$149` checkout path removed from Studio
+* Separate Commercial vs Advertising Image entitlements
+* Server-only `grant_package_entitlement` fulfillment via service_role
+* Idempotent entitlement grant and consumption
 
 Prior RC1 milestones remain valid foundation: Enhancement, Preview Generation, Premium Generation, Biblioteca, Persistence, Workflow Layer, Public Commercial Pages, Growth Engine Foundation, Product Stabilization, Share Experience (functional), and Stripe commercial flow.
-
-Official Product Principle:
-
-> Preview belongs to Metaprom.
-> Premium belongs to the customer.
 
 ### CEO Product Rule
 
@@ -74,23 +142,374 @@ Discovered product issues are captured in `RC1_PRODUCT_BACKLOG.md` without inter
 
 Development rule: register → prioritize → execute only after the current objective reaches PASS. Only **ONE** active objective may exist at any time.
 
-Active backlog priorities are defined in **Product Backlog (RC2)** later in this document.
+Active backlog priorities are defined in **Product Backlog (RC2)** later in this document. Dual Creation Architecture is the active next major product sprint — see **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
 
 ### Validation Environment
 
 Official development environment: `localhost`
 
+Official production validation domain for Stripe V1 E2E: `https://www.metaprom.com`
+
 Official repository: `metaprom-ai`
+
+---
+
+## MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)
+
+*Current canonical record for Stripe V1 verified state, package entitlements, fulfillment security, and the approved Dual Creation Architecture direction. Supersedes earlier Revenue Sprint / Stripe soft-launch status where they conflict. Prior sections remain historical context.*
+
+### 1. Stripe V1 — Current Verified State
+
+Stripe V1 has reached successful **real-domain Test Mode E2E validation** on:
+
+[https://www.metaprom.com](https://www.metaprom.com)
+
+**Verified Commercial E2E:**
+
+```
+www.metaprom.com
+→ Studio / Commercial flow
+→ Stripe Checkout
+→ 1 Commercial
+→ MXN $180
+→ Test Mode payment
+→ successful return
+→ server-side fulfillment
+→ entitlement grant
+→ current-project consumption
+→ success
+```
+
+The manual E2E payment using Stripe Test Mode succeeded.
+
+**Stripe remains TEST MODE.**
+
+Do **not** state that Live Mode is enabled.
+
+### 2. Stripe V1 Packages
+
+#### Commercial packages
+
+| Package | Price |
+| --- | --- |
+| 1 Commercial | MXN $180 |
+| 5 Commercials | MXN $640 |
+| 10 Commercials | MXN $990 |
+| 20 Commercials | MXN $1,780 |
+
+#### Advertising Images
+
+| Package | Price |
+| --- | --- |
+| 10 Images | MXN $99 |
+| 25 Images | MXN $199 |
+| 50 Images | MXN $349 |
+| 100 Images | MXN $599 |
+
+All **8** package Price IDs exist in Stripe Test Mode.
+
+Card and OXXO are available in Test Checkout.
+
+Commercial package checkout has passed production-domain Test Mode validation.
+
+Advertising Image package Stripe checkout infrastructure exists, but full product E2E is **NOT** yet considered complete because the UX/product architecture must be corrected first.
+
+### 3. Legacy Stripe Checkout Removed
+
+The old single Commercial checkout:
+
+* product: `commercial-video`
+* env: `STRIPE_PRICE_ID_COMMERCIAL_VIDEO`
+* price: MXN $149
+
+was identified as a legacy runtime path and **removed** from the active Studio checkout architecture.
+
+Studio now routes through Stripe V1 package checkout using:
+
+```
+productKey: commercial_1
+```
+
+The legacy **$149** Stripe Price must **NOT** be restored.
+
+Current production commit after this fix and entitlement fix:
+
+`1378eb4fbd349ac4fddc03b8f09b4abeff805c1e`
+
+### 4. Entitlement Architecture
+
+Commercial and Advertising Image entitlements are **separate**.
+
+* Commercial package purchase → grants **commercial** entitlement balance
+* Advertising Image package purchase → grants **advertising_asset** balance
+
+#### Advertising Image consumption model
+
+1 new standalone finished Advertising Image → consumes exactly **1** `advertising_asset`.
+
+**Billing boundary:** first persistence of a new finished/deliverable Advertising Image.
+
+**Do NOT charge:**
+
+* internal AI generation attempts
+* AI retries
+* reasonable refinements of an already-consumed `asset_id`
+* internal images generated as part of Commercial production
+
+Consumption is **idempotent**.
+
+Concurrent requests cannot spend the same last entitlement twice.
+
+No negative balances.
+
+### 5. Supabase Fulfillment Fix
+
+Verified security architecture for `grant_package_entitlement`:
+
+| Caller | Result |
+| --- | --- |
+| `anon` | DENIED |
+| `authenticated` | DENIED |
+| `service_role` | ALLOWED |
+
+`grant_package_entitlement` is **server-only**.
+
+The post-payment fulfillment bug was caused by the authenticated SSR client calling `grant_package_entitlement`.
+
+**Fixed** by using `createAdminClient()` / `service_role` for trusted payment fulfillment.
+
+Do **NOT** broaden database permissions.
+
+Purchase fulfillment remains idempotent.
+
+### 6. Important Product Architecture Finding
+
+Current UX was originally designed around Commercial generation.
+
+This creates a structural problem for Advertising Images.
+
+**Observed current behavior:**
+
+```
+User uploads/provides an image
+→ Premium Image can be generated successfully
+→ Premium Image can appear in Biblioteca
+→ UX then assumes the user wants a Commercial
+→ asks "Where will you publish this commercial?"
+→ destinations are video/commercial oriented
+→ flow proceeds toward video
+→ payment path naturally offers Commercial purchase
+```
+
+Therefore:
+
+Advertising Images are technically supported by generation, persistence, Stripe packages, and entitlements, but are **NOT** yet exposed as a coherent standalone customer journey.
+
+This is **NOT** a Stripe problem.
+
+It is a **product/UX orchestration** problem.
+
+### 7. Approved Direction — Director as Central Orchestrator
+
+The Creative Director becomes the **primary intelligent interface and commercial orchestrator** for Metaprom.
+
+The user should **NOT** need to understand Metaprom's internal engines or manually navigate separate technical workflows.
+
+Director should understand user intent and route the request.
+
+**Examples:**
+
+| User intent | Route |
+| --- | --- |
+| "Quiero un comercial para TikTok." | Commercial route |
+| "Quiero mejorar esta foto para Mercado Libre." | Advertising Image route |
+| "Hazme un flyer." | Advertising Image / creative asset route |
+| "Necesito anunciar este producto." | Director may clarify the desired deliverable when necessary |
+
+When intent is ambiguous, Director may ask a simple high-level question:
+
+> ¿Qué quieres crear?
+>
+> - Un Comercial
+> - Una Imagen Publicitaria
+
+Avoid exposing unnecessary technical complexity.
+
+### 8. Dual Creation Architecture — Next Sprint
+
+**Next major product sprint:**
+
+> METAPROM DUAL CREATION ARCHITECTURE
+> COMMERCIALS + ADVERTISING IMAGES
+
+**Goal:** one intelligent entry point through Director, with separate downstream product journeys.
+
+#### Commercial route
+
+```
+Director
+→ input/photo
+→ Premium Image / commercial preparation
+→ destination
+→ format
+→ video generation
+→ preview
+→ Commercial entitlement/payment
+→ HD/final commercial
+→ Biblioteca
+```
+
+#### Advertising Image route
+
+```
+Director
+→ input/photo
+→ understand desired image asset
+→ generate Premium Advertising Image
+→ refinements if requested
+→ finalize image
+→ Advertising Image entitlement/payment
+→ Biblioteca
+```
+
+The Advertising Image route **MUST** terminate as an image product.
+
+It must **NOT** automatically proceed into:
+
+* video generation
+* commercial destination selection
+* Veo
+* video duration
+* teaser
+* Commercial HD checkout
+
+### 9. Advertising Image Destinations / Intent
+
+Director should understand or ask about image purpose when relevant.
+
+Possible image intents include:
+
+* commercial product photography
+* Amazon
+* Mercado Libre
+* social media
+* flyer
+* poster
+* menu
+* banner
+* website
+* catalog
+* other advertising asset
+
+These should guide composition, aspect ratio, copy, and output.
+
+Do **NOT** turn this into a large technical form.
+
+Director should absorb the complexity.
+
+### 10. Director as Commercial Advisor
+
+Director should also become responsible for product/package discovery.
+
+**Current weakness:** a user may enter wanting one Commercial or one Image and never discover the available package menu.
+
+Director should intelligently expose or recommend packages when commercially appropriate.
+
+**Examples:**
+
+* If user needs one Commercial → may offer 1 Commercial or explain savings from larger packages
+* If user indicates recurring image needs → recommend 10 / 25 / 50 / 100 Image package appropriately
+
+Director should act as a helpful seller/advisor, **not** an aggressive popup system.
+
+The `/planes` page remains the canonical package catalog, but Director can surface relevant package options and route users there or initiate the appropriate checkout.
+
+### 11. Next Validation Order
+
+Do **NOT** move Stripe to Live Mode yet.
+
+Next:
+
+1. **A.** Build Dual Creation Architecture
+2. **B.** Complete standalone Advertising Image customer journey
+3. **C.** Test Advertising Image E2E:
+   * purchase 10 Images for MXN $99
+   * → balance 10
+   * → create/finalize one standalone image
+   * → consume exactly 1
+   * → resulting balance 9
+   * → Biblioteca delivery
+4. **D.** Test OXXO asynchronous E2E behavior
+5. **E.** Final payment/entitlement regression
+6. **F.** Move Stripe to Live Mode
+
+### 12. Live Mode Plan
+
+After Test Mode validation is complete:
+
+* activate/verify Stripe account for real payments
+* create equivalent 8 Live Mode Prices
+* configure `sk_live_` securely in Production
+* configure 8 Live Price IDs
+* configure Live webhook secret/endpoint
+* verify card + OXXO availability in Live
+* perform controlled small real payment
+* verify entitlement fulfillment
+* launch
+
+Test and Live credentials must **never** be mixed.
+
+### 13. Current Product Principle
+
+Metaprom is evolving from:
+
+> "AI Commercial generator"
+
+toward:
+
+> "AI advertising asset platform orchestrated by an intelligent Creative Director."
+
+Director determines what the customer is trying to create and coordinates the correct generation, refinement, purchase, and delivery flow.
+
+Preserve:
+
+> No barriers, no nonsense.
+
+Do not make the user learn the architecture.
+
+### 14. Current Stopping Point
+
+**Commercial Stripe V1:**
+
+E2E TEST MODE — VERIFIED SUCCESSFULLY ON www.metaprom.com
+
+**Advertising Image infrastructure:**
+
+* generation — available
+* persistence — available
+* package catalog — available
+* Stripe Test checkout — available
+* entitlements — implemented
+* idempotent consumption — implemented
+* hard entitlement gate — implemented
+
+**Advertising Image customer journey:**
+
+NOT COMPLETE
+
+**Next work:**
+
+Dual Creation Architecture + Director orchestration.
 
 ---
 
 ## Historical Milestones
 
-*The sections below record prior sprint and RC milestones. Where they conflict with **Current State** or canonical sections later in this document, the later sections govern.*
+*The sections below record prior sprint and RC milestones. Where they conflict with **Current State** or **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**, those later sections govern.*
 
 ## MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)
 
-*Historical — RC1 commercial foundation. Superseded by **Current State** for project status, focus, and completed milestones.*
+*Historical — RC1 commercial foundation. Superseded by **Current State** and **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)** for project status, Stripe V1 verified state, package pricing, entitlements, and Dual Creation direction.*
 
 ### RC1.4
 
@@ -3592,7 +4011,9 @@ See **Preview Policy**, **Preview vs Premium**, and **Creative Director**.
 
 **Status:** Independent product — one of Metaprom's primary competitive advantages. No longer experimental.
 
-The Director is expected to become the **primary customer interface** across the platform. Future product decisions should prioritize protecting the Director experience.
+The Director is expected to become the **primary intelligent interface and commercial orchestrator** across the platform. Future product decisions should prioritize protecting the Director experience.
+
+Approved August 2026 direction: Director routes user intent into the correct Dual Creation journey — **Commercial** or **Advertising Image** — and may act as a helpful package advisor without exposing internal engines. See **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
 
 The Creative Director is:
 
@@ -3600,6 +4021,7 @@ The Creative Director is:
 * Marketing Expert
 * Commercial Storytelling Expert
 * Creative Strategist
+* Commercial orchestrator (intent routing + package discovery)
 
 The Director accompanies the customer throughout creation, improves **commercial quality**, and should feel like an experienced creative agency. The Director is integrated after Preview and Premium generation — not merely a prompt, but an independent product with personality, principles, behavior, ownership, acceptance criteria, and roadmap.
 
@@ -3839,6 +4261,12 @@ Customers care far more about business outcomes than about the underlying AI tec
 
 Discovered issues during testing are registered in `RC1_PRODUCT_BACKLOG.md`. The items below are strategic product initiatives.
 
+### ACTIVE NEXT SPRINT
+
+**Dual Creation Architecture — Commercials + Advertising Images**
+
+One intelligent Director entry point with separate Commercial and Advertising Image journeys. Advertising Image route must terminate as an image product. Complete standalone Advertising Image E2E before Stripe Live Mode. Canonical detail: **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+
 ### HIGH
 
 **Creative Director Certification Suite**
@@ -3905,7 +4333,7 @@ UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom nav
 
 ## Revenue Strategy (July 10, 2026)
 
-**Status:** Current company objective.
+**Status:** Current company objective — Stripe V1 Commercial E2E verified in Test Mode (August 2026). Live Mode not yet enabled.
 
 Revenue is now the company's primary objective.
 
@@ -3918,6 +4346,8 @@ Current objective:
 > Generate revenue.
 
 The **Revenue Sprint** begins after Sprint 3.2.
+
+**August 2026 update:** Commercial Stripe V1 package checkout reached successful real-domain Test Mode E2E on www.metaprom.com (1 Commercial — MXN $180). Advertising Image packages and entitlements exist; standalone Advertising Image journey and Dual Creation Architecture must complete before Live Mode. See **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
 
 Stripe is selected as the payment platform after commercial evaluation and after considering previous experience with chargebacks and payment providers.
 

@@ -567,7 +567,7 @@ export async function purchaseHdCommercial(
   const traceId = createRuntimeTraceId();
   const checkoutPayload = {
     assetId: input.assetId,
-    productId: "commercial-video",
+    productKey: "commercial_1",
     paymentMethod: input.paymentMethod,
   };
 

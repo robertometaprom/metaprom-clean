@@ -103,6 +103,11 @@ export async function createCheckoutSession(
     await assertStripePackagePriceMatchesCatalog(pkg);
   }
 
+  // Studio HD unlock binds an asset → return to /studio for fulfillment UX.
+  // Catalog purchases from /planes keep the package confirmation page.
+  const successPath = assetId ? "/studio" : "/planes/compra";
+  const cancelPath = assetId ? "/studio" : "/planes";
+
   const session = await provider.createCheckout({
     assetId: assetId ?? undefined,
     productId: pkg.id,
@@ -113,8 +118,8 @@ export async function createCheckoutSession(
     paymentMethodTypes: ["card", "oxxo"],
     customerEmail: input.customerEmail,
     userId: input.userId,
-    successPath: "/planes/compra",
-    cancelPath: "/planes",
+    successPath,
+    cancelPath,
     metadata: {
       packageId: pkg.id,
       packageName: pkg.name,

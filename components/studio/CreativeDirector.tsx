@@ -40,7 +40,7 @@ import {
 } from "@/lib/studio-creation";
 import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
 import type { PaymentMethod } from "@/lib/payments/types";
-import { getPriceById } from "@/lib/pricing";
+import { getPricingPackageById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
 import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import DestinationStep from "@/components/studio/DestinationStep";
@@ -84,7 +84,8 @@ type Phase =
 const OFF_TOPIC_MESSAGE =
   "Solo puedo ayudarte a crear contenido de marketing — imágenes, videos y material para vender mejor. ¿Qué te gustaría crear hoy?";
 
-const HD_COMMERCIAL_PRICE = getPriceById("commercial-video") ?? 149;
+const HD_COMMERCIAL_PRICE =
+  getPricingPackageById("commercial_1")?.displayPrice ?? 180;
 
 const CHECKOUT_PAYMENT_METHODS = [
   { id: "card" as const, label: "Tarjeta" },

@@ -51,7 +51,7 @@ import {
   type ExperiencePhase,
 } from "@/lib/experience/types";
 import type { LandingContent } from "@/lib/i18n";
-import { formatPriceMxn, getPriceById } from "@/lib/pricing";
+import { formatPriceMxn, getPricingPackageById } from "@/lib/pricing";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 import { WELCOME_CHIPS } from "@/lib/studio-atmosphere";
 
@@ -59,7 +59,7 @@ type ExperienceFlowProps = {
   content: LandingContent;
 };
 
-const HD_PRICE = getPriceById("commercial-video") ?? 149;
+const HD_PRICE = getPricingPackageById("commercial_1")?.displayPrice ?? 180;
 
 const OFF_TOPIC_MESSAGE =
   "Solo puedo ayudarte a crear contenido de marketing — imágenes, videos y material para vender mejor. ¿Qué quieres promocionar?";

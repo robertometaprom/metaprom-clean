@@ -9,8 +9,7 @@ Provider-agnostic checkout for Metaprom commercial and package purchases.
 | `PAYMENT_PROVIDER` | `mock` | Active provider: `mock`, `mercadopago` (future), `stripe` |
 | `STRIPE_SECRET_KEY` | none | **Test Mode only** (`sk_test_...`). Live keys are rejected. |
 | `STRIPE_WEBHOOK_SECRET` | none | Webhook signing secret (`whsec_...`) |
-| `STRIPE_PRICE_ID_COMMERCIAL_VIDEO` | none | Legacy studio SKU only (`commercial-video`) |
-| `STRIPE_PRICE_ID_COMMERCIAL_1/5/10/20` | none | V1 commercial packages |
+| `STRIPE_PRICE_ID_COMMERCIAL_1/5/10/20` | none | V1 commercial packages (Studio HD uses `commercial_1`) |
 | `STRIPE_PRICE_ID_ASSETS_10/25/50/100` | none | V1 advertising-asset packages |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public app base URL for Checkout return URLs |
 | `SUPABASE_SERVICE_ROLE_KEY` | none | Required for unauthenticated provider webhooks |
@@ -73,7 +72,7 @@ One new finished Advertising Image (`assets.image_path` set for a new `asset_id`
 
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `/api/payments/checkout` | POST | Package (`productKey`) or legacy asset checkout |
+| `/api/payments/checkout` | POST | Package checkout (`productKey`; optional `assetId` for Studio HD) |
 | `/api/payments/checkout?sessionId=` | GET | Poll payment status |
 | `/api/payments/webhook` | POST | Provider webhooks |
 | `/api/entitlements/balances` | GET | Current user package balances |

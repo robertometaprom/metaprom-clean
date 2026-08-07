@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createCheckoutSession } from "@/lib/payments/create-checkout-session";
 import { getPaymentProvider } from "@/lib/payments";
 import { PaymentProviderError } from "@/lib/payments/types";
@@ -271,8 +272,13 @@ async function getWithTrace(req: Request, traceId: string) {
 
   const nextStatus: PaymentSessionStatus = session.status;
 
-  if (nextStatus !== purchase.status) {
-    await persistPaymentResult(supabase, provider.id, {
+  // Entitlement grants are service_role-only. Never call grant RPCs with the
+  // cookie/anon authenticated client (EXECUTE is revoked for anon/authenticated).
+  // Always persist completed sessions so a prior status update without grant
+  // can be recovered idempotently.
+  if (nextStatus !== purchase.status || nextStatus === "completed") {
+    const admin = createAdminClient();
+    await persistPaymentResult(admin, provider.id, {
       sessionId: session.sessionId,
       purchaseId: String(purchase.id),
       status: nextStatus,

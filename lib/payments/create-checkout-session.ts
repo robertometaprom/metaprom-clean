@@ -9,6 +9,7 @@ import {
 
 import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
 import { ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL } from "@/lib/entitlements/flags";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getPaymentProvider } from "./index";
 import { updateAssetPaymentState } from "./persistence";
@@ -177,8 +178,9 @@ export async function createCheckoutSession(
   }
 
   // Mock/instant card completion grants immediately; Stripe path grants via webhook.
+  // Grants require service_role EXECUTE — never use the caller/auth cookie client.
   if (session.status === "completed") {
-    await grantPackageEntitlementFromPurchase(supabase, {
+    await grantPackageEntitlementFromPurchase(createAdminClient(), {
       userId: input.userId,
       purchaseId: purchase.id,
       productId: pkg.id,

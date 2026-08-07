@@ -139,8 +139,22 @@ export default function StudioShell({
                       onOpenLibrary?.();
                     }}
                   >
-                    Mi biblioteca
+                    Mi Biblioteca
                   </button>
+                  <Link
+                    href="/creditos"
+                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Mis Créditos
+                  </Link>
+                  <Link
+                    href="/planes"
+                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Planes y Precios
+                  </Link>
                   <Link
                     href="/auth/signout"
                     prefetch={false}

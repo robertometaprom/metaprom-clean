@@ -12,6 +12,10 @@ export {
   type ConsumeAdvertisingAssetResult,
 } from "./consume-advertising-asset";
 export {
+  consumeCommercialForAsset,
+  type ConsumeCommercialResult,
+} from "./consume-commercial";
+export {
   ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
   ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
   ADVERTISING_IMAGE_PLANES_HREF,

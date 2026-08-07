@@ -561,10 +561,90 @@ export async function persistCreationToLibrary(
   }
 }
 
+/**
+ * Server-first Commercial authorization for the current asset (no client balance gate).
+ * Returns true when authorization succeeded (new debit or already consumed).
+ * Returns false only on insufficient balance so caller can fall back to Stripe.
+ * Unexpected errors throw — they must not open Stripe.
+ */
+async function tryConsumePrepaidCommercial(
+  assetId: string,
+  onStatus: PurchaseHdInput["onStatus"],
+  traceId: string,
+): Promise<boolean> {
+  onStatus?.("Usando tu crédito de comercial...");
+
+  const consumePayload = { assetId };
+  traceRuntime(
+    traceId,
+    "POST /api/entitlements/consume-commercial request",
+    consumePayload,
+  );
+
+  let consumeResponse: Response;
+  try {
+    consumeResponse = await fetch("/api/entitlements/consume-commercial", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Metaprom-Trace-Id": traceId,
+      },
+      body: JSON.stringify(consumePayload),
+    });
+  } catch (networkError) {
+    traceRuntime(traceId, "POST /api/entitlements/consume-commercial fetch threw", {
+      error: describeUnknownError(networkError),
+    });
+    throw networkError;
+  }
+
+  const consumeData = await readRuntimeResponseBody(
+    consumeResponse,
+    traceId,
+    "POST /api/entitlements/consume-commercial",
+  );
+
+  if (consumeResponse.ok && consumeData.ok === true) {
+    return true;
+  }
+
+  // Balance raced to zero — mutually exclusive fallback to Stripe commercial_1.
+  if (
+    consumeResponse.status === 402 ||
+    consumeData.code === "insufficient_entitlement"
+  ) {
+    traceRuntime(traceId, "prepaid commercial insufficient; falling back to Stripe", {
+      status: consumeResponse.status,
+      body: consumeData,
+    });
+    return false;
+  }
+
+  throwRuntimeResponseError(
+    traceId,
+    "POST /api/entitlements/consume-commercial",
+    consumeResponse,
+    consumeData,
+  );
+}
+
 export async function purchaseHdCommercial(
   input: PurchaseHdInput,
 ): Promise<PurchaseHdResult> {
   const traceId = createRuntimeTraceId();
+
+  // Server-first prepaid authorization: do NOT gate on client balance.
+  // consume-commercial is authoritative for already-authorized / new debit / 402.
+  // Only explicit insufficient balance falls through to Stripe commercial_1.
+  const consumed = await tryConsumePrepaidCommercial(
+    input.assetId,
+    input.onStatus,
+    traceId,
+  );
+  if (consumed) {
+    return fulfillPurchase(input.assetId, input.onStatus, traceId);
+  }
+
   const checkoutPayload = {
     assetId: input.assetId,
     productKey: "commercial_1",

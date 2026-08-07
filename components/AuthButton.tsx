@@ -77,6 +77,12 @@ export default function AuthButton({ labels }: AuthButtonProps) {
           {labels.dashboard}
         </Link>
         <Link
+          href="/creditos"
+          className="hidden text-base text-white/70 transition hover:text-white sm:inline"
+        >
+          Mis Créditos
+        </Link>
+        <Link
           href="/auth/signout"
           prefetch={false}
           className="rounded-full border border-white/15 px-5 py-2.5 text-base text-white/70 transition hover:border-white/30 hover:text-white"

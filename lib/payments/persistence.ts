@@ -115,7 +115,8 @@ async function fulfillPackageEntitlements(
     },
   });
 
-  if (!grant) {
+  // Idempotent grant retries return { granted: false }; do not re-consume.
+  if (!grant?.granted) {
     return;
   }
 

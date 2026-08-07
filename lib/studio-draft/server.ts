@@ -356,18 +356,23 @@ export async function claimStudioDraftServer(
       throw new Error("Authentication required.");
     }
 
+    const teaserVideoBlob = teaserBuffer
+      ? new Blob([Uint8Array.from(teaserBuffer)], { type: "video/mp4" })
+      : undefined;
+
     const result = await persistStudioCreationServer({
       userId,
       originalFile,
       enhancedDataUrl,
-      teaserVideoBlob: teaserBuffer
-        ? new Blob([Uint8Array.from(teaserBuffer)], { type: "video/mp4" })
-        : undefined,
+      teaserVideoBlob,
       imagePrompt: draft.image_prompt || "",
       videoPrompt: draft.video_prompt || "",
       customerIntent: draft.customer_intent || "",
       mode: (draft.product_mode || "custom") as Mode,
       projectMetadata,
+      // Drafts with a teaser are Commercial production; image-only drafts are
+      // standalone Advertising Image deliverables and hard-gated on persist.
+      billAdvertisingAsset: !teaserVideoBlob,
     });
 
     await deleteDraftObjects([

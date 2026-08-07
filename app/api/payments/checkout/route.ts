@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createCheckoutSession } from "@/lib/payments/create-checkout-session";
 import { getPaymentProvider } from "@/lib/payments";
 import { PaymentProviderError } from "@/lib/payments/types";
 import {
@@ -13,7 +14,7 @@ import type {
   PaymentProvider,
   PaymentSessionStatus,
 } from "@/lib/payments/types";
-import { getPriceById } from "@/lib/pricing";
+import { getPriceById, getPricingPackageById } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -132,6 +133,7 @@ async function postWithTrace(req: Request, traceId: string) {
   let body: {
     assetId?: string | number;
     productId?: string;
+    productKey?: string;
     paymentMethod?: PaymentMethod;
     customerEmail?: string;
   };
@@ -151,17 +153,80 @@ async function postWithTrace(req: Request, traceId: string) {
 
   logTrace(traceId, "request body parsed", body);
 
+  const productKey = (body.productKey ?? body.productId)?.trim();
+  const paymentMethod = body.paymentMethod ?? "card";
   const assetId =
     typeof body.assetId === "string"
       ? body.assetId.trim()
       : typeof body.assetId === "number" && Number.isFinite(body.assetId)
         ? String(body.assetId)
         : undefined;
-  const productId = body.productId?.trim() ?? "commercial-video";
-  const paymentMethod = body.paymentMethod ?? "card";
+
+  // V1 package catalog path — one reusable createCheckoutSession(productKey).
+  if (productKey && getPricingPackageById(productKey)) {
+    if (assetId) {
+      const asset = await verifyAssetOwnership(
+        supabase,
+        user.id,
+        assetId,
+        traceId,
+      );
+      if (!asset) {
+        return jsonError("Asset not found.", 404, traceId, {
+          assetId,
+          userId: user.id,
+        });
+      }
+    }
+
+    try {
+      const result = await createCheckoutSession(supabase, {
+        productKey,
+        userId: user.id,
+        customerEmail: body.customerEmail ?? user.email ?? undefined,
+        assetId,
+        paymentMethod,
+      });
+
+      logTrace(traceId, "package checkout created", {
+        productKey: result.productKey,
+        purchaseId: result.purchaseId,
+        sessionId: result.session.sessionId,
+      });
+
+      return Response.json({
+        traceId,
+        checkoutKind: "package",
+        productKey: result.productKey,
+        sessionId: result.session.sessionId,
+        purchaseId: result.purchaseId,
+        status: result.session.status,
+        provider: result.provider,
+        amountMxn: result.amountMxn,
+        quantity: result.quantity,
+        category: result.category,
+        oxxoReference: result.session.oxxoReference,
+        oxxoExpiresAt: result.session.oxxoExpiresAt,
+        redirectUrl: result.session.redirectUrl,
+        assetId: result.assetId,
+      });
+    } catch (error) {
+      const details = describeUnknownError(error);
+      logTrace(traceId, "package createCheckoutSession failed", details);
+      if (error instanceof PaymentProviderError) {
+        return jsonError(error.message, 503, traceId, details);
+      }
+      throw error;
+    }
+  }
+
+  // Legacy studio single-commercial path (asset-bound commercial-video).
+  const productId = productKey ?? "commercial-video";
 
   if (!assetId) {
-    return jsonError("assetId is required.", 400, traceId, { body });
+    return jsonError("assetId is required for legacy checkout.", 400, traceId, {
+      body,
+    });
   }
 
   const asset = await verifyAssetOwnership(supabase, user.id, assetId, traceId);
@@ -183,6 +248,8 @@ async function postWithTrace(req: Request, traceId: string) {
     paymentMethod,
     customerEmail: body.customerEmail ?? user.email ?? undefined,
     userId: user.id,
+    successPath: "/studio",
+    cancelPath: "/studio",
   };
 
   let provider: PaymentProvider;
@@ -220,6 +287,7 @@ async function postWithTrace(req: Request, traceId: string) {
       providerPurchaseId: session.purchaseId,
       sessionId: session.sessionId,
       oxxoReference: session.oxxoReference,
+      checkoutKind: "legacy_asset",
     },
     completed_at:
       session.status === "completed" ? new Date().toISOString() : null,
@@ -253,6 +321,7 @@ async function postWithTrace(req: Request, traceId: string) {
 
   return Response.json({
     traceId,
+    checkoutKind: "legacy_asset",
     sessionId: session.sessionId,
     purchaseId: purchase.id,
     status: session.status,
@@ -301,7 +370,7 @@ async function getWithTrace(req: Request, traceId: string) {
 
   const { data: purchase } = await supabase
     .from("purchases")
-    .select("id, asset_id, status")
+    .select("id, asset_id, product_id, status, metadata")
     .eq("user_id", user.id)
     .eq("provider", provider.id)
     .eq("provider_reference", session.sessionId)
@@ -327,7 +396,8 @@ async function getWithTrace(req: Request, traceId: string) {
     traceId,
     sessionId: session.sessionId,
     purchaseId: purchase.id,
-    assetId: String(purchase.asset_id),
+    assetId: purchase.asset_id == null ? null : String(purchase.asset_id),
+    productId: purchase.product_id,
     status: nextStatus,
     provider: provider.id,
     oxxoReference: session.oxxoReference,

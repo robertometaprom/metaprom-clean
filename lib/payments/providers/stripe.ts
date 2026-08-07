@@ -8,7 +8,6 @@ import {
 import type {
   CheckoutRequest,
   CheckoutSession,
-  PaymentMethod,
   PaymentProvider,
   PaymentSessionStatus,
   PaymentWebhookPayload,
@@ -39,17 +38,31 @@ function getAppUrl(): string {
 }
 
 function getPaymentMethodTypes(
-  paymentMethod: PaymentMethod,
+  request: CheckoutRequest,
 ): Stripe.Checkout.SessionCreateParams.PaymentMethodType[] {
-  if (paymentMethod === "oxxo") return ["oxxo"];
+  if (request.paymentMethodTypes?.length) {
+    return request.paymentMethodTypes;
+  }
+
+  if (request.paymentMethod === "oxxo") return ["oxxo"];
   return ["card"];
 }
 
+/**
+ * Map Stripe Checkout session → Metaprom payment status.
+ * OXXO vouchers stay awaiting_payment until async payment succeeds.
+ * Never treat unpaid/pending payment_status as completed.
+ */
 function mapStripeCheckoutStatus(
   session: Stripe.Checkout.Session,
 ): PaymentSessionStatus {
   if (session.payment_status === "paid") return "completed";
   if (session.status === "expired") return "cancelled";
+  if (session.payment_status === "unpaid" || session.payment_status === "no_payment_required") {
+    if (session.status === "open" || session.status === "complete") {
+      return "awaiting_payment";
+    }
+  }
   if (session.status === "open" || session.status === "complete") {
     return "awaiting_payment";
   }
@@ -80,12 +93,12 @@ function toCheckoutSession(session: Stripe.Checkout.Session): CheckoutSession {
 
 function toWebhookResult(
   session: Stripe.Checkout.Session,
-  status = mapStripeCheckoutStatus(session),
+  status?: PaymentSessionStatus,
 ): PaymentWebhookResult {
   return {
     sessionId: session.id,
     purchaseId: requirePurchaseId(session),
-    status,
+    status: status ?? mapStripeCheckoutStatus(session),
     providerReference:
       typeof session.payment_intent === "string"
         ? session.payment_intent
@@ -108,9 +121,11 @@ export const stripePaymentProvider: PaymentProvider = {
     const stripe = getStripeClient();
     const purchaseId = crypto.randomUUID();
     const appUrl = getAppUrl();
-    const paymentMethodTypes = getPaymentMethodTypes(request.paymentMethod);
+    const paymentMethodTypes = getPaymentMethodTypes(request);
     const isOxxo = paymentMethodTypes.includes("oxxo");
     const priceId = getStripeTestPriceId(request.productId);
+    const successPath = (request.successPath ?? "/studio").replace(/^\//, "");
+    const cancelPath = (request.cancelPath ?? "/studio").replace(/^\//, "");
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -128,21 +143,22 @@ export const stripePaymentProvider: PaymentProvider = {
       ],
       metadata: {
         purchaseId,
-        assetId: request.assetId,
+        assetId: request.assetId ?? "",
         productId: request.productId,
         userId: request.userId,
         paymentMethod: request.paymentMethod,
         amountMxn: String(request.amountMxn),
+        ...(request.metadata ?? {}),
       },
-      success_url: `${appUrl}/studio?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/studio?payment=cancelled&purchase=${purchaseId}`,
+      success_url: `${appUrl}/${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/${cancelPath}?payment=cancelled&purchase=${purchaseId}`,
     });
 
     const checkoutSession = toCheckoutSession(session);
 
     if (!checkoutSession.redirectUrl) {
       throw new PaymentProviderError(
-        "Stripe did not return a hosted checkout URL. Verify Stripe Checkout is enabled for card payments.",
+        "Stripe did not return a hosted checkout URL. Verify Stripe Checkout is enabled for card/OXXO payments.",
       );
     }
 
@@ -177,8 +193,11 @@ export const stripePaymentProvider: PaymentProvider = {
     );
 
     switch (event.type) {
-      case "checkout.session.completed":
+      case "checkout.session.completed": {
+        // Card: payment_status=paid → completed.
+        // OXXO voucher created: payment_status=unpaid → awaiting_payment (no grant).
         return toWebhookResult(event.data.object as Stripe.Checkout.Session);
+      }
       case "checkout.session.async_payment_succeeded":
         return toWebhookResult(
           event.data.object as Stripe.Checkout.Session,

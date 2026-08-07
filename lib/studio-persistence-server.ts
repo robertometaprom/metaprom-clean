@@ -5,6 +5,14 @@ import {
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
 import {
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+  consumeAdvertisingAssetOnFirstPersist,
+  getEntitlementBalances,
+  revokeUndeliveredAdvertisingPersist,
+  shouldBillAdvertisingAsset,
+} from "@/lib/entitlements";
+import { InsufficientEntitlementError } from "@/lib/entitlements/consume";
+import {
   dataUrlToBlob,
   inferExtensionFromMime,
 } from "@/lib/library-storage";
@@ -12,9 +20,20 @@ import {
   uploadLibraryObjectServer,
 } from "@/lib/library-storage-server";
 import { generateShareSlug, isShareSlugUniqueViolation } from "@/lib/preview/share-slug";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Mode } from "@/lib/prompts";
 import type { PersistStudioCreationResult } from "@/lib/studio-persistence";
+
+export class AdvertisingImagePackageRequiredError extends Error {
+  readonly code = "insufficient_advertising_images" as const;
+  readonly planesHref = "/planes" as const;
+
+  constructor(message = ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE) {
+    super(message);
+    this.name = "AdvertisingImagePackageRequiredError";
+  }
+}
 
 function isSchemaColumnMissingError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -30,6 +49,38 @@ function isSchemaColumnMissingError(error: unknown): boolean {
   );
 }
 
+async function finalizeAdvertisingAssetConsume(input: {
+  userId: string;
+  assetId: string;
+  projectId: string;
+  billAdvertisingAsset: boolean;
+}): Promise<void> {
+  if (!input.billAdvertisingAsset) {
+    return;
+  }
+
+  try {
+    await consumeAdvertisingAssetOnFirstPersist({
+      userId: input.userId,
+      assetId: input.assetId,
+      metadata: { source: "persistStudioCreationServer" },
+    });
+  } catch (error) {
+    const admin = createAdminClient();
+    await revokeUndeliveredAdvertisingPersist(admin, {
+      assetId: input.assetId,
+      projectId: input.projectId,
+      deleteProject: true,
+    });
+
+    if (error instanceof InsufficientEntitlementError) {
+      throw new AdvertisingImagePackageRequiredError();
+    }
+
+    throw error;
+  }
+}
+
 export async function persistStudioCreationServer(input: {
   userId: string;
   originalFile: File;
@@ -40,7 +91,28 @@ export async function persistStudioCreationServer(input: {
   customerIntent: string;
   mode: Mode;
   projectMetadata: StudioProjectMetadata;
+  /**
+   * When true, first finished persist requires & consumes 1 advertising_asset.
+   * When false, skip (Commercial). When omitted, inferred from teaser presence.
+   */
+  billAdvertisingAsset?: boolean;
 }): Promise<PersistStudioCreationResult> {
+  const billAdvertising = shouldBillAdvertisingAsset({
+    billAdvertisingAsset: input.billAdvertisingAsset,
+    teaserVideoBlob: input.teaserVideoBlob,
+  });
+
+  if (billAdvertising) {
+    const supabaseForBalances = await createClient();
+    const balances = await getEntitlementBalances(
+      supabaseForBalances,
+      input.userId,
+    );
+    if (balances.advertisingAssetsRemaining < 1) {
+      throw new AdvertisingImagePackageRequiredError();
+    }
+  }
+
   const supabase = await createClient();
 
   const projectInsert = {
@@ -161,6 +233,13 @@ export async function persistStudioCreationServer(input: {
         .single();
 
       if (!updateResult.error) {
+        await finalizeAdvertisingAssetConsume({
+          userId: input.userId,
+          assetId,
+          projectId,
+          billAdvertisingAsset: billAdvertising,
+        });
+
         return {
           projectId,
           assetId,
@@ -189,6 +268,13 @@ export async function persistStudioCreationServer(input: {
           throw fallbackUpdate.error ?? new Error("Failed to update asset.");
         }
 
+        await finalizeAdvertisingAssetConsume({
+          userId: input.userId,
+          assetId,
+          projectId,
+          billAdvertisingAsset: billAdvertising,
+        });
+
         return {
           projectId,
           assetId,
@@ -212,6 +298,13 @@ export async function persistStudioCreationServer(input: {
   if (updateResult.error || !updateResult.data) {
     throw updateResult.error ?? new Error("Failed to update asset.");
   }
+
+  await finalizeAdvertisingAssetConsume({
+    userId: input.userId,
+    assetId,
+    projectId,
+    billAdvertisingAsset: billAdvertising,
+  });
 
   return {
     projectId,

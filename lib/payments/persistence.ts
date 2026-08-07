@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  consumeEntitlement,
+  grantPackageEntitlementFromPurchase,
+  resolvePackageForProductId,
+} from "@/lib/entitlements";
+
 import type {
   PaymentProviderId,
   PaymentSessionStatus,
@@ -8,7 +14,9 @@ import type {
 
 type PurchaseRecord = {
   id: number | string;
-  asset_id: string;
+  user_id: string;
+  asset_id: string | number | null;
+  product_id: string;
   status: PaymentSessionStatus;
   metadata?: Record<string, unknown>;
 };
@@ -52,7 +60,7 @@ export async function findPurchaseByProviderSession(
 ): Promise<PurchaseRecord | null> {
   const { data } = await supabase
     .from("purchases")
-    .select("id, asset_id, status, metadata")
+    .select("id, user_id, asset_id, product_id, status, metadata")
     .eq("provider", providerId)
     .eq("provider_reference", sessionId)
     .maybeSingle<PurchaseRecord>();
@@ -88,6 +96,62 @@ export async function updateAssetPaymentState(
   }
 }
 
+async function fulfillPackageEntitlements(
+  supabase: SupabaseClient,
+  purchase: PurchaseRecord,
+): Promise<void> {
+  const pkg = resolvePackageForProductId(purchase.product_id);
+
+  if (!pkg) {
+    return;
+  }
+
+  const grant = await grantPackageEntitlementFromPurchase(supabase, {
+    userId: purchase.user_id,
+    purchaseId: purchase.id,
+    productId: purchase.product_id,
+    metadata: {
+      sessionFulfillment: true,
+    },
+  });
+
+  if (!grant) {
+    return;
+  }
+
+  const metadata = toRecordMetadata(purchase.metadata);
+  const assetId =
+    purchase.asset_id == null || purchase.asset_id === ""
+      ? null
+      : String(purchase.asset_id);
+
+  // Optional current-project consumption: one unit only, remaining balance kept.
+  if (
+    assetId &&
+    pkg.category === "commercials" &&
+    metadata.consumeCurrentProject === true
+  ) {
+    try {
+      await consumeEntitlement(supabase, {
+        userId: purchase.user_id,
+        kind: "commercial",
+        quantity: 1,
+        assetId,
+        productId: pkg.id,
+        metadata: {
+          reason: "current_project_after_package_purchase",
+          purchaseId: purchase.id,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "[payments] Failed to consume current-project commercial entitlement:",
+        error,
+      );
+    }
+  }
+}
+
 export async function persistPaymentResult(
   supabase: SupabaseClient,
   providerId: PaymentProviderId,
@@ -100,6 +164,14 @@ export async function persistPaymentResult(
   );
 
   if (!purchase) return null;
+
+  // Never downgrade a completed (paid) purchase on webhook retries / races.
+  if (purchase.status === "completed") {
+    if (result.status === "completed") {
+      await fulfillPackageEntitlements(supabase, purchase);
+    }
+    return purchase;
+  }
 
   const update: {
     status: PaymentSessionStatus;
@@ -138,13 +210,26 @@ export async function persistPaymentResult(
     );
   }
 
-  await updateAssetPaymentState(supabase, purchase.asset_id, result.status, {
-    purchaseId: purchase.id,
-  });
+  const assetId =
+    purchase.asset_id == null || purchase.asset_id === ""
+      ? null
+      : String(purchase.asset_id);
 
-  return {
+  if (assetId) {
+    await updateAssetPaymentState(supabase, assetId, result.status, {
+      purchaseId: purchase.id,
+    });
+  }
+
+  const nextPurchase: PurchaseRecord = {
     ...purchase,
     status: result.status,
     metadata: update.metadata ?? purchase.metadata,
   };
+
+  if (result.status === "completed") {
+    await fulfillPackageEntitlements(supabase, nextPurchase);
+  }
+
+  return nextPurchase;
 }

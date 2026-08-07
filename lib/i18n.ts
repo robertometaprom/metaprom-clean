@@ -3,6 +3,7 @@ export type Locale = "en" | "es";
 export type Messages = {
   nav: {
     brand: string;
+    planes: string;
     signIn: string;
     startFree: string;
     dashboard: string;
@@ -66,6 +67,7 @@ export type Messages = {
   footer: {
     tagline: string;
     copyright: string;
+    planes: string;
   };
 };
 

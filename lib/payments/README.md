@@ -1,6 +1,6 @@
 # Payment abstraction
 
-Provider-agnostic checkout for Metaprom commercial purchases.
+Provider-agnostic checkout for Metaprom commercial and package purchases.
 
 ## Environment
 
@@ -9,94 +9,72 @@ Provider-agnostic checkout for Metaprom commercial purchases.
 | `PAYMENT_PROVIDER` | `mock` | Active provider: `mock`, `mercadopago` (future), `stripe` |
 | `STRIPE_SECRET_KEY` | none | **Test Mode only** (`sk_test_...`). Live keys are rejected. |
 | `STRIPE_WEBHOOK_SECRET` | none | Webhook signing secret (`whsec_...`) |
-| `STRIPE_PRICE_ID_COMMERCIAL_VIDEO` | none | Stripe Test Mode Price ID (`price_...`) for `commercial-video` |
+| `STRIPE_PRICE_ID_COMMERCIAL_VIDEO` | none | Legacy studio SKU only (`commercial-video`) |
+| `STRIPE_PRICE_ID_COMMERCIAL_1/5/10/20` | none | V1 commercial packages |
+| `STRIPE_PRICE_ID_ASSETS_10/25/50/100` | none | V1 advertising-asset packages |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public app base URL for Checkout return URLs |
-| `SUPABASE_SERVICE_ROLE_KEY` | none | Required for unauthenticated provider webhooks to update purchase state |
+| `SUPABASE_SERVICE_ROLE_KEY` | none | Required for unauthenticated provider webhooks |
 
 See `.env.example` for the full template. Do not invent Stripe IDs — create them in the Stripe Dashboard (Test Mode).
 
-## Stripe Test Mode setup (manual Dashboard)
+## Package checkout (canonical)
 
-Required before `PAYMENT_PROVIDER=stripe` works end-to-end:
+```ts
+createCheckoutSession(supabase, { productKey, userId, ... })
+```
+
+- Browser sends only the stable product key (e.g. `commercial_10`).
+- Server resolves package from `lib/pricing/catalog.ts`.
+- Server resolves Stripe Price ID from the package env var.
+- Server validates Stripe Price (Test Mode, one-time, MXN, exact amount) before Checkout.
+- One reusable path for Commercial packages — no per-package checkout forks.
+- Advertising Image packages (`assets_*`) are purchasable when `ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL = true` and each package has a matching Stripe Test Price.
+- Billable consume: first persistence of a new finished Imagen Publicitaria (`consume_advertising_asset_on_first_persist`, idempotent per `asset_id`).
+
+## Stripe Test Mode setup (manual Dashboard)
 
 1. Enable **Test Mode** in Stripe Dashboard.
 2. Copy **Secret key** (`sk_test_...`) → `STRIPE_SECRET_KEY`.
-3. Create Product **Metaprom comercial HD** + one-time Price **149 MXN** → copy Price ID (`price_...`) → `STRIPE_PRICE_ID_COMMERCIAL_VIDEO`.
-4. Add webhook endpoint `POST {NEXT_PUBLIC_APP_URL}/api/payments/webhook` for events:
+3. Create the **four Commercial** V1 Products + one-time MXN Prices (do not reuse the legacy MXN $149 price).
+4. Copy each `price_...` into the matching `STRIPE_PRICE_ID_COMMERCIAL_*` env var.
+5. Add webhook endpoint `POST {NEXT_PUBLIC_APP_URL}/api/payments/webhook` for events:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
    - `checkout.session.async_payment_failed`
    - `checkout.session.expired`
-5. Copy webhook signing secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`.
-6. Set `PAYMENT_PROVIDER=stripe` and `NEXT_PUBLIC_APP_URL` to the deployed Preview/production URL.
-7. Ensure `SUPABASE_SERVICE_ROLE_KEY` is set on the same environment.
+6. Copy webhook signing secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`.
+7. Set `PAYMENT_PROVIDER=stripe` and `NEXT_PUBLIC_APP_URL`.
+8. Ensure `SUPABASE_SERVICE_ROLE_KEY` is set.
+9. Apply migration `20260806010000_package_entitlements.sql`.
 
-## Lifecycle
+## OXXO
 
-Payments are provider-owned until the purchase is paid. Content generation is a
-Metaprom domain concern after payment succeeds.
+Package Checkout Sessions offer `card` + `oxxo` for MXN one-time prices.
 
-### Payment state machine
+- Voucher creation (`checkout.session.completed` with `payment_status=unpaid`) → `awaiting_payment` — **no entitlement grant**.
+- Cash confirmed (`checkout.session.async_payment_succeeded`) → `completed` — grant once.
+- Failed / expired → no grant.
 
-```text
-created -> checkout_started -> awaiting_payment -> paid
-```
+## Entitlements
 
-Failure and exit paths:
+| Table / RPC | Purpose |
+|-------------|---------|
+| `entitlement_balances` | `commercials_remaining`, `advertising_assets_remaining` |
+| `entitlement_ledger` | Immutable grant/consume audit trail |
+| `grant_package_entitlement` | Idempotent grant per purchase |
+| `consume_entitlement` | Atomic consume |
+| `consume_advertising_asset_on_first_persist` | Idempotent image consume per `asset_id` |
 
-```text
-checkout_started -> cancelled
-checkout_started -> failed
-awaiting_payment -> cancelled
-awaiting_payment -> failed
-```
+Purchased balances do not expire. Package purchase does **not** auto-generate all units.
 
-### Persistence mapping
-
-| Lifecycle state | `purchases.status` | `assets.payment_status` |
-|-----------------|--------------------|--------------------------|
-| `created` | not persisted yet | unchanged |
-| `checkout_started` | `pending` or `awaiting_payment` | `pending` |
-| `awaiting_payment` | `awaiting_payment` | `pending` |
-| `paid` | `completed` | `paid` |
-| `cancelled` | `cancelled` | `none`, unless another completed purchase exists |
-| `failed` | `failed` | `none`, unless another completed purchase exists |
-
-### Metaprom post-payment flow
-
-```text
-paid -> premium_generation -> premium_ready
-```
-
-`paid` is the final payment state. After a verified webhook (or client poll)
-sets `assets.payment_status = paid`, premium HD generation runs:
-
-1. Webhook path: server `after()` fulfillment (async after payment verify)
-2. Client path: Studio return URL → poll → `POST /api/studio/premium-video`
-
-Premium readiness is represented by `assets.premium_video_path` (Biblioteca + download).
-
-## Adding a provider
-
-1. Implement `PaymentProvider` in `lib/payments/types.ts`.
-2. Register in `lib/payments/index.ts`.
-3. Set `PAYMENT_PROVIDER` in the target environment.
+One new finished Advertising Image (`assets.image_path` set for a new `asset_id`) consumes **1** `advertising_asset`. Same-project refinements that reuse `existingAssetId` do not consume again.
 
 ## API
 
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `/api/payments/checkout` | POST | Start checkout for an asset |
+| `/api/payments/checkout` | POST | Package (`productKey`) or legacy asset checkout |
 | `/api/payments/checkout?sessionId=` | GET | Poll payment status |
 | `/api/payments/webhook` | POST | Provider webhooks |
-
-## Methods supported (interface)
-
-- `card`
-- `oxxo`
-- `spei`
-- `wallet`
-
-Mock provider completes card payments immediately and simulates OXXO via polling.
-Stripe uses hosted Checkout with a Test Mode Price ID and returns to `/studio`
-before/while Metaprom starts premium generation.
+| `/api/entitlements/balances` | GET | Current user package balances |
+| `/api/entitlements/consume-advertising-asset` | POST | Idempotent consume after first finished-image persist |

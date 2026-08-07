@@ -22,7 +22,15 @@ export default function Footer({ labels, brand }: FooterProps) {
           </p>
         </div>
 
-        <p className="text-sm text-white/30">{labels.copyright}</p>
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          <Link
+            href="/planes"
+            className="text-sm text-white/55 transition hover:text-white"
+          >
+            {labels.planes}
+          </Link>
+          <p className="text-sm text-white/30">{labels.copyright}</p>
+        </div>
       </div>
     </footer>
   );

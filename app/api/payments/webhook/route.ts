@@ -1,5 +1,6 @@
 import { after } from "next/server";
 
+import { resolvePackageForProductId } from "@/lib/entitlements";
 import { getPaymentProvider } from "@/lib/payments";
 import { persistPaymentResult } from "@/lib/payments/persistence";
 import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
@@ -30,6 +31,25 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, ignored: true });
     }
 
+    // OXXO / async: unpaid sessions must not grant entitlements or fulfill.
+    if (result.status !== "completed") {
+      const supabase = createAdminClient();
+      const purchase = await persistPaymentResult(supabase, provider.id, result);
+
+      if (!purchase) {
+        console.error(
+          "[payments/webhook] Purchase not found for provider session:",
+          result.sessionId,
+        );
+        return Response.json(
+          { error: "Purchase not found for webhook session." },
+          { status: 500 },
+        );
+      }
+
+      return Response.json({ ok: true, ...result });
+    }
+
     const supabase = createAdminClient();
     const purchase = await persistPaymentResult(supabase, provider.id, result);
 
@@ -44,8 +64,17 @@ export async function POST(req: Request) {
       );
     }
 
-    if (result.status === "completed") {
-      const assetId = String(purchase.asset_id);
+    const isCatalogPackage = Boolean(
+      resolvePackageForProductId(purchase.product_id),
+    );
+    const assetId =
+      purchase.asset_id == null || purchase.asset_id === ""
+        ? null
+        : String(purchase.asset_id);
+
+    // Package purchases grant balances in persistPaymentResult.
+    // Premium video generation only for a bound current project (or legacy SKU).
+    if (assetId && (!isCatalogPackage || purchase.metadata?.consumeCurrentProject === true)) {
       after(async () => {
         try {
           const fulfillment = await fulfillPremiumVideoAfterPayment(

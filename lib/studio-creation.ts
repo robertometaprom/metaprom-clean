@@ -4,6 +4,12 @@ import {
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
 import { mapCreationError } from "@/lib/creation-errors";
+import {
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+  ADVERTISING_IMAGE_PLANES_HREF,
+  shouldBillAdvertisingAsset,
+} from "@/lib/entitlements/advertising-image-gate";
 import type { PaymentMethod } from "@/lib/payments/types";
 import type { Mode } from "@/lib/prompts";
 import { toDestinationGenerationPayload } from "@/lib/destination-generation";
@@ -17,7 +23,12 @@ import { createClient } from "@/lib/supabase/client";
 
 export type CreationStep = "image" | "video" | "done";
 
-export type AutoSaveStatus = "idle" | "saving" | "saved" | "local-only";
+export type AutoSaveStatus =
+  | "idle"
+  | "saving"
+  | "saved"
+  | "local-only"
+  | "requires-package";
 
 export type CreateCommercialInput = {
   file: File;
@@ -47,6 +58,11 @@ export type PersistCreationInput = {
   existingProjectId?: string | null;
   existingAssetId?: string | null;
   localDraftKey?: string;
+  /**
+   * When true, first finished persist requires & consumes 1 advertising_asset.
+   * When false, skip (Commercial production). When omitted, inferred from teaser.
+   */
+  billAdvertisingAsset?: boolean;
 };
 
 export type PersistCreationResult = {
@@ -54,6 +70,9 @@ export type PersistCreationResult = {
   assetId: string | null;
   shareSlug: string | null;
   status: AutoSaveStatus;
+  code?: typeof ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE;
+  message?: string;
+  planesHref?: typeof ADVERTISING_IMAGE_PLANES_HREF;
 };
 
 export type PurchaseHdInput = {
@@ -298,6 +317,51 @@ export async function createCommercialAssets(
   };
 }
 
+function packageRequiredPersistResult(): PersistCreationResult {
+  return {
+    projectId: null,
+    assetId: null,
+    shareSlug: null,
+    status: "requires-package",
+    code: ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
+    message: ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+    planesHref: ADVERTISING_IMAGE_PLANES_HREF,
+  };
+}
+
+async function revokeClientUndeliveredPersist(input: {
+  assetId: string;
+  projectId: string;
+  deleteProject: boolean;
+}): Promise<void> {
+  const supabase = createClient();
+  const { error: assetError } = await supabase
+    .from("assets")
+    .delete()
+    .eq("id", input.assetId);
+
+  if (assetError) {
+    console.error(
+      "[persistCreationToLibrary] Failed to revoke undelivered asset",
+      assetError,
+    );
+  }
+
+  if (input.deleteProject) {
+    const { error: projectError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", input.projectId);
+
+    if (projectError) {
+      console.error(
+        "[persistCreationToLibrary] Failed to revoke undelivered project",
+        projectError,
+      );
+    }
+  }
+}
+
 export async function persistCreationToLibrary(
   input: PersistCreationInput,
 ): Promise<PersistCreationResult> {
@@ -328,6 +392,40 @@ export async function persistCreationToLibrary(
     const userId = user.id;
     logPersistCreationStage("user id", { userId });
 
+    const isFirstFinishedPersist = !input.existingAssetId;
+    const billAdvertising =
+      isFirstFinishedPersist &&
+      shouldBillAdvertisingAsset({
+        billAdvertisingAsset: input.billAdvertisingAsset,
+        teaserVideoBlob: input.teaserVideoBlob,
+      });
+
+    // Hard gate BEFORE first finished persist for standalone Advertising Images.
+    // Generation / AI retries never reach here; refinements skip via existingAssetId.
+    if (billAdvertising) {
+      logPersistCreationStage("entitlement preflight:start");
+      const balancesResponse = await fetch("/api/entitlements/balances");
+      if (balancesResponse.ok) {
+        const balances = (await balancesResponse.json().catch(() => null)) as {
+          advertisingAssetsRemaining?: number;
+        } | null;
+        const remaining = balances?.advertisingAssetsRemaining ?? 0;
+        if (remaining < 1) {
+          logPersistCreationStage("entitlement preflight:blocked", {
+            remaining,
+          });
+          finalResult = packageRequiredPersistResult();
+          logPersistCreationStage("final PersistCreationResult", finalResult);
+          return finalResult;
+        }
+      } else {
+        logPersistCreationStage("entitlement preflight:balances_unavailable", {
+          status: balancesResponse.status,
+        });
+      }
+    }
+
+    const createdNewProject = !input.existingProjectId;
     const result = await persistStudioCreation({
       userId,
       originalFile: input.originalFile,
@@ -349,6 +447,91 @@ export async function persistCreationToLibrary(
     logPersistCreationStage("returned assetId", {
       assetId: result.assetId,
     });
+
+    // Billable event: first persistence of a new finished Imagen Publicitaria.
+    // Commercial production sets billAdvertisingAsset: false and must not debit.
+    // Same-project refinements pass existingAssetId and must not consume again.
+    if (billAdvertising && result.assetId) {
+      logPersistCreationStage("entitlement consume:start", {
+        assetId: result.assetId,
+      });
+      try {
+        const consumeResponse = await fetch(
+          "/api/entitlements/consume-advertising-asset",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assetId: result.assetId }),
+          },
+        );
+        const payload = (await consumeResponse.json().catch(() => null)) as {
+          error?: string;
+          code?: string;
+          consumed?: boolean;
+          alreadyConsumed?: boolean;
+        } | null;
+
+        if (
+          consumeResponse.status === 402 ||
+          payload?.code === "insufficient_entitlement"
+        ) {
+          logPersistCreationStage("entitlement consume:blocked_insufficient", {
+            assetId: result.assetId,
+          });
+          await revokeClientUndeliveredPersist({
+            assetId: result.assetId,
+            projectId: result.projectId,
+            deleteProject: createdNewProject,
+          });
+          finalResult = packageRequiredPersistResult();
+          logPersistCreationStage("final PersistCreationResult", finalResult);
+          return finalResult;
+        }
+
+        if (!consumeResponse.ok) {
+          logPersistCreationStage("entitlement consume:failed", {
+            status: consumeResponse.status,
+            payload,
+          });
+          await revokeClientUndeliveredPersist({
+            assetId: result.assetId,
+            projectId: result.projectId,
+            deleteProject: createdNewProject,
+          });
+          finalResult = {
+            projectId: null,
+            assetId: null,
+            shareSlug: null,
+            status: "idle",
+          };
+          logPersistCreationStage("final PersistCreationResult", finalResult);
+          return finalResult;
+        }
+
+        logPersistCreationStage("entitlement consume:success", {
+          assetId: result.assetId,
+          consumed: payload?.consumed,
+          alreadyConsumed: payload?.alreadyConsumed,
+        });
+      } catch (consumeError) {
+        logPersistCreationStage("entitlement consume:network_error", {
+          error: consumeError,
+        });
+        await revokeClientUndeliveredPersist({
+          assetId: result.assetId,
+          projectId: result.projectId,
+          deleteProject: createdNewProject,
+        });
+        finalResult = {
+          projectId: null,
+          assetId: null,
+          shareSlug: null,
+          status: "idle",
+        };
+        logPersistCreationStage("final PersistCreationResult", finalResult);
+        return finalResult;
+      }
+    }
 
     finalResult = {
       projectId: result.projectId,
@@ -589,6 +772,8 @@ export function getAutoSaveMessage(status: AutoSaveStatus): string | null {
       return "Guardado automáticamente en tu biblioteca.";
     case "local-only":
       return "Guarda este trabajo en tu biblioteca personal.";
+    case "requires-package":
+      return ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE;
     default:
       return null;
   }

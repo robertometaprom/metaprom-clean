@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -586,6 +587,9 @@ export default function CreativeDirector({
         },
         existingProjectId: savedProjectIdRef.current,
         existingAssetId: savedAssetIdRef.current,
+        // Commercial production: image enhancement is internal; do not require
+        // Advertising Image packages.
+        billAdvertisingAsset: false,
       });
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
@@ -611,6 +615,11 @@ export default function CreativeDirector({
         } catch (draftError) {
           console.error("Anonymous draft persistence failed", draftError);
         }
+      } else if (result.status === "requires-package") {
+        setError(
+          result.message ??
+            "Necesitas Imágenes Publicitarias disponibles para crear esta pieza.",
+        );
       }
       setAutoSaveStatus(result.status);
     },
@@ -1048,9 +1057,17 @@ export default function CreativeDirector({
                 </div>
 
                 {error && (
-                  <p className="mt-4 whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                    {error}
-                  </p>
+                  <div className="mt-4 space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    <p className="whitespace-pre-line">{error}</p>
+                    {autoSaveStatus === "requires-package" && (
+                      <Link
+                        href="/planes"
+                        className="inline-flex font-semibold text-red-700 underline underline-offset-2"
+                      >
+                        Ver planes
+                      </Link>
+                    )}
+                  </div>
                 )}
               </motion.div>
             </div>
@@ -1129,9 +1146,17 @@ export default function CreativeDirector({
             </label>
 
             {error && (
-              <p className="whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
-              </p>
+              <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <p className="whitespace-pre-line">{error}</p>
+                {autoSaveStatus === "requires-package" && (
+                  <Link
+                    href="/planes"
+                    className="inline-flex font-semibold text-red-700 underline underline-offset-2"
+                  >
+                    Ver planes
+                  </Link>
+                )}
+              </div>
             )}
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -1223,9 +1248,17 @@ export default function CreativeDirector({
               </div>
 
               {error && (
-                <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                  {error}
-                </p>
+                <div className="space-y-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  <p className="whitespace-pre-line">{error}</p>
+                  {autoSaveStatus === "requires-package" && (
+                    <Link
+                      href="/planes"
+                      className="inline-flex font-semibold text-red-200 underline underline-offset-2"
+                    >
+                      Ver planes
+                    </Link>
+                  )}
+                </div>
               )}
 
               <div className="border-t border-white/10 pt-5 text-center">

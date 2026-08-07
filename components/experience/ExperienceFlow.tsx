@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -278,6 +279,8 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
         existingProjectId: savedProjectIdRef.current,
         existingAssetId: savedAssetIdRef.current,
         localDraftKey: EXPERIENCE_DRAFT_KEY,
+        // Commercial production must not require Advertising Image packages.
+        billAdvertisingAsset: false,
       });
 
       if (persistResult.projectId) {
@@ -290,6 +293,12 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
         setShareSlug(persistResult.shareSlug);
       }
       if (persistResult.status === "saved") markStudioHasProjects();
+      if (persistResult.status === "requires-package") {
+        setError(
+          persistResult.message ??
+            "Necesitas Imágenes Publicitarias disponibles para crear esta pieza.",
+        );
+      }
       setAutoSaveStatus(persistResult.status);
 
       setRevealFromOffer(false);
@@ -610,9 +619,17 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                   Continuar
                 </PrimaryButton>
                 {error && (
-                  <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                    {error}
-                  </p>
+                  <div className="space-y-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    <p className="whitespace-pre-line">{error}</p>
+                    {autoSaveStatus === "requires-package" && (
+                      <Link
+                        href="/planes"
+                        className="inline-flex font-semibold text-red-100 underline underline-offset-2"
+                      >
+                        Ver planes
+                      </Link>
+                    )}
+                  </div>
                 )}
                 <SecondaryButton onClick={() => goTo("upload")}>
                   Volver
@@ -654,9 +671,17 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                 Generar mi comercial
               </AccentButton>
               {error && (
-                <p className="whitespace-pre-line rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {error}
-                </p>
+                <div className="space-y-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  <p className="whitespace-pre-line">{error}</p>
+                  {autoSaveStatus === "requires-package" && (
+                    <Link
+                      href="/planes"
+                      className="inline-flex font-semibold text-red-100 underline underline-offset-2"
+                    >
+                      Ver planes
+                    </Link>
+                  )}
+                </div>
               )}
               <SecondaryButton onClick={() => goTo("intent")}>
                 Editar

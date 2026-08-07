@@ -10,13 +10,19 @@ export type PaymentSessionStatus =
   | "cancelled";
 
 export type CheckoutRequest = {
-  assetId: string;
+  /** Optional for package purchases that are not asset-bound. */
+  assetId?: string;
   productId: string;
   amountMxn: number;
   currency?: string;
   paymentMethod: PaymentMethod;
+  /** When set, overrides single-method selection (e.g. card + OXXO packages). */
+  paymentMethodTypes?: Array<"card" | "oxxo">;
   customerEmail?: string;
   userId: string;
+  successPath?: string;
+  cancelPath?: string;
+  metadata?: Record<string, string>;
 };
 
 export type CheckoutSession = {

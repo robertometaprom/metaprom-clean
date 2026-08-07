@@ -3,6 +3,12 @@ import { stripePaymentProvider } from "./providers/stripe";
 import type { PaymentProvider, PaymentProviderId } from "./types";
 import { PaymentProviderError } from "./types";
 
+export { createCheckoutSession } from "./create-checkout-session";
+export type {
+  CreateCheckoutSessionInput,
+  CreateCheckoutSessionResult,
+} from "./create-checkout-session";
+
 const providers: Partial<Record<PaymentProviderId, PaymentProvider>> = {
   mock: mockPaymentProvider,
   stripe: stripePaymentProvider,

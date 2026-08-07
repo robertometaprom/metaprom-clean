@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import {
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+  ADVERTISING_IMAGE_PLANES_HREF,
+} from "@/lib/entitlements/advertising-image-gate";
+import { AdvertisingImagePackageRequiredError } from "@/lib/studio-persistence-server";
 import { claimStudioDraftServer } from "@/lib/studio-draft/server";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_JSON_BODY_BYTES } from "@/lib/security/limits";
@@ -54,6 +60,18 @@ export async function POST(request: Request) {
     const result = await claimStudioDraftServer(token, user.id);
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof AdvertisingImagePackageRequiredError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
+          message: ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+          planesHref: ADVERTISING_IMAGE_PLANES_HREF,
+        },
+        { status: 402 },
+      );
+    }
+
     console.error("POST /api/studio/draft/claim failed", error);
     const message =
       error instanceof Error

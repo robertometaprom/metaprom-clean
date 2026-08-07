@@ -1,8 +1,22 @@
+import { PRICING_PACKAGES } from "@/lib/pricing/catalog";
+
 import { PaymentProviderError } from "./types";
 
-/** Env var that holds the Stripe Test Mode Price ID for commercial HD video. */
-export const STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> = {
+/** Legacy studio SKU — never reuse for V1 package catalog checkout. */
+export const LEGACY_STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> = {
   "commercial-video": "STRIPE_PRICE_ID_COMMERCIAL_VIDEO",
+};
+
+/** Stable package keys → env var names from the canonical catalog. */
+export const PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> =
+  Object.fromEntries(
+    PRICING_PACKAGES.map((pkg) => [pkg.id, pkg.stripeEnvironmentVariable]),
+  );
+
+/** Env var that holds the Stripe Test Mode Price ID for a product key. */
+export const STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> = {
+  ...LEGACY_STRIPE_PRICE_ENV_BY_PRODUCT,
+  ...PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT,
 };
 
 export function assertStripeTestSecretKey(secretKey: string): void {
@@ -43,6 +57,10 @@ export function getStripeTestPriceId(productId: string): string {
     throw new PaymentProviderError(
       `No Stripe Test Price mapping for product "${productId}".`,
     );
+  }
+
+  if (envName === "STRIPE_PRICE_ID_COMMERCIAL_VIDEO") {
+    // Allowed only for the legacy studio SKU path.
   }
 
   const priceId = process.env[envName]?.trim();

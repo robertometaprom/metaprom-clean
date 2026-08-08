@@ -99,19 +99,6 @@ const CHECKOUT_PAYMENT_METHODS = [
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-/** Lightweight image-purpose chips — not separate workflows. */
-const ADVERTISING_IMAGE_INTENT_CHIPS = [
-  { id: "product", label: "Foto de producto", prompt: "Foto de producto profesional para vender" },
-  { id: "mercado-libre", label: "Mercado Libre", prompt: "Imagen optimizada para Mercado Libre" },
-  { id: "amazon", label: "Amazon", prompt: "Imagen de producto para Amazon" },
-  { id: "social", label: "Redes sociales", prompt: "Imagen publicitaria para Instagram y Facebook" },
-  { id: "flyer", label: "Flyer", prompt: "Flyer publicitario atractivo" },
-  { id: "poster", label: "Póster", prompt: "Póster publicitario de alto impacto" },
-  { id: "menu", label: "Menú", prompt: "Foto apetitosa para menú de restaurante" },
-  { id: "banner", label: "Banner", prompt: "Banner publicitario para sitio web" },
-  { id: "catalog", label: "Catálogo", prompt: "Imagen de catálogo profesional" },
-] as const;
-
 function describeRuntimeError(error: unknown): string {
   if (error instanceof Error) {
     return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
@@ -151,7 +138,12 @@ export default function CreativeDirector({
   /** Dual Creation intent — set by chooser now; Director may set later. */
   const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  /**
+   * Job inputs. Phase 4C uses 0..1 files; prefer this over deepening
+   * a permanent single-file assumption before Phase 4D multi-photo.
+   */
+  const [sourceFiles, setSourceFiles] = useState<File[]>([]);
+  const selectedFile = sourceFiles[0] ?? null;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [premiumImage, setPremiumImage] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -183,7 +175,7 @@ export default function CreativeDirector({
   const previewUrlRef = useRef<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const selectedFileRef = useRef<File | null>(null);
+  const sourceFilesRef = useRef<File[]>([]);
   const matchedProductRef = useRef<CatalogProduct>(
     PRODUCT_CATALOG["premium-image"],
   );
@@ -210,8 +202,14 @@ export default function CreativeDirector({
   }, [creationMode]);
 
   useEffect(() => {
-    selectedFileRef.current = selectedFile;
-  }, [selectedFile]);
+    sourceFilesRef.current = sourceFiles;
+  }, [sourceFiles]);
+
+  const setPrimarySourceFile = useCallback((file: File | null) => {
+    const next = file ? [file] : [];
+    sourceFilesRef.current = next;
+    setSourceFiles(next);
+  }, []);
 
   useEffect(() => {
     onWelcomeChange?.(phase === "welcome");
@@ -278,7 +276,7 @@ export default function CreativeDirector({
         teaserVideoBlob?: Blob | null;
       },
     ) => {
-      const file = selectedFileRef.current;
+      const file = sourceFilesRef.current[0] ?? null;
       const enhancedDataUrl = overrides?.enhancedDataUrl ?? premiumImage;
       if (!file || !enhancedDataUrl) {
         throw new Error("No hay suficiente información para guardar tu borrador.");
@@ -362,8 +360,7 @@ export default function CreativeDirector({
               type: draft.original_content_type || blob.type || "image/jpeg",
             },
           );
-          setSelectedFile(file);
-          selectedFileRef.current = file;
+          setPrimarySourceFile(file);
         } catch (fetchError) {
           console.error("Failed to restore original file from draft", fetchError);
         }
@@ -394,7 +391,7 @@ export default function CreativeDirector({
       setDirectorPanelOpen(false);
       setShowRegistrationInvite(false);
     },
-    [],
+    [setPrimarySourceFile],
   );
 
   const applyClaimResult = useCallback(
@@ -683,7 +680,7 @@ export default function CreativeDirector({
   useEffect(() => {
     if (!isAuthenticated || autoSaveStatus !== "local-only") return;
 
-    const file = selectedFileRef.current;
+    const file = sourceFilesRef.current[0] ?? null;
     if (!file || !premiumImage || savedAssetIdRef.current) return;
 
     const isAdvertising =
@@ -702,14 +699,18 @@ export default function CreativeDirector({
   }, [autoSaveStatus, isAuthenticated, persistToLibrary, premiumImage]);
 
   const runCreation = useCallback(async () => {
-    const file = selectedFileRef.current;
+    const file = sourceFilesRef.current[0] ?? null;
     if (!file) {
       setError("Sube una foto para continuar.");
       setPhase("upload");
       return;
     }
 
-    const mode = creationModeRef.current ?? "commercial";
+    const mode = creationModeRef.current;
+    if (!mode) {
+      setPhase("creation_mode");
+      return;
+    }
     const isAdvertising = mode === "advertising_image";
 
     if (!isAdvertising) {
@@ -808,7 +809,7 @@ export default function CreativeDirector({
     async (event: FormEvent) => {
       event.preventDefault();
       const trimmed = input.trim();
-      const hasPhoto = Boolean(selectedFileRef.current);
+      const hasPhoto = sourceFilesRef.current.length > 0;
 
       if (!trimmed) return;
 
@@ -869,6 +870,11 @@ export default function CreativeDirector({
       setCreationMode(mode);
       creationModeRef.current = mode;
       setError(null);
+      // Manual choice may happen before or after photo; only route when ready.
+      if (sourceFilesRef.current.length === 0) {
+        setPhase("upload");
+        return;
+      }
       routeAfterCreationMode(mode);
     },
     [routeAfterCreationMode],
@@ -904,8 +910,7 @@ export default function CreativeDirector({
         previewUrlRef.current = null;
       }
 
-      setSelectedFile(file);
-      selectedFileRef.current = file;
+      setPrimarySourceFile(file);
       setPremiumImage(null);
       setVideoUrl(null);
       setError(null);
@@ -918,7 +923,7 @@ export default function CreativeDirector({
 
       continueAfterPhoto();
     },
-    [continueAfterPhoto, phase],
+    [continueAfterPhoto, phase, setPrimarySourceFile],
   );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -943,7 +948,7 @@ export default function CreativeDirector({
   };
 
   const handleFinalizeAdvertisingImage = useCallback(async () => {
-    const file = selectedFileRef.current;
+    const file = sourceFilesRef.current[0] ?? null;
     if (!file || !premiumImage) {
       setError("Genera tu imagen publicitaria para continuar.");
       return;
@@ -1088,7 +1093,7 @@ export default function CreativeDirector({
     setMatchedProduct(null);
     matchedProductRef.current = PRODUCT_CATALOG["premium-image"];
     customerIntentRef.current = "";
-    setSelectedFile(null);
+    setPrimarySourceFile(null);
     setPremiumImage(null);
     setVideoUrl(null);
     setError(null);
@@ -1117,7 +1122,6 @@ export default function CreativeDirector({
     videoPromptRef.current = "";
     projectMetadataRef.current = {};
     setAutoSaveStatus("idle");
-    selectedFileRef.current = null;
 
     if (videoUrlRef.current?.startsWith("blob:")) {
       URL.revokeObjectURL(videoUrlRef.current);
@@ -1152,9 +1156,12 @@ export default function CreativeDirector({
     setPhase("checkout");
   }, [isAuthenticated, requestAuthentication]);
 
-  const contextualUploadMessage = matchedProduct
-    ? getUploadMessage(matchedProduct)
-    : "Sube una foto de lo que vendes.";
+  const contextualUploadMessage =
+    creationMode === "advertising_image"
+      ? "Sube la foto que quieres transformar."
+      : matchedProduct
+        ? getUploadMessage(matchedProduct)
+        : "Sube una foto de lo que vendes.";
 
   const creativeDirectorProjectContext: ProjectContext = {
     currentImage: previewUrl ? { url: previewUrl } : undefined,
@@ -1219,24 +1226,27 @@ export default function CreativeDirector({
               >
                 <div className="space-y-2 text-center">
                   <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-                    Sube tu{" "}
-                    <span className="bg-gradient-to-r from-violet-600 to-purple-500 bg-clip-text text-transparent">
-                      foto
-                    </span>
+                    ¿Qué quieres crear?
                   </h2>
                   <p className="text-sm text-neutral-500 sm:text-base">
-                    Toma una foto de lo que vendes — Metaprom crea tu comercial.
+                    Elige y Metaprom hace el resto con tu foto.
                   </p>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-8 flex flex-col gap-3">
                   <button
                     type="button"
-                    onClick={() => setPhase("upload")}
+                    onClick={() => selectCreationMode("commercial")}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
                   >
-                    Subir o tomar foto
-                    <span aria-hidden="true">→</span>
+                    Un Comercial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selectCreationMode("advertising_image")}
+                    className="inline-flex w-full items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 py-4 text-base font-semibold text-neutral-900 transition hover:border-violet-200 hover:bg-violet-50/50"
+                  >
+                    Una Imagen Publicitaria
                   </button>
                 </div>
 
@@ -1354,7 +1364,11 @@ export default function CreativeDirector({
               </button>
               <button
                 type="button"
-                onClick={resetFlow}
+                onClick={() => {
+                  setCreationMode(null);
+                  creationModeRef.current = null;
+                  resetFlow();
+                }}
                 className="rounded-2xl px-6 py-4 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
               >
                 Cambiar idea
@@ -1408,7 +1422,11 @@ export default function CreativeDirector({
             </div>
             <button
               type="button"
-              onClick={() => setPhase("upload")}
+              onClick={() => {
+                setCreationMode(null);
+                creationModeRef.current = null;
+                setPhase(sourceFilesRef.current.length > 0 ? "upload" : "welcome");
+              }}
               className="w-full rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
             >
               Volver
@@ -1463,7 +1481,7 @@ export default function CreativeDirector({
               </h2>
               <p className="text-base text-white/55">
                 {creationMode === "advertising_image"
-                  ? "Describe el uso: producto, Amazon, Mercado Libre, flyer, redes…"
+                  ? "Descríbelo con tus palabras. Metaprom interpreta el uso."
                   : "Describe tu comercial. Metaprom interpreta tu intención."}
               </p>
             </div>
@@ -1475,7 +1493,7 @@ export default function CreativeDirector({
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
                     creationMode === "advertising_image"
-                      ? "Ej: foto de producto para Mercado Libre..."
+                      ? "Ej: fotos de una casa, optimízalas premium para venderla..."
                       : "Describe tu comercial. Ej: hamburguesa artesanal en cámara lenta..."
                   }
                   className="w-full bg-transparent py-4 pl-5 pr-36 text-base text-white placeholder:text-white/35 focus:outline-none"
@@ -1518,30 +1536,21 @@ export default function CreativeDirector({
                 </button>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-2">
-                {creationMode === "advertising_image"
-                  ? ADVERTISING_IMAGE_INTENT_CHIPS.map((chip) => (
-                      <button
-                        key={chip.id}
-                        type="button"
-                        onClick={() => handleExampleClick(chip.prompt)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                      >
-                        {chip.label}
-                      </button>
-                    ))
-                  : PROMPT_CATEGORY_CHIPS.map((chip) => (
-                      <button
-                        key={chip.id}
-                        type="button"
-                        onClick={() => handleExampleClick(chip.prompt)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                      >
-                        <PromptCategoryIcon type={chip.icon} />
-                        {chip.label}
-                      </button>
-                    ))}
-              </div>
+              {creationMode === "commercial" && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {PROMPT_CATEGORY_CHIPS.map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => handleExampleClick(chip.prompt)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                    >
+                      <PromptCategoryIcon type={chip.icon} />
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <button
                 type="button"

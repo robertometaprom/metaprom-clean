@@ -54,6 +54,7 @@ export type CreateCommercialResult = {
 };
 
 export type CreateAdvertisingImageInput = {
+  /** Primary source image. Phase 4D may accept `files` / multi-input without new product types. */
   file: File;
   customerIntent: string;
   productMode: Mode;

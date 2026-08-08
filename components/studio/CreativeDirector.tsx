@@ -1527,18 +1527,6 @@ export default function CreativeDirector({
                 </div>
               )}
 
-              <div className="border-t border-white/10 pt-5 text-center">
-                <p className="text-sm text-white/45">¿Necesitas ayuda?</p>
-                <button
-                  type="button"
-                  onClick={() => setDirectorPanelOpen(true)}
-                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/85 transition hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
-                >
-                  <span aria-hidden="true">✨</span>
-                  Habla con el Director Creativo
-                </button>
-              </div>
-
               {creationMode === "commercial" && (
                 <div className="flex flex-wrap justify-center gap-2">
                   {PROMPT_CATEGORY_CHIPS.map((chip) => (
@@ -1758,7 +1746,6 @@ export default function CreativeDirector({
               hasPremiumImage={Boolean(premiumImage)}
               shareSlug={shareSlug}
               publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
-              onOpenCreativeDirector={handleOpenDirectorPanel}
             />
           )}
 

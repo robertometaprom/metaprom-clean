@@ -794,8 +794,8 @@ export default function CreativeDirector({
         billAdvertisingAsset: false,
       });
 
+      // Presence-only: do not auto-speak after generation. User opens Director if needed.
       setPhase("preview");
-      setPendingCompanionMoment("preview");
     } catch (createError) {
       console.error(createError);
       setError(
@@ -1275,7 +1275,7 @@ export default function CreativeDirector({
           <StudioTrustBar />
         </div>
       ) : (
-        <div className="mx-auto max-w-2xl bg-[#ececec] px-6 pb-24 pt-8">
+        <div className="mx-auto max-w-2xl bg-[#ececec] px-6 pb-36 pt-8">
           <AnimatePresence mode="wait">
         {phase === "unavailable" && (
           <motion.div
@@ -1830,6 +1830,10 @@ export default function CreativeDirector({
         </div>
       )}
 
+      {!directorPanelOpen && phase !== "unavailable" && (
+        <CreativeDirectorPresence onOpen={handleOpenDirectorPanel} />
+      )}
+
       <CreativeDirectorPanel
         open={directorPanelOpen}
         stackLayer={phase === "preview" ? "elevated" : "default"}
@@ -1845,6 +1849,33 @@ export default function CreativeDirector({
         showRegistrationInvite={showRegistrationInvite}
       />
     </>
+  );
+}
+
+/**
+ * Compact persistent entry point while the Director panel is closed.
+ * One shared conversation remains owned by CreativeDirectorPanel + sessionKey.
+ * Anchored bottom-right above primary CTA stacks (see flow pb-36 / mobile offset).
+ */
+function CreativeDirectorPresence({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div className="pointer-events-none fixed bottom-24 right-3 z-[105] sm:bottom-8 sm:right-6">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="pointer-events-auto flex w-[10.75rem] flex-col items-start rounded-2xl border border-neutral-200/90 bg-white/95 px-3 py-2.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-violet-200 hover:shadow-[0_16px_44px_rgba(0,0,0,0.14)]"
+        aria-label="Abrir Director Creativo"
+      >
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-600">
+          <span aria-hidden="true">✨</span>
+          Director Creativo
+        </span>
+        <span className="mt-0.5 text-[11px] text-neutral-500">Disponible</span>
+        <span className="mt-1.5 inline-flex items-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+          Pregúntame
+        </span>
+      </button>
+    </div>
   );
 }
 

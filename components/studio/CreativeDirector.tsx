@@ -231,6 +231,23 @@ export default function CreativeDirector({
     return () => subscription.unsubscribe();
   }, []);
 
+  // Explicit Director-open intent from /planes (and similar CTAs): /studio?director=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("director") !== "1") return;
+
+    // Preserve intent across existing auth redirects (e.g. panel sign-in).
+    authRedirectToRef.current = "/studio?director=1";
+    setDirectorPanelOpen(true);
+    params.delete("director");
+    const next = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      next ? `/studio?${next}` : "/studio",
+    );
+  }, []);
+
   const buildDraftPayload = useCallback(
     (pendingAction?: StudioDraftPendingAction | null) => {
       const product = matchedProductRef.current;

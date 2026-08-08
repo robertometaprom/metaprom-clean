@@ -131,7 +131,7 @@ export const PRICING_PAGE_COPY = {
     title: "¿No sabes qué paquete elegir?",
     body: "Nuestro Director Creativo te ayudará a encontrar la mejor opción antes de comenzar tu proyecto.",
     ctaLabel: "Hablar con Director",
-    ctaHref: "/studio",
+    ctaHref: "/studio?director=1",
   },
 } as const;
 

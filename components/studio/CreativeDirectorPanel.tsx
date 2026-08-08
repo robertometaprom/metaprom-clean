@@ -9,7 +9,6 @@ import {
   type FormEvent,
 } from "react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
-import { mapCreationError } from "@/lib/creation-errors";
 import type {
   CommercialProposal,
   ConversationMessage,
@@ -121,19 +120,22 @@ export default function CreativeDirectorPanel({
   const conversationRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const handledCompanionMomentsRef = useRef<Set<CompanionMoment>>(new Set());
+  const initialMessagesRef = useRef(initialMessages);
+  initialMessagesRef.current = initialMessages;
 
   const resetPanel = useCallback(() => {
     handledCompanionMomentsRef.current = new Set();
     setActiveCompanionMoment(null);
-    setMessages(initialMessages);
+    setMessages(initialMessagesRef.current);
     setComposerValue("");
     setIsLoading(false);
     setError(null);
     setEditingProposalId(null);
     setEditedProposalText("");
     setRegistrationRequired(false);
-  }, [initialMessages]);
+  }, []);
 
+  // Intentional conversation/session reset only — not ordinary message sync.
   useEffect(() => {
     resetPanel();
   }, [resetPanel, sessionKey]);
@@ -256,13 +258,10 @@ export default function CreativeDirectorPanel({
         if (response.requiresRegistration) {
           setRegistrationRequired(true);
         }
-      } catch (sendError) {
-        const message =
-          mapCreationError(
-            sendError instanceof Error ? sendError.message : undefined,
-          ) || "No pudimos continuar la conversación. Intenta de nuevo.";
-
-        setError(message);
+      } catch {
+        setError(
+          "No pude continuar la conversación. Intenta enviarlo de nuevo.",
+        );
         setMessages((current) => current.slice(0, -1));
         setComposerValue(trimmed);
       } finally {

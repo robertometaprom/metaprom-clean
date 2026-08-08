@@ -374,7 +374,10 @@ export default function CreativeDirector({
             content: message.content,
           })),
         );
+      } else {
+        setDirectorMessages([]);
       }
+      setDirectorSessionKey(`restored-${draft.resume_token}`);
 
       const isAdvertisingDraft = !urls.teaserUrl && Boolean(urls.enhancedUrl);
       const restoredPhase =

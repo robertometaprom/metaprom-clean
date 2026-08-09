@@ -47,6 +47,15 @@ import CinematicReveal from "@/components/studio/CinematicReveal";
 import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import DestinationStep from "@/components/studio/DestinationStep";
 import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
+import StudioProgress from "@/components/studio/StudioProgress";
+import {
+  getAdvertisingImageBand,
+  getCommercialCreationBand,
+  getFinalizeImageBand,
+  getPremiumProcessingBand,
+  sleep,
+  useStudioProgress,
+} from "@/lib/studio-progress";
 import type { ProjectContext } from "@/lib/creative-director/types";
 import type { CompanionMoment } from "@/lib/studio/creative-director-companion";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
@@ -149,6 +158,16 @@ export default function CreativeDirector({
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [creationStep, setCreationStep] = useState<CreationStep>("image");
   const [creationMessage, setCreationMessage] = useState("");
+  const [creationPreparing, setCreationPreparing] = useState(false);
+  const [commercialPersisting, setCommercialPersisting] = useState(false);
+  const [creationProgressComplete, setCreationProgressComplete] =
+    useState(false);
+  const [creationProgressRunId, setCreationProgressRunId] = useState(0);
+  const [finalizeProgressComplete, setFinalizeProgressComplete] =
+    useState(false);
+  const [finalizeProgressRunId, setFinalizeProgressRunId] = useState(0);
+  const [premiumProgressComplete, setPremiumProgressComplete] = useState(false);
+  const [premiumProgressRunId, setPremiumProgressRunId] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
@@ -561,10 +580,17 @@ export default function CreativeDirector({
         return;
       }
 
+      setPremiumProgressComplete(false);
+      setPremiumProgressRunId((current) => current + 1);
       setPhase("processing_payment");
       setCheckoutMessage("Confirmando tu pago...");
 
-      completeCheckoutAfterRedirect(sessionId, setCheckoutMessage)
+      completeCheckoutAfterRedirect(sessionId, (message) => {
+        setCheckoutMessage(message);
+        if (message.includes("Produciendo")) {
+          setPhase("processing_premium");
+        }
+      })
         .then((result) => {
           if (cancelled) return;
 
@@ -580,6 +606,7 @@ export default function CreativeDirector({
             videoUrlRef.current = null;
             setVideoUrl(result.premiumVideoUrl);
             setPremiumReady(true);
+            setPremiumProgressComplete(true);
           }
 
           setCheckoutMessage(result.message);
@@ -603,6 +630,7 @@ export default function CreativeDirector({
           console.error("[metaprom-runtime-trace] checkout redirect failed", {
             error: runtimeError,
           });
+          setPremiumProgressComplete(false);
           setPhase("error");
           setCheckoutMessage(runtimeError);
         })
@@ -624,6 +652,47 @@ export default function CreativeDirector({
   }, []);
 
   const autoSaveMessage = getAutoSaveMessage(autoSaveStatus);
+
+  const isAdvertisingCreation = creationMode === "advertising_image";
+  const creationBand = isAdvertisingCreation
+    ? getAdvertisingImageBand(creationStep, creationPreparing)
+    : getCommercialCreationBand(creationStep, {
+        preparing: creationPreparing,
+        persisting: commercialPersisting,
+      });
+  const creationProgress = useStudioProgress({
+    running: phase === "creating" && !creationProgressComplete,
+    floor: creationBand.floor,
+    ceiling: creationBand.ceiling,
+    complete: creationProgressComplete,
+    error: false,
+    runId: creationProgressRunId,
+  });
+
+  const finalizeBand = getFinalizeImageBand();
+  const finalizeProgress = useStudioProgress({
+    running: autoSaveStatus === "saving" && phase === "image_result",
+    floor: finalizeBand.floor,
+    ceiling: finalizeBand.ceiling,
+    complete: finalizeProgressComplete,
+    error: Boolean(error) && autoSaveStatus !== "saving",
+    runId: finalizeProgressRunId,
+  });
+
+  const premiumPhaseActive =
+    phase === "processing_payment" || phase === "processing_premium";
+  const premiumBand = getPremiumProcessingBand(
+    phase === "processing_premium" ? "processing_premium" : "processing_payment",
+    checkoutMessage,
+  );
+  const premiumProgress = useStudioProgress({
+    running: premiumPhaseActive && !premiumProgressComplete,
+    floor: premiumBand.floor,
+    ceiling: premiumBand.ceiling,
+    complete: premiumProgressComplete,
+    error: phase === "error",
+    runId: premiumProgressRunId,
+  });
 
   const persistToLibrary = useCallback(
     async (input: {
@@ -739,6 +808,10 @@ export default function CreativeDirector({
 
     setPhase("creating");
     setCreationStep("image");
+    setCreationPreparing(true);
+    setCommercialPersisting(false);
+    setCreationProgressComplete(false);
+    setCreationProgressRunId((current) => current + 1);
     setCreationMessage(
       isAdvertising
         ? "Preparando tu imagen publicitaria..."
@@ -765,12 +838,17 @@ export default function CreativeDirector({
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
 
+      // Brief client prep band so progress starts above 0 with a real stage label
+      // before the long provider wait begins.
+      await sleep(700);
+
       if (isAdvertising) {
         const result = await createAdvertisingImage({
           file,
           customerIntent,
           productMode: product.mode,
           onStep: (step, message) => {
+            setCreationPreparing(false);
             setCreationStep(step);
             setCreationMessage(message);
           },
@@ -779,6 +857,9 @@ export default function CreativeDirector({
         imagePromptRef.current = result.imagePrompt;
         videoPromptRef.current = "";
         setPremiumImage(result.premiumImage);
+        setCreationPreparing(false);
+        setCreationProgressComplete(true);
+        await sleep(650);
         // Image-only: do not persist or consume until Finalizar Imagen.
         setPhase("image_result");
         return;
@@ -790,6 +871,7 @@ export default function CreativeDirector({
         productMode: product.mode,
         destination: destinationRef.current,
         onStep: (step, message) => {
+          setCreationPreparing(false);
           setCreationStep(step);
           setCreationMessage(message);
         },
@@ -802,6 +884,8 @@ export default function CreativeDirector({
       videoUrlRef.current = result.videoUrl;
       setVideoUrl(result.videoUrl);
 
+      setCreationPreparing(false);
+      setCommercialPersisting(true);
       await persistToLibrary({
         originalFile: file,
         enhancedDataUrl: result.premiumImage,
@@ -811,10 +895,15 @@ export default function CreativeDirector({
         billAdvertisingAsset: false,
       });
 
+      setCreationProgressComplete(true);
+      await sleep(650);
       // Presence-only: do not auto-speak after generation. User opens Director if needed.
       setPhase("preview");
     } catch (createError) {
       console.error(createError);
+      setCreationPreparing(false);
+      setCommercialPersisting(false);
+      setCreationProgressComplete(false);
       setError(
         mapCreationError(
           createError instanceof Error ? createError.message : undefined,
@@ -977,6 +1066,8 @@ export default function CreativeDirector({
     if (finalizingImageRef.current) return;
     finalizingImageRef.current = true;
     setError(null);
+    setFinalizeProgressComplete(false);
+    setFinalizeProgressRunId((current) => current + 1);
 
     try {
       if (!isAuthenticated) {
@@ -994,16 +1085,20 @@ export default function CreativeDirector({
       });
 
       if (result.status === "requires-package") {
+        setFinalizeProgressComplete(false);
         setPhase("image_result");
         return;
       }
 
       if (result.status === "local-only") {
+        setFinalizeProgressComplete(false);
         setPhase("image_result");
         return;
       }
 
       if (result.status === "saved") {
+        setFinalizeProgressComplete(true);
+        await sleep(500);
         setPhase("image_ready");
         onOpenLibrary?.({
           projectId: result.projectId ?? undefined,
@@ -1012,6 +1107,7 @@ export default function CreativeDirector({
       }
     } catch (finalizeError) {
       console.error(finalizeError);
+      setFinalizeProgressComplete(false);
       setError(
         mapCreationError(
           finalizeError instanceof Error ? finalizeError.message : undefined,
@@ -1055,6 +1151,8 @@ export default function CreativeDirector({
     }
 
     setCheckoutMessage(null);
+    setPremiumProgressComplete(false);
+    setPremiumProgressRunId((current) => current + 1);
     setPhase("processing_payment");
 
     try {
@@ -1071,6 +1169,7 @@ export default function CreativeDirector({
         },
       });
     } catch (purchaseError) {
+      setPremiumProgressComplete(false);
       setPhase("error");
       throw purchaseError;
     }
@@ -1091,6 +1190,7 @@ export default function CreativeDirector({
       videoUrlRef.current = null;
       setVideoUrl(result.premiumVideoUrl);
       setPremiumReady(true);
+      setPremiumProgressComplete(true);
     } else {
       setPhase("processing_premium");
     }
@@ -1116,6 +1216,11 @@ export default function CreativeDirector({
     setPrimarySourceFile(null);
     setPremiumImage(null);
     setVideoUrl(null);
+    setCreationPreparing(false);
+    setCommercialPersisting(false);
+    setCreationProgressComplete(false);
+    setFinalizeProgressComplete(false);
+    setPremiumProgressComplete(false);
     setError(null);
     setPremiumReady(false);
     setDestination(null);
@@ -1583,7 +1688,7 @@ export default function CreativeDirector({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex min-h-[50vh] flex-col items-center justify-center space-y-8 rounded-3xl border border-neutral-200 bg-white p-10 text-center shadow-lg"
+            className="flex min-h-[50vh] flex-col items-center justify-center space-y-8 rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-lg sm:p-10"
           >
             {previewUrl && (
               <div className="relative overflow-hidden rounded-3xl">
@@ -1591,26 +1696,31 @@ export default function CreativeDirector({
                 <img
                   src={previewUrl}
                   alt="Tu foto"
-                  className="h-40 w-40 rounded-3xl object-cover"
+                  className="h-32 w-32 rounded-3xl object-cover sm:h-40 sm:w-40"
                   style={{ animation: "studio-float 2.5s ease-in-out infinite" }}
                 />
                 <div className="pointer-events-none absolute inset-0 animate-pulse rounded-3xl ring-2 ring-violet-400/40" />
               </div>
             )}
-            <div className="space-y-2">
-              <p className="text-xl font-semibold text-neutral-900">{creationMessage}</p>
-              <p className="text-sm text-neutral-500">
-                {creationMode === "advertising_image"
-                  ? creationStep === "done"
-                    ? "¡Tu imagen publicitaria está lista!"
-                    : "Creando tu imagen publicitaria..."
-                  : creationStep === "image"
-                    ? "Preparando la escena de tu comercial..."
-                    : creationStep === "video"
-                      ? "Produciendo tu comercial..."
-                      : "¡Tu comercial está listo!"}
-              </p>
-            </div>
+            <StudioProgress
+              label={
+                creationProgressComplete
+                  ? creationMode === "advertising_image"
+                    ? "Imagen lista"
+                    : "Comercial listo"
+                  : creationBand.label
+              }
+              stage={
+                creationProgressComplete
+                  ? creationMode === "advertising_image"
+                    ? "Tu imagen publicitaria está lista."
+                    : "Tu comercial está listo."
+                  : creationBand.stage || creationMessage
+              }
+              progress={creationProgress.progress}
+              status={creationProgress.status}
+              longWait={creationProgress.longWait}
+            />
           </motion.div>
         )}
 
@@ -1652,7 +1762,30 @@ export default function CreativeDirector({
               </div>
             )}
 
-            {autoSaveMessage && autoSaveStatus !== "requires-package" && (
+            {(autoSaveStatus === "saving" || finalizeProgressComplete) && (
+              <div className="mx-auto w-full max-w-md rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-left">
+                <StudioProgress
+                  compact
+                  label={
+                    finalizeProgressComplete
+                      ? "Imagen lista"
+                      : finalizeBand.label
+                  }
+                  stage={
+                    finalizeProgressComplete
+                      ? "Guardada en tu Biblioteca."
+                      : finalizeBand.stage
+                  }
+                  progress={finalizeProgress.progress}
+                  status={finalizeProgress.status}
+                  longWait={finalizeProgress.longWait}
+                />
+              </div>
+            )}
+
+            {autoSaveMessage &&
+              autoSaveStatus !== "requires-package" &&
+              autoSaveStatus !== "saving" && (
               <p className="text-center text-sm text-neutral-500">
                 {autoSaveMessage}
               </p>
@@ -1782,13 +1915,32 @@ export default function CreativeDirector({
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
+            {premiumPhaseActive && (
+              <div className="mx-auto max-w-md rounded-3xl border border-neutral-200 bg-white px-5 py-5 shadow-lg sm:px-6">
+                <StudioProgress
+                  label={
+                    premiumProgressComplete
+                      ? "Comercial listo"
+                      : premiumBand.label
+                  }
+                  stage={
+                    premiumProgressComplete
+                      ? "Tu comercial HD está listo."
+                      : premiumBand.stage
+                  }
+                  progress={premiumProgress.progress}
+                  status={premiumProgress.status}
+                  longWait={premiumProgress.longWait}
+                />
+              </div>
+            )}
             <Checkout
               purchaseId={checkoutAssetId}
               price={HD_COMMERCIAL_PRICE}
               currency="MXN"
               provider={checkoutProvider}
               previewVideoUrl={videoUrl}
-              error={checkoutMessage}
+              error={premiumPhaseActive ? null : checkoutMessage}
               onSuccess={handleCheckoutSuccess}
               onCancel={() => setPhase("preview")}
             />

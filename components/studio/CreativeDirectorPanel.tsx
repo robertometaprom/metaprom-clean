@@ -116,12 +116,18 @@ export default function CreativeDirectorPanel({
   const [activeCompanionMoment, setActiveCompanionMoment] =
     useState<CompanionMoment | null>(null);
   const [registrationRequired, setRegistrationRequired] = useState(false);
+  const [thinkingCopyIndex, setThinkingCopyIndex] = useState(0);
 
   const conversationRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const handledCompanionMomentsRef = useRef<Set<CompanionMoment>>(new Set());
   const initialMessagesRef = useRef(initialMessages);
   initialMessagesRef.current = initialMessages;
+
+  const thinkingCopy = [
+    "Director está pensando…",
+    "Director está preparando una respuesta…",
+  ][thinkingCopyIndex % 2];
 
   const resetPanel = useCallback(() => {
     handledCompanionMomentsRef.current = new Set();
@@ -210,6 +216,19 @@ export default function CreativeDirectorPanel({
     if (!open) return;
     composerRef.current?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setThinkingCopyIndex(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setThinkingCopyIndex((current) => current + 1);
+    }, 2800);
+
+    return () => window.clearInterval(timer);
+  }, [isLoading]);
 
   const buildRequestContext = useCallback(
     (history: PanelMessage[]): ProjectContext => ({
@@ -425,10 +444,22 @@ export default function CreativeDirectorPanel({
 
           {isLoading ? (
             <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-md border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-violet-400" />
-                  El Director está preparando su respuesta...
+              <div
+                className="rounded-2xl rounded-bl-md border border-violet-200/80 bg-violet-50/70 px-4 py-3 text-sm text-neutral-600"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <span className="inline-flex items-center gap-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center gap-1"
+                  >
+                    <span className="director-thinking-dot h-1.5 w-1.5 rounded-full bg-violet-500" />
+                    <span className="director-thinking-dot h-1.5 w-1.5 rounded-full bg-violet-500" />
+                    <span className="director-thinking-dot h-1.5 w-1.5 rounded-full bg-violet-500" />
+                  </span>
+                  <span>{thinkingCopy}</span>
                 </span>
               </div>
             </div>

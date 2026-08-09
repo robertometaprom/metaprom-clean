@@ -117,3 +117,29 @@ html {
 .director-thinking-dot:nth-child(3) {
   animation-delay: 0.3s;
 }
+
+@keyframes director-artwork-breath {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.015) translateY(-4px);
+  }
+}
+
+.director-artwork-breath {
+  animation: director-artwork-breath 5.5s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* Progress/work copy sits on cinematic backdrop without a modal card */
+.director-work-surface {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .director-artwork-breath {
+    animation: none;
+  }
+}

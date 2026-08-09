@@ -48,6 +48,7 @@ import CinematicReveal from "@/components/studio/CinematicReveal";
 import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import DestinationStep from "@/components/studio/DestinationStep";
 import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
+import DirectorStage from "@/components/studio/DirectorStage";
 import StudioProgress from "@/components/studio/StudioProgress";
 import {
   getAdvertisingImageBand,
@@ -1367,6 +1368,9 @@ export default function CreativeDirector({
     startPurchase: startCheckoutPurchase,
   };
 
+  const directorStageActive =
+    phase === "creating" || premiumPhaseActive;
+
   return (
     <>
       <input
@@ -1437,6 +1441,82 @@ export default function CreativeDirector({
           <StudioPlatforms />
           <StudioTrustBar />
         </div>
+      ) : phase === "creating" ? (
+        <motion.div
+          key="creating-director-stage"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="overflow-x-hidden bg-[#07070c] pb-28"
+        >
+          <DirectorStage mode="working">
+            <StudioProgress
+              tone="director"
+              label={
+                creationProgressComplete
+                  ? creationMode === "advertising_image"
+                    ? "Imagen lista"
+                    : "Comercial listo"
+                  : creationBand.label
+              }
+              stage={
+                creationProgressComplete
+                  ? creationMode === "advertising_image"
+                    ? "Tu imagen publicitaria está lista."
+                    : "Tu comercial está listo."
+                  : creationBand.stage || creationMessage
+              }
+              progress={creationProgress.progress}
+              status={creationProgress.status}
+              longWait={creationProgress.longWait}
+            />
+          </DirectorStage>
+        </motion.div>
+      ) : premiumPhaseActive ? (
+        <motion.div
+          key="premium-director-stage"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="space-y-6 overflow-x-hidden bg-[#07070c] pb-28"
+        >
+          <DirectorStage mode="working">
+            <StudioProgress
+              tone="director"
+              label={
+                premiumProgressComplete
+                  ? "Comercial listo"
+                  : premiumBand.label
+              }
+              stage={
+                premiumProgressComplete
+                  ? "Tu comercial HD está listo."
+                  : premiumBand.stage
+              }
+              progress={premiumProgress.progress}
+              status={premiumProgress.status}
+              longWait={premiumProgress.longWait}
+            />
+          </DirectorStage>
+          <div className="mx-auto max-w-2xl space-y-4 px-6">
+            <Checkout
+              purchaseId={checkoutAssetId}
+              price={HD_COMMERCIAL_PRICE}
+              currency="MXN"
+              provider={checkoutProvider}
+              previewVideoUrl={videoUrl}
+              error={null}
+              onSuccess={handleCheckoutSuccess}
+              onCancel={() => setPhase("preview")}
+            />
+            {!checkoutAssetId && showRegistrationInvite && (
+              <GoogleSignInButton
+                redirectTo={authRedirectToRef.current}
+                label="Crear cuenta gratuita para continuar"
+              />
+            )}
+          </div>
+        </motion.div>
       ) : (
         <div className="mx-auto max-w-2xl bg-[#ececec] px-6 pb-36 pt-8">
           <AnimatePresence mode="wait">
@@ -1740,48 +1820,6 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
-        {phase === "creating" && (
-          <motion.div
-            key="creating"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex min-h-[50vh] flex-col items-center justify-center space-y-8 rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-lg sm:p-10"
-          >
-            {previewUrl && (
-              <div className="relative overflow-hidden rounded-3xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewUrl}
-                  alt="Tu foto"
-                  className="h-32 w-32 rounded-3xl object-cover sm:h-40 sm:w-40"
-                  style={{ animation: "studio-float 2.5s ease-in-out infinite" }}
-                />
-                <div className="pointer-events-none absolute inset-0 animate-pulse rounded-3xl ring-2 ring-violet-400/40" />
-              </div>
-            )}
-            <StudioProgress
-              label={
-                creationProgressComplete
-                  ? creationMode === "advertising_image"
-                    ? "Imagen lista"
-                    : "Comercial listo"
-                  : creationBand.label
-              }
-              stage={
-                creationProgressComplete
-                  ? creationMode === "advertising_image"
-                    ? "Tu imagen publicitaria está lista."
-                    : "Tu comercial está listo."
-                  : creationBand.stage || creationMessage
-              }
-              progress={creationProgress.progress}
-              status={creationProgress.status}
-              longWait={creationProgress.longWait}
-            />
-          </motion.div>
-        )}
-
         {phase === "image_result" && premiumImage && (
           <motion.div
             key="image_result"
@@ -1963,42 +2001,20 @@ export default function CreativeDirector({
           </div>
         )}
 
-        {(phase === "checkout" ||
-          phase === "processing_payment" ||
-          phase === "processing_premium" ||
-          phase === "error") && (
+        {(phase === "checkout" || phase === "error") && (
           <motion.div
             key="checkout"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            {premiumPhaseActive && (
-              <div className="mx-auto max-w-md rounded-3xl border border-neutral-200 bg-white px-5 py-5 shadow-lg sm:px-6">
-                <StudioProgress
-                  label={
-                    premiumProgressComplete
-                      ? "Comercial listo"
-                      : premiumBand.label
-                  }
-                  stage={
-                    premiumProgressComplete
-                      ? "Tu comercial HD está listo."
-                      : premiumBand.stage
-                  }
-                  progress={premiumProgress.progress}
-                  status={premiumProgress.status}
-                  longWait={premiumProgress.longWait}
-                />
-              </div>
-            )}
             <Checkout
               purchaseId={checkoutAssetId}
               price={HD_COMMERCIAL_PRICE}
               currency="MXN"
               provider={checkoutProvider}
               previewVideoUrl={videoUrl}
-              error={premiumPhaseActive ? null : checkoutMessage}
+              error={checkoutMessage}
               onSuccess={handleCheckoutSuccess}
               onCancel={() => setPhase("preview")}
             />
@@ -2044,7 +2060,9 @@ export default function CreativeDirector({
         </div>
       )}
 
-      {!directorPanelOpen && phase !== "unavailable" && (
+      {!directorPanelOpen &&
+        !directorStageActive &&
+        phase !== "unavailable" && (
         <CreativeDirectorPresence onOpen={handleOpenDirectorPanel} />
       )}
 

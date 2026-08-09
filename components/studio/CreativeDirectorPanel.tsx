@@ -89,6 +89,11 @@ async function requestCreativeDirector(input: {
   return payload as CreativeDirectorResponse;
 }
 
+/**
+ * Conversation owner for Director multi-turn state.
+ * UX2 visual shell (`DirectorStage`) is prepared for a later talking-mode
+ * presentation pass — do not relocate session/message architecture here.
+ */
 export default function CreativeDirectorPanel({
   open,
   onClose,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -108,6 +109,9 @@ const CHECKOUT_PAYMENT_METHODS = [
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+/** Intent prompt: grow with content; scroll only after a generous cap. */
+const INTENT_PROMPT_MAX_HEIGHT_PX = 384;
+
 function describeRuntimeError(error: unknown): string {
   if (error instanceof Error) {
     return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
@@ -190,8 +194,11 @@ export default function CreativeDirector({
   const [directorMessages, setDirectorMessages] = useState<
     SerializablePanelMessage[]
   >([]);
+  /** Brief confirmation after Director “Usar esta propuesta” — not a session reset. */
+  const [directorProposalApplied, setDirectorProposalApplied] = useState(false);
 
   const previewUrlRef = useRef<string | null>(null);
+  const intentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const videoUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sourceFilesRef = useRef<File[]>([]);
@@ -960,6 +967,7 @@ export default function CreativeDirector({
         destination: destinationRef.current,
       };
       setError(null);
+      setDirectorProposalApplied(false);
 
       await runCreation();
     },
@@ -1230,6 +1238,7 @@ export default function CreativeDirector({
     setDirectorPanelOpen(false);
     setPendingCompanionMoment(null);
     setDirectorSessionKey(`${Date.now()}`);
+    setDirectorProposalApplied(false);
     setCheckoutMessage(null);
     setResumeToken(null);
     setShowRegistrationInvite(false);
@@ -1314,10 +1323,42 @@ export default function CreativeDirector({
   }, []);
 
   const handleUseDirectorProposal = useCallback((narrative: string) => {
-    setInput(narrative);
-    customerIntentRef.current = narrative;
+    const trimmed = narrative.trim();
+    if (!trimmed) return;
+
+    // Full string transfer — no truncation. Customer still presses Generar.
+    setInput(trimmed);
+    customerIntentRef.current = trimmed;
     setError(null);
+    setDirectorProposalApplied(true);
+
+    // Post-result dead-end fix: leave image_result / commercial preview surfaces
+    // and return to the generation feed. Preserve creationMode, destination,
+    // source files, and Director conversation (do not rotate sessionKey).
+    setPhase((current) => {
+      if (
+        current === "image_result" ||
+        current === "preview" ||
+        current === "checkout" ||
+        current === "error"
+      ) {
+        return "intent";
+      }
+      return current;
+    });
   }, []);
+
+  useLayoutEffect(() => {
+    if (phase !== "intent") return;
+    const el = intentTextareaRef.current;
+    if (!el) return;
+
+    el.style.height = "auto";
+    const next = Math.min(el.scrollHeight, INTENT_PROMPT_MAX_HEIGHT_PX);
+    el.style.height = `${next}px`;
+    el.style.overflowY =
+      el.scrollHeight > INTENT_PROMPT_MAX_HEIGHT_PX ? "auto" : "hidden";
+  }, [input, phase, directorProposalApplied]);
 
   const checkoutProvider = {
     id: paymentProviderDisplay.id,
@@ -1612,28 +1653,45 @@ export default function CreativeDirector({
             </div>
 
             <form onSubmit={handleIntentSubmit} className="space-y-5">
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-                <input
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 sm:px-5">
+                {directorProposalApplied ? (
+                  <p
+                    className="text-sm font-medium text-emerald-300/90"
+                    role="status"
+                  >
+                    ✓ Prompt preparado por tu Director Creativo
+                  </p>
+                ) : null}
+                <label htmlFor="studio-intent-prompt" className="sr-only">
+                  {creationMode === "advertising_image"
+                    ? "Descripción de tu imagen"
+                    : "Descripción de tu comercial"}
+                </label>
+                <textarea
+                  id="studio-intent-prompt"
+                  ref={intentTextareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  rows={3}
                   placeholder={
                     creationMode === "advertising_image"
                       ? "Ej: fotos de una casa, optimízalas premium para venderla..."
                       : "Describe tu comercial. Ej: hamburguesa artesanal en cámara lenta..."
                   }
-                  className="w-full bg-transparent py-4 pl-5 pr-36 text-base text-white placeholder:text-white/35 focus:outline-none"
+                  className="max-h-[min(50vh,24rem)] min-h-[5.5rem] w-full resize-none overflow-x-hidden bg-transparent text-base leading-relaxed text-white placeholder:text-white/35 focus:outline-none"
                 />
-                <div className="absolute inset-y-0 right-2 flex items-center">
-                  <button
-                    type="submit"
-                    disabled={!input.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <span aria-hidden="true">✨</span>
-                    Generar
-                  </button>
-                </div>
               </div>
+
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 px-5 py-3.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span aria-hidden="true">✨</span>
+                {premiumImage || videoUrl
+                  ? "Generar nueva versión"
+                  : "Generar"}
+              </button>
 
               {error && (
                 <div className="space-y-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

@@ -3,12 +3,15 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import DirectorStage from "@/components/studio/DirectorStage";
 import type {
@@ -51,6 +54,13 @@ export type CreativeDirectorPanelProps = {
   showRegistrationInvite?: boolean;
   /** Raise above CinematicReveal (z-100) when the panel opens on the post-preview screen. */
   stackLayer?: "default" | "elevated";
+  /**
+   * `overlay` — full-viewport DirectorStage (ACTIVE / TALKING).
+   * `embedded` — conversation surface only for REVIEW split (artwork lives in parent).
+   */
+  presentation?: "overlay" | "embedded";
+  /** Host node for embedded REVIEW conversation (same panel instance / session). */
+  embeddedHostRef?: RefObject<HTMLElement | null>;
   /** Optional secondary creation paths (e.g. manual Studio chooser on welcome). */
   secondaryActions?: ReactNode;
 };
@@ -111,9 +121,21 @@ export default function CreativeDirectorPanel({
   authRedirectTo = "/studio",
   showRegistrationInvite = false,
   stackLayer = "default",
+  presentation = "overlay",
+  embeddedHostRef,
   secondaryActions = null,
 }: CreativeDirectorPanelProps) {
   const stageZ = stackLayer === "elevated" ? "z-[120]" : "z-50";
+  const isEmbedded = presentation === "embedded";
+  const [embeddedHost, setEmbeddedHost] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!isEmbedded) {
+      setEmbeddedHost(null);
+      return;
+    }
+    setEmbeddedHost(embeddedHostRef?.current ?? null);
+  }, [embeddedHostRef, isEmbedded, open]);
   const [messages, setMessages] = useState<PanelMessage[]>(initialMessages);
   const [composerValue, setComposerValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -332,19 +354,20 @@ export default function CreativeDirectorPanel({
 
   const headerSubtitle = activeCompanionMoment
     ? getCompanionHeaderSubtitle(activeCompanionMoment)
-    : "Te ayudo a definir tu comercial antes de producirlo.";
+    : isEmbedded
+      ? "Conversemos sobre el resultado — los cambios no se generan solos."
+      : "Te ayudo a definir tu comercial antes de producirlo.";
 
   if (!open) return null;
 
-  return (
-    <div
-      className={`fixed inset-0 ${stageZ} overflow-y-auto bg-[#07070c]`}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Director Creativo"
-    >
-      <DirectorStage mode="talking">
-        <div className="flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)]">
+  const conversationBody = (
+        <div
+          className={
+            isEmbedded
+              ? "flex max-h-[min(58vh,28rem)] flex-col text-left sm:max-h-[min(64vh,32rem)] lg:max-h-[min(70vh,36rem)]"
+              : "flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)]"
+          }
+        >
           <header className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-300/90">
@@ -537,7 +560,26 @@ export default function CreativeDirectorPanel({
             ) : null}
           </div>
         </div>
-      </DirectorStage>
+  );
+
+  if (isEmbedded) {
+    if (!embeddedHost) return null;
+    return createPortal(
+      <div role="region" aria-label="Director Creativo — revisión">
+        {conversationBody}
+      </div>,
+      embeddedHost,
+    );
+  }
+
+  return (
+    <div
+      className={`fixed inset-0 ${stageZ} overflow-y-auto bg-[#07070c]`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Director Creativo"
+    >
+      <DirectorStage mode="talking">{conversationBody}</DirectorStage>
     </div>
   );
 }

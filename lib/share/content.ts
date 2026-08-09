@@ -7,11 +7,16 @@ export type ShareCommercialContent = {
   copyLinkSuccess: string;
   copyLinkError: string;
   whatsapp: string;
+  whatsappCta: string;
+  whatsappQrInstruction: string;
+  whatsappQrHint: string;
+  whatsappOpenOnDesktop: string;
   facebook: string;
   linkedin: string;
   x: string;
   email: string;
   closeMenu: string;
+  closePanel: string;
 };
 
 const CONTENT: Record<Locale, ShareCommercialContent> = {
@@ -22,11 +27,16 @@ const CONTENT: Record<Locale, ShareCommercialContent> = {
     copyLinkSuccess: "Enlace copiado",
     copyLinkError: "No se pudo copiar el enlace",
     whatsapp: "WhatsApp",
+    whatsappCta: "WHATSAPP · COMPARTIR AHORA",
+    whatsappQrInstruction: "ESCANEA Y COMPÁRTELO",
+    whatsappQrHint: "Apunta tu celular al QR",
+    whatsappOpenOnDesktop: "Abrir WhatsApp en esta PC",
     facebook: "Facebook",
     linkedin: "LinkedIn",
     x: "X",
     email: "Correo",
     closeMenu: "Cerrar menú",
+    closePanel: "Cerrar",
   },
   en: {
     shareLabel: "Share",
@@ -35,11 +45,16 @@ const CONTENT: Record<Locale, ShareCommercialContent> = {
     copyLinkSuccess: "Link copied",
     copyLinkError: "Could not copy link",
     whatsapp: "WhatsApp",
+    whatsappCta: "WHATSAPP · SHARE NOW",
+    whatsappQrInstruction: "SCAN AND SHARE IT",
+    whatsappQrHint: "Point your phone at the QR",
+    whatsappOpenOnDesktop: "Open WhatsApp on this PC",
     facebook: "Facebook",
     linkedin: "LinkedIn",
     x: "X",
     email: "Email",
     closeMenu: "Close menu",
+    closePanel: "Close",
   },
 };
 

@@ -32,6 +32,16 @@ export function buildPublicPreviewUrl(shareSlug: string): string {
   return `${getAppBaseUrl()}${buildPublicPreviewPath(shareSlug)}`;
 }
 
+/** Metaprom-owned WhatsApp QR handoff path (public preview only — no premium media). */
+export function buildWhatsAppHandoffPath(shareSlug: string): string {
+  return `/share/wa/${encodeURIComponent(shareSlug)}`;
+}
+
+/** Desktop QR destination → mobile opens WhatsApp with public preview message. */
+export function buildWhatsAppHandoffUrl(shareSlug: string): string {
+  return `${getAppBaseUrl()}${buildWhatsAppHandoffPath(shareSlug)}`;
+}
+
 export function extractShareSlugFromPublicUrl(url: string): string | null {
   try {
     const parsed = new URL(url);

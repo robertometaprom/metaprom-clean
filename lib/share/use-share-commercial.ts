@@ -21,6 +21,12 @@ export type UseShareCommercialOptions = {
 
 export type ShareCommercialAction = "native" | ShareProviderId;
 
+export type ShareGrowthSurface =
+  | "menu"
+  | "review_cta"
+  | "desktop_qr"
+  | "handoff";
+
 function canUseNativeShare(): boolean {
   return typeof navigator !== "undefined" && typeof navigator.share === "function";
 }
@@ -74,7 +80,10 @@ export function useShareCommercial({
   );
 
   const trackShare = useCallback(
-    async (action: ShareCommercialAction) => {
+    async (
+      action: ShareCommercialAction | "desktop_qr_shown" | "desktop_qr_handoff",
+      surface?: ShareGrowthSurface,
+    ) => {
       const eventType =
         action === "copy_link"
           ? "share_copy"
@@ -85,36 +94,64 @@ export function useShareCommercial({
       await trackGrowthEvent({
         shareSlug,
         eventType,
-        metadata: { channel: action },
+        metadata: {
+          channel: action,
+          ...(surface ? { surface } : {}),
+        },
       });
     },
     [shareSlug],
   );
 
-  const shareWhatsApp = useCallback(async () => {
-    await trackShare("whatsapp");
-    const url = buildWhatsAppShareUrl({
-      publicPreviewUrl,
-      locale,
-    });
-    window.open(url, "_blank", "noopener,noreferrer");
-  }, [locale, publicPreviewUrl, trackShare]);
+  const trackWhatsAppCta = useCallback(
+    async (device: "mobile" | "desktop") => {
+      await trackGrowthEvent({
+        shareSlug,
+        eventType: "share_whatsapp",
+        metadata: {
+          channel: "whatsapp",
+          surface: "review_cta",
+          device,
+        },
+      });
+    },
+    [shareSlug],
+  );
 
-  const copyLink = useCallback(async () => {
-    const copied = await copyTextToClipboard(publicPreviewUrl);
-    setCopyState(copied ? "success" : "error");
+  const trackDesktopQrShown = useCallback(async () => {
+    await trackShare("desktop_qr_shown", "desktop_qr");
+  }, [trackShare]);
 
-    if (copied) {
-      await trackShare("copy_link");
-    }
+  const shareWhatsApp = useCallback(
+    async (surface: ShareGrowthSurface = "menu") => {
+      await trackShare("whatsapp", surface);
+      const url = buildWhatsAppShareUrl({
+        publicPreviewUrl,
+        locale,
+      });
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    [locale, publicPreviewUrl, trackShare],
+  );
 
-    window.setTimeout(() => setCopyState("idle"), 2000);
-    return copied;
-  }, [publicPreviewUrl, trackShare]);
+  const copyLink = useCallback(
+    async (surface: ShareGrowthSurface = "menu") => {
+      const copied = await copyTextToClipboard(publicPreviewUrl);
+      setCopyState(copied ? "success" : "error");
+
+      if (copied) {
+        await trackShare("copy_link", surface);
+      }
+
+      window.setTimeout(() => setCopyState("idle"), 2000);
+      return copied;
+    },
+    [publicPreviewUrl, trackShare],
+  );
 
   const shareNative = useCallback(async () => {
     if (!canUseNativeShare()) {
-      await shareWhatsApp();
+      await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
 
@@ -129,14 +166,14 @@ export function useShareCommercial({
         text: message.split("\n")[0],
         url: publicPreviewUrl,
       });
-      await trackShare("native");
+      await trackShare("native", "review_cta");
       return "native" as const;
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return null;
       }
 
-      await shareWhatsApp();
+      await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
   }, [locale, publicPreviewUrl, shareWhatsApp, trackShare]);
@@ -147,7 +184,7 @@ export function useShareCommercial({
     }
 
     if (isMobileShareContext()) {
-      await shareWhatsApp();
+      await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
 
@@ -191,5 +228,7 @@ export function useShareCommercial({
     shareWhatsApp,
     copyLink,
     openProvider,
+    trackWhatsAppCta,
+    trackDesktopQrShown,
   };
 }

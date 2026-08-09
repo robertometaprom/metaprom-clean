@@ -138,8 +138,63 @@ html {
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
+/* UX4B share celebration — Review share zone only */
+@keyframes share-zone-headline-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(232, 121, 249, 0.75))
+      drop-shadow(0 0 28px rgba(168, 85, 247, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(244, 114, 182, 0.95))
+      drop-shadow(0 0 42px rgba(192, 38, 211, 0.7));
+  }
+}
+
+@keyframes share-zone-cta-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(134, 239, 172, 0.45),
+      0 0 28px rgba(37, 211, 102, 0.55),
+      0 14px 36px rgba(37, 211, 102, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(187, 247, 208, 0.7),
+      0 0 42px rgba(37, 211, 102, 0.75),
+      0 16px 44px rgba(37, 211, 102, 0.45);
+  }
+}
+
+.share-zone-headline {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  letter-spacing: -0.04em;
+  text-shadow:
+    0 0 10px rgba(232, 121, 249, 0.9),
+    0 0 28px rgba(168, 85, 247, 0.75),
+    0 0 56px rgba(192, 38, 211, 0.45),
+    0 3px 0 rgba(88, 28, 135, 0.55);
+  animation: share-zone-headline-glow 2.8s ease-in-out infinite;
+}
+
+.share-zone-support {
+  text-shadow: 0 0 18px rgba(216, 180, 254, 0.55);
+}
+
+.share-zone-cta {
+  animation: share-zone-cta-pulse 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .director-artwork-breath {
+    animation: none;
+  }
+
+  .share-zone-headline,
+  .share-zone-cta {
     animation: none;
   }
 }

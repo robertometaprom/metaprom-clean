@@ -47,6 +47,8 @@ import { getPricingPackageById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
 import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import DestinationStep from "@/components/studio/DestinationStep";
+import DirectorReviewInvite from "@/components/studio/DirectorReviewInvite";
+import DirectorResultReview from "@/components/studio/DirectorResultReview";
 import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
 import DirectorStage from "@/components/studio/DirectorStage";
 import StudioProgress from "@/components/studio/StudioProgress";
@@ -60,6 +62,9 @@ import {
 } from "@/lib/studio-progress";
 import type { ProjectContext } from "@/lib/creative-director/types";
 import type { CompanionMoment } from "@/lib/studio/creative-director-companion";
+import {
+  type DirectorReviewFocus,
+} from "@/lib/studio/director-review";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import type { StudioDestination } from "@/lib/studio-destination";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
@@ -113,6 +118,24 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /** Intent prompt: grow with content; scroll only after a generous cap. */
 const INTENT_PROMPT_MAX_HEIGHT_PX = 384;
 
+/** Local visual-only REVIEW mock slug — not a persisted production share. */
+const UX4A_REVIEW_MOCK_SHARE_SLUG = "UX4AREVIEW2";
+const UX4A_REVIEW_MOCK_VIDEO_URL = "/showcase/coffee/commercial.mp4";
+
+/**
+ * UX4A/UX4B local visual mock (?ux4aReview=1).
+ * Local-safe only: development or localhost — never a public production shortcut.
+ */
+function isUx4aReviewMockRequest(): boolean {
+  if (typeof window === "undefined") return false;
+  if (new URLSearchParams(window.location.search).get("ux4aReview") !== "1") {
+    return false;
+  }
+  if (process.env.NODE_ENV === "development") return true;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
 function describeRuntimeError(error: unknown): string {
   if (error instanceof Error) {
     return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
@@ -144,13 +167,19 @@ export default function CreativeDirector({
   onOpenLibrary,
   onLibraryUpdated,
 }: CreativeDirectorProps) {
-  const [phase, setPhase] = useState<Phase>("welcome");
+  // Lazy init so ?ux4aReview=1 survives React Strict Mode remounts and does not
+  // lose to the phase-cleanup effect that runs on the initial "welcome" paint.
+  const [phase, setPhase] = useState<Phase>(() =>
+    isUx4aReviewMockRequest() ? "preview" : "welcome",
+  );
   const [input, setInput] = useState("");
   const [matchedProduct, setMatchedProduct] = useState<CatalogProduct | null>(
     null,
   );
   /** Dual Creation intent — set by chooser now; Director may set later. */
-  const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
+  const [creationMode, setCreationMode] = useState<CreationMode | null>(() =>
+    isUx4aReviewMockRequest() ? "commercial" : null,
+  );
 
   /**
    * Job inputs. Phase 4C uses 0..1 files; prefer this over deepening
@@ -160,7 +189,9 @@ export default function CreativeDirector({
   const selectedFile = sourceFiles[0] ?? null;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [premiumImage, setPremiumImage] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(() =>
+    isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_VIDEO_URL : null,
+  );
   const [creationStep, setCreationStep] = useState<CreationStep>("image");
   const [creationMessage, setCreationMessage] = useState("");
   const [creationPreparing, setCreationPreparing] = useState(false);
@@ -177,13 +208,17 @@ export default function CreativeDirector({
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [checkoutAssetId, setCheckoutAssetId] = useState<string | null>(null);
-  const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [shareSlug, setShareSlug] = useState<string | null>(() =>
+    isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_SHARE_SLUG : null,
+  );
   const [premiumReady, setPremiumReady] = useState(false);
   const [destination, setDestination] = useState<StudioDestination | null>(
     null,
   );
   /** Fresh Studio opens in ACTIVE Director introduction; resume/payment may close. */
-  const [directorPanelOpen, setDirectorPanelOpen] = useState(true);
+  const [directorPanelOpen, setDirectorPanelOpen] = useState(
+    () => !isUx4aReviewMockRequest(),
+  );
   const [pendingCompanionMoment, setPendingCompanionMoment] =
     useState<CompanionMoment | null>(null);
   const [directorSessionKey, setDirectorSessionKey] = useState("initial");
@@ -198,10 +233,23 @@ export default function CreativeDirector({
   >([]);
   /** Brief confirmation after Director “Usar esta propuesta” — not a session reset. */
   const [directorProposalApplied, setDirectorProposalApplied] = useState(false);
+  /** CinematicReveal stage — REVIEW presentation activates at offer. */
+  const [revealStage, setRevealStage] = useState<
+    "fade" | "logo" | "playback" | "offer" | null
+  >(() => (isUx4aReviewMockRequest() ? "offer" : null));
+  const [directorReviewFocus, setDirectorReviewFocus] =
+    useState<DirectorReviewFocus>("invite");
+  /** Local visual mock for UX4A REVIEW without provider generation. */
+  const [reviewVisualMock, setReviewVisualMock] = useState(() =>
+    isUx4aReviewMockRequest(),
+  );
 
   const previewUrlRef = useRef<string | null>(null);
+  const reviewDirectorHostRef = useRef<HTMLDivElement | null>(null);
   const intentTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const videoUrlRef = useRef<string | null>(null);
+  const videoUrlRef = useRef<string | null>(
+    isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_VIDEO_URL : null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sourceFilesRef = useRef<File[]>([]);
   const matchedProductRef = useRef<CatalogProduct>(
@@ -219,7 +267,9 @@ export default function CreativeDirector({
     destination?: StudioDestination | null;
   }>({});
   const destinationRef = useRef<StudioDestination | null>(null);
-  const creationModeRef = useRef<CreationMode | null>(null);
+  const creationModeRef = useRef<CreationMode | null>(
+    isUx4aReviewMockRequest() ? "commercial" : null,
+  );
   const teaserVideoBlobStore = useRef<Blob | null>(null);
   const resumeHandledRef = useRef(false);
   const authRedirectToRef = useRef("/studio");
@@ -274,6 +324,25 @@ export default function CreativeDirector({
       readResumeTokenFromLocation() || readStoredResumeToken(),
     );
     const explicitDirector = params.get("director") === "1";
+    // UX4A visual approval — skip expensive generation; jump to Commercial REVIEW.
+    // Keep ?ux4aReview=1 in the URL so Strict Mode remounts / refreshes stay in mock.
+    const ux4aReviewMock = isUx4aReviewMockRequest();
+
+    if (ux4aReviewMock) {
+      setCreationMode("commercial");
+      creationModeRef.current = "commercial";
+      setVideoUrl(UX4A_REVIEW_MOCK_VIDEO_URL);
+      videoUrlRef.current = UX4A_REVIEW_MOCK_VIDEO_URL;
+      // Visual-only mock share slug for local REVIEW / WhatsApp QR inspection.
+      // Not a persisted production share — QR encodes a local handoff URL only.
+      setShareSlug(UX4A_REVIEW_MOCK_SHARE_SLUG);
+      setReviewVisualMock(true);
+      setRevealStage("offer");
+      setDirectorReviewFocus("invite");
+      setDirectorPanelOpen(false);
+      setPhase("preview");
+      return;
+    }
 
     if (explicitDirector) {
       // Preserve intent across existing auth redirects (e.g. panel sign-in).
@@ -1277,6 +1346,9 @@ export default function CreativeDirector({
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
     setShareSlug(null);
+    setRevealStage(null);
+    setDirectorReviewFocus("invite");
+    setReviewVisualMock(false);
     imagePromptRef.current = "";
     videoPromptRef.current = "";
     projectMetadataRef.current = {};
@@ -1344,8 +1416,41 @@ export default function CreativeDirector({
   }, []);
 
   const handleOpenDirectorPanel = useCallback(() => {
+    if (phase === "preview" && revealStage === "offer") {
+      setDirectorReviewFocus("conversation");
+      setPendingCompanionMoment("preview");
+    }
+    if (phase === "image_result") {
+      setDirectorReviewFocus("conversation");
+      setPendingCompanionMoment("preview");
+    }
+    setDirectorPanelOpen(true);
+  }, [phase, revealStage]);
+
+  const handleReviewAdjust = useCallback(() => {
+    setDirectorReviewFocus("conversation");
+    setPendingCompanionMoment("preview");
     setDirectorPanelOpen(true);
   }, []);
+
+  const handleReviewContinue = useCallback(() => {
+    setDirectorReviewFocus("continue");
+    setDirectorPanelOpen(false);
+  }, []);
+
+  const handleCloseDirectorPanel = useCallback(() => {
+    setDirectorPanelOpen(false);
+    if (phase === "preview" && revealStage === "offer") {
+      setDirectorReviewFocus((current) =>
+        current === "conversation" ? "invite" : current,
+      );
+    }
+    if (phase === "image_result") {
+      setDirectorReviewFocus((current) =>
+        current === "conversation" ? "invite" : current,
+      );
+    }
+  }, [phase, revealStage]);
 
   /**
    * After Director proposal when creationMode was unset: customer picks mode.
@@ -1415,11 +1520,33 @@ export default function CreativeDirector({
   const directorStageActive =
     phase === "creating" || premiumPhaseActive;
 
+  const commercialReviewActive =
+    phase === "preview" &&
+    creationMode !== "advertising_image" &&
+    Boolean(videoUrl) &&
+    (revealStage === "offer" || reviewVisualMock);
+
+  const advertisingReviewActive =
+    phase === "image_result" && Boolean(premiumImage);
+
+  const directorReviewActive =
+    commercialReviewActive || advertisingReviewActive;
+
   // WORKING stage owns the cinematic Director — close talking presentation.
   useEffect(() => {
     if (!directorStageActive) return;
     setDirectorPanelOpen(false);
   }, [directorStageActive]);
+
+  // Leaving result phases resets REVIEW focus; conversation messages stay in session.
+  // Do not clear the local UX4A mock while ?ux4aReview=1 remains (local inspection).
+  useEffect(() => {
+    if (phase === "preview" || phase === "image_result") return;
+    if (isUx4aReviewMockRequest()) return;
+    setRevealStage(null);
+    setDirectorReviewFocus("invite");
+    setReviewVisualMock(false);
+  }, [phase]);
 
   return (
     <>
@@ -1907,116 +2034,124 @@ export default function CreativeDirector({
         {phase === "image_result" && premiumImage && (
           <motion.div
             key="image_result"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg sm:p-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] overflow-y-auto"
           >
-            <div className="space-y-2 text-center">
-              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-                Tu imagen publicitaria
-              </h2>
-              <p className="text-sm text-neutral-500">
-                Revisa el resultado. Puedes refinar o finalizar.
-              </p>
-            </div>
-
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={premiumImage}
-              alt="Imagen publicitaria premium"
-              className="mx-auto max-h-[28rem] w-full rounded-2xl border border-neutral-200 object-contain"
+            <DirectorResultReview
+              media={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={premiumImage}
+                  alt="Imagen publicitaria premium"
+                  className="mx-auto max-h-[42vh] w-full object-contain sm:max-h-[48vh] lg:max-h-[min(62vh,36rem)]"
+                />
+              }
+              mediaFooter={
+                directorReviewFocus === "continue" ? (
+                  <div className="space-y-3">
+                    {error && (
+                      <div className="space-y-2 rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+                        <p className="whitespace-pre-line">{error}</p>
+                        {autoSaveStatus === "requires-package" && (
+                          <Link
+                            href="/planes"
+                            className="inline-flex font-semibold text-red-200 underline underline-offset-2"
+                          >
+                            Ver planes
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                    {(autoSaveStatus === "saving" ||
+                      finalizeProgressComplete) && (
+                      <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-left">
+                        <StudioProgress
+                          compact
+                          label={
+                            finalizeProgressComplete
+                              ? "Imagen lista"
+                              : finalizeBand.label
+                          }
+                          stage={
+                            finalizeProgressComplete
+                              ? "Guardada en tu Biblioteca."
+                              : finalizeBand.stage
+                          }
+                          progress={finalizeProgress.progress}
+                          status={finalizeProgress.status}
+                          longWait={finalizeProgress.longWait}
+                        />
+                      </div>
+                    )}
+                    {autoSaveMessage &&
+                      autoSaveStatus !== "requires-package" &&
+                      autoSaveStatus !== "saving" && (
+                        <p className="text-center text-sm text-white/55">
+                          {autoSaveMessage}
+                        </p>
+                      )}
+                    <button
+                      type="button"
+                      onClick={() => void handleFinalizeAdvertisingImage()}
+                      disabled={autoSaveStatus === "saving"}
+                      className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {autoSaveStatus === "saving"
+                        ? "Finalizando..."
+                        : "Finalizar Imagen"}
+                    </button>
+                    {/* Explicit regeneration only — never from Director advice alone. */}
+                    <button
+                      type="button"
+                      onClick={() => void runCreation()}
+                      disabled={autoSaveStatus === "saving"}
+                      className="w-full rounded-2xl border border-white/20 bg-white/5 py-3 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Generar de nuevo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadImage}
+                      className="w-full text-sm text-white/45 transition hover:text-white/70"
+                    >
+                      Descargar vista previa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhase("intent")}
+                      className="w-full text-sm text-white/35 transition hover:text-white/55"
+                    >
+                      Cambiar descripción
+                    </button>
+                    {showRegistrationInvite && (
+                      <div className="space-y-3 text-center">
+                        <p className="text-sm text-white/65">
+                          Inicia sesión para guardar tu imagen en Biblioteca.
+                        </p>
+                        <GoogleSignInButton
+                          redirectTo={authRedirectToRef.current}
+                          label="Crear cuenta gratuita para continuar"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-center text-xs text-white/40">
+                    Revisa el resultado con el Director antes de finalizar.
+                  </p>
+                )
+              }
+              director={
+                <DirectorReviewInvite
+                  focus={directorReviewFocus}
+                  onAdjust={handleReviewAdjust}
+                  onContinue={handleReviewContinue}
+                  conversationHostRef={reviewDirectorHostRef}
+                />
+              }
             />
-
-            {error && (
-              <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                <p className="whitespace-pre-line">{error}</p>
-                {autoSaveStatus === "requires-package" && (
-                  <Link
-                    href="/planes"
-                    className="inline-flex font-semibold text-red-700 underline underline-offset-2"
-                  >
-                    Ver planes
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {(autoSaveStatus === "saving" || finalizeProgressComplete) && (
-              <div className="mx-auto w-full max-w-md rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-left">
-                <StudioProgress
-                  compact
-                  label={
-                    finalizeProgressComplete
-                      ? "Imagen lista"
-                      : finalizeBand.label
-                  }
-                  stage={
-                    finalizeProgressComplete
-                      ? "Guardada en tu Biblioteca."
-                      : finalizeBand.stage
-                  }
-                  progress={finalizeProgress.progress}
-                  status={finalizeProgress.status}
-                  longWait={finalizeProgress.longWait}
-                />
-              </div>
-            )}
-
-            {autoSaveMessage &&
-              autoSaveStatus !== "requires-package" &&
-              autoSaveStatus !== "saving" && (
-              <p className="text-center text-sm text-neutral-500">
-                {autoSaveMessage}
-              </p>
-            )}
-
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => void handleFinalizeAdvertisingImage()}
-                disabled={autoSaveStatus === "saving"}
-                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {autoSaveStatus === "saving"
-                  ? "Finalizando..."
-                  : "Finalizar Imagen"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void runCreation()}
-                disabled={autoSaveStatus === "saving"}
-                className="rounded-2xl border border-neutral-200 bg-neutral-50 py-3 text-sm font-semibold text-neutral-800 transition hover:border-violet-200 hover:bg-violet-50/40 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Generar de nuevo
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadImage}
-                className="rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
-              >
-                Descargar vista previa
-              </button>
-              <button
-                type="button"
-                onClick={() => setPhase("intent")}
-                className="rounded-2xl py-3 text-sm font-semibold text-neutral-400 transition hover:text-neutral-700"
-              >
-                Cambiar descripción
-              </button>
-            </div>
-
-            {showRegistrationInvite && (
-              <div className="mx-auto max-w-md space-y-3 text-center">
-                <p className="text-sm text-neutral-600">
-                  Inicia sesión para guardar tu imagen en Biblioteca.
-                </p>
-                <GoogleSignInButton
-                  redirectTo={authRedirectToRef.current}
-                  label="Crear cuenta gratuita para continuar"
-                />
-              </div>
-            )}
           </motion.div>
         )}
 
@@ -2069,13 +2204,30 @@ export default function CreativeDirector({
               priceMxn={HD_COMMERCIAL_PRICE}
               autoSaveMessage={autoSaveMessage}
               onAutoSaveClick={handleOpenLibrary}
-              initialStage="fade"
+              initialStage={reviewVisualMock ? "offer" : "fade"}
               onUnlock={handleUnlock}
               onCreateNew={resetFlow}
               onDownloadImage={premiumImage ? handleDownloadImage : undefined}
               hasPremiumImage={Boolean(premiumImage)}
               shareSlug={shareSlug}
-              publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
+              publicPreviewUrl={
+                shareSlug ? buildPublicPreviewUrl(shareSlug) : null
+              }
+              reviewMode
+              reviewShowPurchase={directorReviewFocus === "continue"}
+              onStageChange={setRevealStage}
+              reviewDirector={
+                <DirectorReviewInvite
+                  focus={directorReviewFocus}
+                  onAdjust={handleReviewAdjust}
+                  onContinue={handleReviewContinue}
+                  conversationHostRef={reviewDirectorHostRef}
+                  shareSlug={shareSlug}
+                  publicPreviewUrl={
+                    shareSlug ? buildPublicPreviewUrl(shareSlug) : null
+                  }
+                />
+              }
             />
           )}
 
@@ -2146,14 +2298,26 @@ export default function CreativeDirector({
 
       {!directorPanelOpen &&
         !directorStageActive &&
+        !directorReviewActive &&
+        !(phase === "preview" && Boolean(videoUrl)) &&
         phase !== "unavailable" && (
         <CreativeDirectorPresence onOpen={handleOpenDirectorPanel} />
       )}
 
       <CreativeDirectorPanel
-        open={directorPanelOpen && !directorStageActive}
-        stackLayer={phase === "preview" ? "elevated" : "default"}
-        onClose={() => setDirectorPanelOpen(false)}
+        open={
+          directorReviewActive
+            ? directorReviewFocus === "conversation"
+            : directorPanelOpen && !directorStageActive
+        }
+        presentation={directorReviewActive ? "embedded" : "overlay"}
+        embeddedHostRef={reviewDirectorHostRef}
+        stackLayer={
+          phase === "preview" || phase === "image_result"
+            ? "elevated"
+            : "default"
+        }
+        onClose={handleCloseDirectorPanel}
         projectContext={creativeDirectorProjectContext}
         onUseProposal={handleUseDirectorProposal}
         pendingCompanionMoment={pendingCompanionMoment}

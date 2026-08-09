@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   DIRECTOR_ARTWORK_SRC,
+  DIRECTOR_TALKING_TOP_INSET_CLASS,
   PRODUCTION_BACKDROP_SRC,
   type DirectorStageMode,
 } from "@/lib/studio/director-stage";
@@ -37,10 +38,15 @@ export default function DirectorStage({
   className = "",
 }: DirectorStageProps) {
   const [artworkReady, setArtworkReady] = useState(false);
+  const isTalking = mode === "talking";
   const shellClass =
     layout === "viewport"
       ? "relative w-screen max-w-none left-1/2 -translate-x-1/2"
       : "relative w-full";
+  // Talking: clear StudioShell header + breath as one unit. Working: frozen.
+  const stageRowClass = isTalking
+    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-2 px-4 pb-6 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10`
+    : "relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10";
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +83,7 @@ export default function DirectorStage({
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,4,10,0.42)_0%,rgba(4,4,10,0.18)_45%,rgba(4,4,10,0.34)_100%),linear-gradient(180deg,rgba(4,4,10,0.28)_0%,rgba(4,4,10,0.12)_48%,rgba(4,4,10,0.45)_100%)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10">
+      <div className={stageRowClass}>
         {/* Director — large, composited, no image frame */}
         <div className="relative flex w-full max-w-[22rem] shrink-0 justify-center sm:max-w-[26rem] lg:max-w-[32rem] lg:basis-[48%] lg:justify-end">
           <div className="relative director-artwork-breath w-full">
@@ -147,7 +153,7 @@ function DirectorArtworkFallback() {
   );
 }
 
-/** Optional talking-mode placeholder for later CreativeDirectorPanel integration. */
+/** Slot helper for talking-mode children inside DirectorStage. */
 export function DirectorTalkingSlot({ children }: { children: ReactNode }) {
   return <div className="min-h-[12rem]">{children}</div>;
 }

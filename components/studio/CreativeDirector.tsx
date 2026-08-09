@@ -182,7 +182,8 @@ export default function CreativeDirector({
   const [destination, setDestination] = useState<StudioDestination | null>(
     null,
   );
-  const [directorPanelOpen, setDirectorPanelOpen] = useState(false);
+  /** Fresh Studio opens in ACTIVE Director introduction; resume/payment may close. */
+  const [directorPanelOpen, setDirectorPanelOpen] = useState(true);
   const [pendingCompanionMoment, setPendingCompanionMoment] =
     useState<CompanionMoment | null>(null);
   const [directorSessionKey, setDirectorSessionKey] = useState("initial");
@@ -223,6 +224,8 @@ export default function CreativeDirector({
   const resumeHandledRef = useRef(false);
   const authRedirectToRef = useRef("/studio");
   const finalizingImageRef = useRef(false);
+  /** Fresh Studio / resetFlow intro — not phase changes or intentional close. */
+  const directorIntroHandledRef = useRef(false);
 
   useEffect(() => {
     creationModeRef.current = creationMode;
@@ -258,21 +261,37 @@ export default function CreativeDirector({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Explicit Director-open intent from /planes (and similar CTAs): /studio?director=1
+  // Fresh Studio starts with Director open. Resume/payment are not introductions.
+  // /planes Hablar con Director (/studio?director=1) lands in the same cinematic experience.
+  // Runs once on mount — not on phase changes / rerenders. Intentional close is respected.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("director") !== "1") return;
+    if (directorIntroHandledRef.current) return;
+    directorIntroHandledRef.current = true;
 
-    // Preserve intent across existing auth redirects (e.g. panel sign-in).
-    authRedirectToRef.current = "/studio?director=1";
-    setDirectorPanelOpen(true);
-    params.delete("director");
-    const next = params.toString();
-    window.history.replaceState(
-      {},
-      "",
-      next ? `/studio?${next}` : "/studio",
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const hasResume = Boolean(
+      readResumeTokenFromLocation() || readStoredResumeToken(),
     );
+    const explicitDirector = params.get("director") === "1";
+
+    if (explicitDirector) {
+      // Preserve intent across existing auth redirects (e.g. panel sign-in).
+      authRedirectToRef.current = "/studio?director=1";
+      params.delete("director");
+      const next = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        next ? `/studio?${next}` : "/studio",
+      );
+      setDirectorPanelOpen(true);
+      return;
+    }
+
+    if (hasResume || payment === "success" || payment === "cancelled") {
+      setDirectorPanelOpen(false);
+    }
   }, []);
 
   const buildDraftPayload = useCallback(
@@ -815,6 +834,7 @@ export default function CreativeDirector({
     }
 
     setPhase("creating");
+    setDirectorPanelOpen(false);
     setCreationStep("image");
     setCreationPreparing(true);
     setCommercialPersisting(false);
@@ -988,6 +1008,8 @@ export default function CreativeDirector({
       setCreationMode(mode);
       creationModeRef.current = mode;
       setError(null);
+      // Manual path enters the normal workflow — Director returns to compact presence.
+      setDirectorPanelOpen(false);
       // Manual choice may happen before or after photo; only route when ready.
       if (sourceFilesRef.current.length === 0) {
         setPhase("upload");
@@ -1236,7 +1258,8 @@ export default function CreativeDirector({
     destinationRef.current = null;
     setCreationMode(null);
     creationModeRef.current = null;
-    setDirectorPanelOpen(false);
+    // New creation session — Director introduces Studio again.
+    setDirectorPanelOpen(true);
     setPendingCompanionMoment(null);
     setDirectorSessionKey(`${Date.now()}`);
     setDirectorProposalApplied(false);
@@ -1249,6 +1272,7 @@ export default function CreativeDirector({
     authRedirectToRef.current = "/studio";
     resumeHandledRef.current = false;
     finalizingImageRef.current = false;
+    directorIntroHandledRef.current = true;
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
@@ -1371,6 +1395,12 @@ export default function CreativeDirector({
   const directorStageActive =
     phase === "creating" || premiumPhaseActive;
 
+  // WORKING stage owns the cinematic Director — close talking presentation.
+  useEffect(() => {
+    if (!directorStageActive) return;
+    setDirectorPanelOpen(false);
+  }, [directorStageActive]);
+
   return (
     <>
       <input
@@ -1381,9 +1411,10 @@ export default function CreativeDirector({
         className="sr-only"
       />
 
-      {phase === "welcome" && <StudioHero />}
+      {/* Director cinematic intro is the fresh Studio host; hero/chooser are fallback when closed. */}
+      {phase === "welcome" && !directorPanelOpen && <StudioHero />}
 
-      {phase === "welcome" ? (
+      {phase === "welcome" && !directorPanelOpen ? (
         <div className="relative bg-[#ececec] pb-8">
           <StudioAtmosphere>
             <div className="relative mx-auto max-w-2xl px-2 pb-4 pt-2 sm:px-4">
@@ -1441,7 +1472,7 @@ export default function CreativeDirector({
           <StudioPlatforms />
           <StudioTrustBar />
         </div>
-      ) : phase === "creating" ? (
+      ) : phase === "welcome" ? null : phase === "creating" ? (
         <motion.div
           key="creating-director-stage"
           initial={{ opacity: 0 }}
@@ -2067,7 +2098,7 @@ export default function CreativeDirector({
       )}
 
       <CreativeDirectorPanel
-        open={directorPanelOpen}
+        open={directorPanelOpen && !directorStageActive}
         stackLayer={phase === "preview" ? "elevated" : "default"}
         onClose={() => setDirectorPanelOpen(false)}
         projectContext={creativeDirectorProjectContext}
@@ -2079,6 +2110,29 @@ export default function CreativeDirector({
         onMessagesChange={setDirectorMessages}
         authRedirectTo={authRedirectToRef.current}
         showRegistrationInvite={showRegistrationInvite}
+        secondaryActions={
+          phase === "welcome" ? (
+            <div className="space-y-2">
+              <p className="text-xs text-white/45">O empieza manualmente</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => selectCreationMode("commercial")}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/85 transition hover:border-white/30 hover:bg-white/10"
+                >
+                  Un Comercial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectCreationMode("advertising_image")}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/85 transition hover:border-white/30 hover:bg-white/10"
+                >
+                  Una Imagen Publicitaria
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
       />
     </>
   );

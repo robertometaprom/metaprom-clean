@@ -303,6 +303,7 @@ export default function CreativeDirectorPanel({
     (narrative: string) => {
       const trimmed = narrative.trim();
       if (!trimmed) return;
+      // Handoff only — parent transitions Studio phase to intent; never navigate.
       onUseProposal(trimmed);
       onClose();
     },
@@ -600,7 +601,11 @@ function ProposalCard({
         <div className="flex flex-col gap-2 border-t border-white/10 px-4 py-4 sm:flex-row">
           <button
             type="button"
-            onClick={onUse}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onUse();
+            }}
             className="flex-1 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-white/90"
           >
             Usar esta propuesta

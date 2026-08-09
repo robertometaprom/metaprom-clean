@@ -1347,6 +1347,20 @@ export default function CreativeDirector({
     setDirectorPanelOpen(true);
   }, []);
 
+  /**
+   * After Director proposal when creationMode was unset: customer picks mode.
+   * Preserves full proposal + conversation; does not auto-generate.
+   */
+  const selectCreationModeAfterProposal = useCallback((mode: CreationMode) => {
+    setCreationMode(mode);
+    creationModeRef.current = mode;
+    setError(null);
+    // Proposal already in input / customerIntentRef. Stay on /studio.
+    // Advertising → image intent feed. Commercial → commercial intent feed
+    // (same known-mode Director handoff; destination remains optional).
+    setPhase("intent");
+  }, []);
+
   const handleUseDirectorProposal = useCallback((narrative: string) => {
     const trimmed = narrative.trim();
     if (!trimmed) return;
@@ -1357,19 +1371,25 @@ export default function CreativeDirector({
     setError(null);
     setDirectorProposalApplied(true);
 
-    // Post-result dead-end fix: leave image_result / commercial preview surfaces
-    // and return to the generation feed. Preserve creationMode, destination,
-    // source files, and Director conversation (do not rotate sessionKey).
+    // Do NOT default unset creationMode to commercial. Creative Director is the
+    // primary Studio entry; mode may be unknown until the customer confirms.
+    const knownMode = creationModeRef.current;
+
+    // Stay on /studio. Closing the talking panel must NOT fall through to
+    // StudioHero. Do not rotate sessionKey or clear directorMessages.
     setPhase((current) => {
       if (
-        current === "image_result" ||
-        current === "preview" ||
-        current === "checkout" ||
-        current === "error"
+        current === "creating" ||
+        current === "processing_payment" ||
+        current === "processing_premium"
       ) {
-        return "intent";
+        return current;
       }
-      return current;
+      // Unknown mode: smallest existing-style choice before intent feed.
+      if (!knownMode) {
+        return "creation_mode";
+      }
+      return "intent";
     });
   }, []);
 
@@ -1663,7 +1683,7 @@ export default function CreativeDirector({
             transition={{ duration: 0.5, ease: EASE }}
             className="space-y-8 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
           >
-            {previewUrl && (
+            {previewUrl && !directorProposalApplied && (
               <div className="flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -1675,39 +1695,72 @@ export default function CreativeDirector({
             )}
             <div className="space-y-3 text-center">
               <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-                ¿Qué quieres crear?
+                {directorProposalApplied
+                  ? "¿Qué quieres crear con esta propuesta?"
+                  : "¿Qué quieres crear?"}
               </h2>
-              <p className="text-sm text-neutral-500 sm:text-base">
-                Elige el tipo de pieza. Puedes cambiar después.
-              </p>
+              {!directorProposalApplied && (
+                <p className="text-sm text-neutral-500 sm:text-base">
+                  Elige el tipo de pieza. Puedes cambiar después.
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => selectCreationMode("commercial")}
-                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
-              >
-                Un Comercial
-              </button>
-              <button
-                type="button"
-                onClick={() => selectCreationMode("advertising_image")}
-                className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-4 text-base font-semibold text-neutral-900 transition hover:border-violet-200 hover:bg-violet-50/50"
-              >
-                Una Imagen Publicitaria
-              </button>
+              {directorProposalApplied ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      selectCreationModeAfterProposal("advertising_image")
+                    }
+                    className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-4 text-base font-semibold text-neutral-900 transition hover:border-violet-200 hover:bg-violet-50/50"
+                  >
+                    Una Imagen Publicitaria
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      selectCreationModeAfterProposal("commercial")
+                    }
+                    className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+                  >
+                    Un Comercial
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => selectCreationMode("commercial")}
+                    className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+                  >
+                    Un Comercial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selectCreationMode("advertising_image")}
+                    className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-4 text-base font-semibold text-neutral-900 transition hover:border-violet-200 hover:bg-violet-50/50"
+                  >
+                    Una Imagen Publicitaria
+                  </button>
+                </>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setCreationMode(null);
-                creationModeRef.current = null;
-                setPhase(sourceFilesRef.current.length > 0 ? "upload" : "welcome");
-              }}
-              className="w-full rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
-            >
-              Volver
-            </button>
+            {!directorProposalApplied && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCreationMode(null);
+                  creationModeRef.current = null;
+                  setPhase(
+                    sourceFilesRef.current.length > 0 ? "upload" : "welcome",
+                  );
+                }}
+                className="w-full rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+              >
+                Volver
+              </button>
+            )}
           </motion.div>
         )}
 

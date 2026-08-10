@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import { getEnabledShareProviders, type ShareProviderId } from "@/lib/share/providers";
 import { useShareCommercial } from "@/lib/share/use-share-commercial";
 
@@ -9,6 +10,7 @@ type ShareCommercialMenuProps = {
   publicPreviewUrl: string;
   shareSlug: string;
   locale?: Locale;
+  assetType?: PublicPreviewKind;
   open: boolean;
   onClose: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
@@ -40,6 +42,7 @@ export default function ShareCommercialMenu({
   publicPreviewUrl,
   shareSlug,
   locale,
+  assetType = "commercial",
   open,
   onClose,
   anchorRef,
@@ -48,6 +51,7 @@ export default function ShareCommercialMenu({
     publicPreviewUrl,
     shareSlug,
     locale,
+    assetType,
   });
   const menuRef = useRef<HTMLDivElement>(null);
   const providers = getEnabledShareProviders();

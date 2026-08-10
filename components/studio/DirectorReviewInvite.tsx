@@ -2,6 +2,7 @@
 
 import type { Ref } from "react";
 import { ShareCommercialActions } from "@/components/share";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import {
   DIRECTOR_REVIEW_ADJUST_LABEL,
   DIRECTOR_REVIEW_CONTINUE_LABEL,
@@ -19,9 +20,11 @@ type DirectorReviewInviteProps = {
   onContinue: () => void;
   /** Stable host for the shared CreativeDirectorPanel portal. */
   conversationHostRef: Ref<HTMLDivElement>;
-  /** Existing Commercial Preview share target — invite tertiary action only. */
+  /** Existing public preview share target — invite tertiary action only. */
   publicPreviewUrl?: string | null;
   shareSlug?: string | null;
+  /** Defaults to commercial. Advertising Image REVIEW passes advertising_image. */
+  shareAssetType?: PublicPreviewKind;
 };
 
 /**
@@ -35,6 +38,7 @@ export default function DirectorReviewInvite({
   conversationHostRef,
   publicPreviewUrl = null,
   shareSlug = null,
+  shareAssetType = "commercial",
 }: DirectorReviewInviteProps) {
   const host = (
     <div
@@ -69,6 +73,7 @@ export default function DirectorReviewInvite({
             shareSlug={shareSlug}
             variant="whatsapp"
             label={DIRECTOR_REVIEW_SHARE_LABEL}
+            assetType={shareAssetType}
           />
         </div>
       </div>

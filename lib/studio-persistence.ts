@@ -37,7 +37,7 @@ export type PersistStudioCreationResult = {
   asset: BibliotecaAsset;
 };
 
-function resolveShareSlugForTeaser(
+function resolveShareSlug(
   existingShareSlug?: string | null,
 ): string {
   if (existingShareSlug) {
@@ -229,11 +229,23 @@ export async function persistStudioCreation(
 
     const existingAsset = await fetchBibliotecaAssetById(assetId);
     existingShareSlug = existingAsset?.share_slug;
-    const shareSlug = resolveShareSlugForTeaser(existingShareSlug);
+    const shareSlug = resolveShareSlug(existingShareSlug);
 
     teaserUpdates = {
       ...teaserUpdates,
       teaser_video_path: teaserUpload.path,
+      share_slug: shareSlug,
+      visibility: "public",
+    };
+  } else {
+    // Advertising Image (no teaser): assign share_slug so REVIEW can use
+    // the existing /p/[share_slug] public preview + WhatsApp handoff.
+    const existingAsset = await fetchBibliotecaAssetById(assetId);
+    existingShareSlug = existingAsset?.share_slug;
+    const shareSlug = resolveShareSlug(existingShareSlug);
+
+    teaserUpdates = {
+      ...teaserUpdates,
       share_slug: shareSlug,
       visibility: "public",
     };

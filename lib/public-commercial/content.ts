@@ -2,10 +2,13 @@ import type { Locale } from "@/lib/i18n";
 
 export type PublicCommercialContent = {
   transformationLine: string;
+  imageTransformationLine: string;
   ctaLabel: string;
   ctaHref: string;
   originalPhotoLabel: string;
   commercialLabel: string;
+  imageLabel: string;
+  imageUnavailableLabel: string;
   footerBrand: string;
   footerTagline: string;
   loadingLabel: string;
@@ -31,10 +34,13 @@ export type PublicCommercialContent = {
 const CONTENT: Record<Locale, PublicCommercialContent> = {
   es: {
     transformationLine: "Comercial creado a partir de una sola foto.",
+    imageTransformationLine: "Imagen publicitaria creada con Metaprom.",
     ctaLabel: "Crea el tuyo gratis",
     ctaHref: "/studio",
     originalPhotoLabel: "Foto original",
     commercialLabel: "Comercial",
+    imageLabel: "Imagen publicitaria",
+    imageUnavailableLabel: "No se pudo cargar la imagen.",
     footerBrand: "Metaprom",
     footerTagline: "Marketing premium para tu negocio.",
     loadingLabel: "Cargando comercial…",
@@ -58,10 +64,13 @@ const CONTENT: Record<Locale, PublicCommercialContent> = {
   },
   en: {
     transformationLine: "Commercial created from a single photo.",
+    imageTransformationLine: "Advertising image created with Metaprom.",
     ctaLabel: "Create yours free",
     ctaHref: "/studio",
     originalPhotoLabel: "Original photo",
     commercialLabel: "Commercial",
+    imageLabel: "Advertising image",
+    imageUnavailableLabel: "Unable to load this image.",
     footerBrand: "Metaprom",
     footerTagline: "Premium marketing for your business.",
     loadingLabel: "Loading commercial…",

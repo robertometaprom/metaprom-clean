@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { trackGrowthEvent } from "@/lib/growth/events";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import { getClientLocale, getShareCommercialContent } from "@/lib/share/content";
 import {
   getShareProvider,
@@ -17,6 +18,8 @@ export type UseShareCommercialOptions = {
   publicPreviewUrl: string;
   shareSlug: string;
   locale?: Locale;
+  /** Defaults to commercial — Advertising Image REVIEW passes advertising_image. */
+  assetType?: PublicPreviewKind;
 };
 
 export type ShareCommercialAction = "native" | ShareProviderId;
@@ -69,6 +72,7 @@ export function useShareCommercial({
   publicPreviewUrl,
   shareSlug,
   locale: localeProp,
+  assetType = "commercial",
 }: UseShareCommercialOptions) {
   const locale = localeProp ?? getClientLocale();
   const content = useMemo(
@@ -77,6 +81,11 @@ export function useShareCommercial({
   );
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">(
     "idle",
+  );
+
+  const assetTypeMetadata = useMemo(
+    () => ({ asset_type: assetType }),
+    [assetType],
   );
 
   const trackShare = useCallback(
@@ -96,11 +105,12 @@ export function useShareCommercial({
         eventType,
         metadata: {
           channel: action,
+          ...assetTypeMetadata,
           ...(surface ? { surface } : {}),
         },
       });
     },
-    [shareSlug],
+    [assetTypeMetadata, shareSlug],
   );
 
   const trackWhatsAppCta = useCallback(
@@ -112,10 +122,11 @@ export function useShareCommercial({
           channel: "whatsapp",
           surface: "review_cta",
           device,
+          ...assetTypeMetadata,
         },
       });
     },
-    [shareSlug],
+    [assetTypeMetadata, shareSlug],
   );
 
   const trackDesktopQrShown = useCallback(async () => {
@@ -128,10 +139,11 @@ export function useShareCommercial({
       const url = buildWhatsAppShareUrl({
         publicPreviewUrl,
         locale,
+        assetType,
       });
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    [locale, publicPreviewUrl, trackShare],
+    [assetType, locale, publicPreviewUrl, trackShare],
   );
 
   const copyLink = useCallback(
@@ -158,6 +170,7 @@ export function useShareCommercial({
     const message = buildWhatsAppShareMessage({
       publicPreviewUrl,
       locale,
+      assetType,
     });
 
     try {
@@ -176,7 +189,7 @@ export function useShareCommercial({
       await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
-  }, [locale, publicPreviewUrl, shareWhatsApp, trackShare]);
+  }, [assetType, locale, publicPreviewUrl, shareWhatsApp, trackShare]);
 
   const sharePrimary = useCallback(async () => {
     if (isMobileShareContext() && canUseNativeShare()) {
@@ -207,14 +220,18 @@ export function useShareCommercial({
         await trackGrowthEvent({
           shareSlug,
           eventType: provider.growthEventType,
-          metadata: { channel: providerId },
+          metadata: { channel: providerId, ...assetTypeMetadata },
         });
       }
 
-      const url = provider.buildActionUrl({ publicPreviewUrl, locale });
+      const url = provider.buildActionUrl({
+        publicPreviewUrl,
+        locale,
+        assetType,
+      });
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    [copyLink, locale, publicPreviewUrl, shareSlug],
+    [assetType, assetTypeMetadata, copyLink, locale, publicPreviewUrl, shareSlug],
   );
 
   return {

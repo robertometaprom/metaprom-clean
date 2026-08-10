@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import ShareCommercialMenu from "@/components/share/ShareCommercialMenu";
 import ShareWhatsAppQrPanel from "@/components/share/ShareWhatsAppQrPanel";
 import { useShareCommercial } from "@/lib/share/use-share-commercial";
@@ -14,6 +15,8 @@ export type ShareCommercialActionsProps = {
   /** Overrides the default share label (e.g. REVIEW tertiary action). */
   label?: string;
   className?: string;
+  /** Defaults to commercial. Advertising Image REVIEW passes advertising_image. */
+  assetType?: PublicPreviewKind;
 };
 
 function ShareIcon({ className }: { className?: string }) {
@@ -50,6 +53,7 @@ export default function ShareCommercialActions({
   variant = "compact",
   label,
   className = "",
+  assetType = "commercial",
 }: ShareCommercialActionsProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,6 +67,7 @@ export default function ShareCommercialActions({
     publicPreviewUrl,
     shareSlug,
     locale,
+    assetType,
   });
 
   const isWhatsAppVariant = variant === "whatsapp";
@@ -131,6 +136,7 @@ export default function ShareCommercialActions({
           publicPreviewUrl={publicPreviewUrl}
           shareSlug={shareSlug}
           locale={locale}
+          assetType={assetType}
           open={qrOpen}
           onClose={() => setQrOpen(false)}
         />
@@ -140,6 +146,7 @@ export default function ShareCommercialActions({
             publicPreviewUrl={publicPreviewUrl}
             shareSlug={shareSlug}
             locale={locale}
+            assetType={assetType}
             open={menuOpen}
             onClose={() => setMenuOpen(false)}
             anchorRef={buttonRef}

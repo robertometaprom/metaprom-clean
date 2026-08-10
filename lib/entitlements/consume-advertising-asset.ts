@@ -68,7 +68,7 @@ async function assertFinishedOwnedAsset(
 
 /**
  * Safe, idempotent consume for the billable event:
- * first persistence of a new finished Imagen Publicitaria (asset with image_path).
+ * successful provider-backed Advertising Image generation (finished asset).
  *
  * - service_role RPC only
  * - one debit per asset_id (unique ledger index)

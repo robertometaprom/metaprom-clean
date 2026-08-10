@@ -372,9 +372,9 @@ export async function claimStudioDraftServer(
       customerIntent: draft.customer_intent || "",
       mode: (draft.product_mode || "custom") as Mode,
       projectMetadata,
-      // Drafts with a teaser are Commercial production; image-only drafts are
-      // standalone Advertising Image deliverables and hard-gated on persist.
-      billAdvertisingAsset: !teaserVideoBlob,
+      // Commercial unchanged (never bills advertising). Advertising Image credit
+      // is consumed at successful generation persist, not at claim/Finalizar.
+      billAdvertisingAsset: false,
     });
 
     await deleteDraftObjects([

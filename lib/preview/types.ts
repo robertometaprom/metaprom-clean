@@ -1,13 +1,19 @@
 export type PreviewVisibility = "public" | "unlisted" | "private";
 
+/** Public landing media kind — commercial teaser vs advertising image. */
+export type PublicPreviewKind = "commercial" | "advertising_image";
+
 export type PublicPreview = {
   shareSlug: string;
+  kind: PublicPreviewKind;
   publicUrl: string;
   title: string;
   description: string;
   posterUrl: string | null;
+  /** Commercial-only. Always null for advertising_image (never expose source photo). */
   originalPhotoUrl: string | null;
-  streamPath: string;
+  /** Commercial teaser stream path. Null for advertising_image. */
+  streamPath: string | null;
   industry: string | null;
   visibility: PreviewVisibility;
   createdAt: string;
@@ -25,7 +31,8 @@ export type PublicPreviewPageResult =
  */
 export type ResolvedPublicCommercial = {
   shareSlug: string;
-  teaserVideoPath: string;
+  kind: PublicPreviewKind;
+  teaserVideoPath: string | null;
   posterImagePath: string | null;
   originalPhotoPath: string | null;
   customerIntent: string | null;

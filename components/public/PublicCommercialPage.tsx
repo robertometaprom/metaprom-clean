@@ -14,44 +14,84 @@ export default function PublicCommercialPage({
   preview,
   labels,
 }: PublicCommercialPageProps) {
+  const isAdvertisingImage = preview.kind === "advertising_image";
+
   return (
     <main className="min-h-screen bg-black text-[#F5F5F0]">
       <div className="mx-auto w-full max-w-lg px-4 py-6 md:max-w-2xl md:py-10">
-        <section aria-label={labels.commercialLabel}>
-          <PublicCommercialVideo
-            streamPath={preview.streamPath}
-            posterUrl={preview.posterUrl}
-            title={preview.title}
-            labels={{
-              loadingLabel: labels.loadingLabel,
-              streamErrorLabel: labels.streamErrorLabel,
-              unmuteLabel: labels.unmuteLabel,
-              playLabel: labels.playLabel,
-            }}
-          />
+        <section
+          aria-label={
+            isAdvertisingImage ? labels.imageLabel : labels.commercialLabel
+          }
+        >
+          {isAdvertisingImage ? (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+              {preview.posterUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- public signed preview
+                <img
+                  src={preview.posterUrl}
+                  alt={preview.title}
+                  className="mx-auto max-h-[70vh] w-full object-contain"
+                />
+              ) : (
+                <div className="flex aspect-square items-center justify-center px-6 text-center text-sm text-white/55">
+                  {labels.imageUnavailableLabel}
+                </div>
+              )}
+            </div>
+          ) : (
+            <PublicCommercialVideo
+              streamPath={preview.streamPath ?? ""}
+              posterUrl={preview.posterUrl}
+              title={preview.title}
+              labels={{
+                loadingLabel: labels.loadingLabel,
+                streamErrorLabel: labels.streamErrorLabel,
+                unmuteLabel: labels.unmuteLabel,
+                playLabel: labels.playLabel,
+              }}
+            />
+          )}
         </section>
 
         <section className="mt-6 space-y-5 text-center md:mt-8">
           <p className="text-sm leading-relaxed text-white/70 md:text-base">
-            {labels.transformationLine}
+            {isAdvertisingImage
+              ? labels.imageTransformationLine
+              : labels.transformationLine}
           </p>
           <PublicCommercialCta label={labels.ctaLabel} href={labels.ctaHref} />
         </section>
 
-        <div className="mt-10 space-y-8">
-          <PublicOriginalPhoto
-            src={preview.originalPhotoUrl}
-            alt={labels.originalPhotoLabel}
-            label={labels.originalPhotoLabel}
-          />
+        {!isAdvertisingImage ? (
+          <div className="mt-10 space-y-8">
+            <PublicOriginalPhoto
+              src={preview.originalPhotoUrl}
+              alt={labels.originalPhotoLabel}
+              label={labels.originalPhotoLabel}
+            />
 
-          <section aria-label={labels.commercialLabel}>
-            <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
-              {labels.commercialLabel}
-            </h2>
-            <p className="text-sm leading-relaxed text-white/60">{preview.title}</p>
-          </section>
-        </div>
+            <section aria-label={labels.commercialLabel}>
+              <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
+                {labels.commercialLabel}
+              </h2>
+              <p className="text-sm leading-relaxed text-white/60">
+                {preview.title}
+              </p>
+            </section>
+          </div>
+        ) : (
+          <div className="mt-10">
+            <section aria-label={labels.imageLabel}>
+              <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
+                {labels.imageLabel}
+              </h2>
+              <p className="text-sm leading-relaxed text-white/60">
+                {preview.title}
+              </p>
+            </section>
+          </div>
+        )}
 
         <PublicCommercialFooter
           brand={labels.footerBrand}

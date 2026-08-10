@@ -4,6 +4,10 @@ import {
   logDestinationGenerationDebug,
   parseStudioDestinationFromFormData,
 } from "@/lib/destination-generation";
+import {
+  assertAdvertisingImageGenerationAllowed,
+  isAdvertisingImagePurpose,
+} from "@/lib/entitlements/assert-advertising-generation";
 import { generateEnhancedImage } from "@/lib/enhancement";
 import type { Mode } from "@/lib/prompts";
 
@@ -21,6 +25,21 @@ const supportedImageTypes = new Set([
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
+
+    // Advertising Image only — Commercial enhancement path stays unchanged.
+    if (isAdvertisingImagePurpose(formData)) {
+      const gate = await assertAdvertisingImageGenerationAllowed();
+      if (!gate.ok) {
+        return Response.json(
+          {
+            error: gate.message,
+            code: gate.code,
+            planesHref: gate.planesHref,
+          },
+          { status: gate.status },
+        );
+      }
+    }
 
     const uploadedFile = formData.get("image") as File;
 

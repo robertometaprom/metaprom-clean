@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { generate } from "lean-qr";
 import type { Locale } from "@/lib/i18n";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import { buildWhatsAppHandoffUrl } from "@/lib/preview/share-url";
 import { useShareCommercial } from "@/lib/share/use-share-commercial";
 
@@ -10,6 +11,7 @@ type ShareWhatsAppQrPanelProps = {
   publicPreviewUrl: string;
   shareSlug: string;
   locale?: Locale;
+  assetType?: PublicPreviewKind;
   open: boolean;
   onClose: () => void;
 };
@@ -41,6 +43,7 @@ export default function ShareWhatsAppQrPanel({
   publicPreviewUrl,
   shareSlug,
   locale,
+  assetType = "commercial",
   open,
   onClose,
 }: ShareWhatsAppQrPanelProps) {
@@ -55,6 +58,7 @@ export default function ShareWhatsAppQrPanel({
     publicPreviewUrl,
     shareSlug,
     locale,
+    assetType,
   });
 
   const trackedOpenRef = useRef(false);

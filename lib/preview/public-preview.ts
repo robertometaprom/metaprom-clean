@@ -9,6 +9,7 @@ import {
   isPubliclyAccessiblePreview,
   type PreviewVisibility,
   type PublicPreview,
+  type PublicPreviewKind,
   type PublicPreviewPageResult,
   type ResolvedPublicCommercial,
 } from "@/lib/preview/types";
@@ -20,7 +21,7 @@ const PUBLIC_PREVIEW_SIGNED_URL_TTL_SECONDS = 60 * 15;
 
 type ResolvedCommercialRow = {
   share_slug: string;
-  teaser_video_path: string;
+  teaser_video_path: string | null;
   image_path: string | null;
   original_path: string | null;
   ai_instructions: string | null;
@@ -30,11 +31,29 @@ type ResolvedCommercialRow = {
   updated_at: string;
 };
 
+function resolvePreviewKind(row: ResolvedCommercialRow): PublicPreviewKind | null {
+  if (row.teaser_video_path) {
+    return "commercial";
+  }
+
+  if (row.image_path) {
+    return "advertising_image";
+  }
+
+  return null;
+}
+
 function mapResolvedCommercialRow(
   row: ResolvedCommercialRow,
-): ResolvedPublicCommercial {
+): ResolvedPublicCommercial | null {
+  const kind = resolvePreviewKind(row);
+  if (!kind) {
+    return null;
+  }
+
   return {
     shareSlug: row.share_slug,
+    kind,
     teaserVideoPath: row.teaser_video_path,
     posterImagePath: row.image_path,
     originalPhotoPath: row.original_path,
@@ -76,6 +95,7 @@ export async function resolvePublicCommercial(
 
 /**
  * Look up a preview asset by its immutable public slug.
+ * Supports Commercial (teaser) and Advertising Image (enhanced image only).
  */
 export async function getPreviewBySlug(
   slug: string,
@@ -90,7 +110,6 @@ export async function getPreviewBySlug(
     .from("assets")
     .select(RESOLVED_COMMERCIAL_SELECT)
     .eq("share_slug", slug)
-    .not("teaser_video_path", "is", null)
     .maybeSingle();
 
   if (error) {
@@ -122,21 +141,30 @@ export async function getPublicPreview(
     shareSlug: resolved.shareSlug,
     customerIntent: resolved.customerIntent,
     locale: options?.locale,
+    kind: resolved.kind,
   });
+
+  const isAdvertisingImage = resolved.kind === "advertising_image";
 
   const [posterUrl, originalPhotoUrl] = await Promise.all([
     createSignedPreviewAssetUrl(resolved.posterImagePath),
-    createSignedPreviewAssetUrl(resolved.originalPhotoPath),
+    // Advertising Image public share must never expose the protected source photo.
+    isAdvertisingImage
+      ? Promise.resolve(null)
+      : createSignedPreviewAssetUrl(resolved.originalPhotoPath),
   ]);
 
   return {
     shareSlug: resolved.shareSlug,
+    kind: resolved.kind,
     publicUrl: metadata.publicUrl,
     title: metadata.title,
     description: metadata.description,
     posterUrl,
     originalPhotoUrl,
-    streamPath: buildPublicPreviewStreamPath(resolved.shareSlug),
+    streamPath: isAdvertisingImage
+      ? null
+      : buildPublicPreviewStreamPath(resolved.shareSlug),
     industry: resolved.industry,
     visibility: resolved.visibility,
     createdAt: resolved.createdAt,
@@ -177,13 +205,18 @@ export async function resolvePublicPreviewPage(
 
 /**
  * Create a short-lived signed URL for controlled teaser streaming.
+ * Advertising Image previews have no teaser stream.
  */
 export async function createPublicPreviewStreamUrl(
   slug: string,
 ): Promise<string | null> {
   const resolved = await resolvePublicCommercial(slug);
 
-  if (!resolved || !isPubliclyAccessiblePreview(resolved.visibility)) {
+  if (
+    !resolved ||
+    !resolved.teaserVideoPath ||
+    !isPubliclyAccessiblePreview(resolved.visibility)
+  ) {
     return null;
   }
 

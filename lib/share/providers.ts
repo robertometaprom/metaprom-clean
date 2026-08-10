@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import { buildWhatsAppShareUrl } from "@/lib/share/whatsapp-message";
 
 export type ShareProviderId =
@@ -12,6 +13,7 @@ export type ShareProviderId =
 export type ShareProviderContext = {
   publicPreviewUrl: string;
   locale: Locale;
+  assetType?: PublicPreviewKind;
 };
 
 export type ShareProvider = {
@@ -30,6 +32,7 @@ export const SHARE_PROVIDERS: ShareProvider[] = [
       buildWhatsAppShareUrl({
         publicPreviewUrl: context.publicPreviewUrl,
         locale: context.locale,
+        assetType: context.assetType,
       }),
   },
   {

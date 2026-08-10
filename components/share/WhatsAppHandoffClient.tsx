@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { trackGrowthEvent } from "@/lib/growth/events";
 import { getClientLocale } from "@/lib/share/content";
+import type { PublicPreviewKind } from "@/lib/preview/types";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 import { buildWhatsAppShareUrl } from "@/lib/share/whatsapp-message";
 
 type WhatsAppHandoffClientProps = {
   shareSlug: string;
+};
+
+type PublicPreviewApiResponse = {
+  kind?: PublicPreviewKind;
 };
 
 /**
@@ -31,12 +36,29 @@ export default function WhatsAppHandoffClient({
       const locale = getClientLocale();
       const publicPreviewUrl = buildPublicPreviewUrl(shareSlug);
 
+      let assetType: PublicPreviewKind = "commercial";
+      try {
+        const response = await fetch(`/api/public/${encodeURIComponent(shareSlug)}`);
+        if (response.ok) {
+          const preview = (await response.json()) as PublicPreviewApiResponse;
+          if (
+            preview.kind === "advertising_image" ||
+            preview.kind === "commercial"
+          ) {
+            assetType = preview.kind;
+          }
+        }
+      } catch {
+        // Fall back to commercial copy if preview lookup fails.
+      }
+
       await trackGrowthEvent({
         shareSlug,
         eventType: "share",
         metadata: {
           channel: "desktop_qr_handoff",
           surface: "handoff",
+          asset_type: assetType,
         },
       });
 
@@ -45,6 +67,7 @@ export default function WhatsAppHandoffClient({
       const whatsappUrl = buildWhatsAppShareUrl({
         publicPreviewUrl,
         locale,
+        assetType,
       });
 
       window.location.replace(whatsappUrl);

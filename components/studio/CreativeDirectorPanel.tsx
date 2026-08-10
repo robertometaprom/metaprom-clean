@@ -513,12 +513,19 @@ export default function CreativeDirectorPanel({
             {shouldShowRegistrationInvite ? (
               <div className="space-y-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4">
                 <p className="text-sm leading-relaxed text-white/85">
-                  Crea tu cuenta gratuita para guardar este comercial y continuar
-                  donde te quedaste.
+                  {pendingCompanionMoment === "generate_invitation" ||
+                  activeCompanionMoment === "generate_invitation"
+                    ? "Guarda tu proyecto y crea tu primera Imagen Publicitaria gratis."
+                    : "Crea tu cuenta gratuita para guardar este comercial y continuar donde te quedaste."}
                 </p>
                 <GoogleSignInButton
                   redirectTo={authRedirectTo}
-                  label="Crear cuenta gratuita"
+                  label={
+                    pendingCompanionMoment === "generate_invitation" ||
+                    activeCompanionMoment === "generate_invitation"
+                      ? "Crear cuenta gratis"
+                      : "Crear cuenta gratuita"
+                  }
                 />
               </div>
             ) : null}

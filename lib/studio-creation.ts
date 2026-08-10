@@ -5,9 +5,13 @@ import {
 } from "@/lib/biblioteca";
 import { mapCreationError } from "@/lib/creation-errors";
 import {
+  ADVERTISING_IMAGE_AUTH_REQUIRED_CODE,
+  ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE,
   ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE,
   ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
   ADVERTISING_IMAGE_PLANES_HREF,
+  ADVERTISING_IMAGE_PURPOSE_FIELD,
+  ADVERTISING_IMAGE_PURPOSE_VALUE,
   shouldBillAdvertisingAsset,
 } from "@/lib/entitlements/advertising-image-gate";
 import type { PaymentMethod } from "@/lib/payments/types";
@@ -65,6 +69,23 @@ export type CreateAdvertisingImageResult = {
   premiumImage: string;
   imagePrompt: string;
 };
+
+export class AdvertisingImageAuthRequiredError extends Error {
+  readonly code = ADVERTISING_IMAGE_AUTH_REQUIRED_CODE;
+  constructor(message: string = ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE) {
+    super(message);
+    this.name = "AdvertisingImageAuthRequiredError";
+  }
+}
+
+export class AdvertisingImagePackageRequiredError extends Error {
+  readonly code = ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE;
+  readonly planesHref = ADVERTISING_IMAGE_PLANES_HREF;
+  constructor(message: string = ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE) {
+    super(message);
+    this.name = "AdvertisingImagePackageRequiredError";
+  }
+}
 
 export type PersistCreationInput = {
   originalFile: File;
@@ -357,13 +378,34 @@ export async function createAdvertisingImage(
   formData.append("image", input.file);
   formData.append("mode", "custom");
   formData.append("aiInstructions", imagePrompt);
+  // Marks this request for server-side Advertising Image auth/credit gate.
+  formData.append(ADVERTISING_IMAGE_PURPOSE_FIELD, ADVERTISING_IMAGE_PURPOSE_VALUE);
 
   const response = await fetch("/api/enhancement", {
     method: "POST",
     body: formData,
   });
 
-  const data = await parseJsonResponse(response);
+  const data = (await parseJsonResponse(response)) as {
+    image?: string;
+    error?: string;
+    code?: string;
+  };
+
+  if (response.status === 401 || data.code === ADVERTISING_IMAGE_AUTH_REQUIRED_CODE) {
+    throw new AdvertisingImageAuthRequiredError(
+      data.error || ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE,
+    );
+  }
+
+  if (
+    response.status === 402 ||
+    data.code === ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE
+  ) {
+    throw new AdvertisingImagePackageRequiredError(
+      data.error || ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+    );
+  }
 
   if (!response.ok || !data.image) {
     throw new Error(
@@ -455,16 +497,14 @@ export async function persistCreationToLibrary(
     const userId = user.id;
     logPersistCreationStage("user id", { userId });
 
-    const isFirstFinishedPersist = !input.existingAssetId;
-    const billAdvertising =
-      isFirstFinishedPersist &&
-      shouldBillAdvertisingAsset({
-        billAdvertisingAsset: input.billAdvertisingAsset,
-        teaserVideoBlob: input.teaserVideoBlob,
-      });
+    // Successful Advertising Image generation persist bills once per asset_id.
+    // Finalizar / Commercial pass false and must not debit.
+    const billAdvertising = shouldBillAdvertisingAsset({
+      billAdvertisingAsset: input.billAdvertisingAsset,
+      teaserVideoBlob: input.teaserVideoBlob,
+    });
 
-    // Hard gate BEFORE first finished persist for standalone Advertising Images.
-    // Generation / AI retries never reach here; refinements skip via existingAssetId.
+    // Hard gate BEFORE billable finished persist for standalone Advertising Images.
     if (billAdvertising) {
       logPersistCreationStage("entitlement preflight:start");
       const balancesResponse = await fetch("/api/entitlements/balances");
@@ -511,9 +551,9 @@ export async function persistCreationToLibrary(
       assetId: result.assetId,
     });
 
-    // Billable event: first persistence of a new finished Imagen Publicitaria.
+    // Billable event: successful provider-backed Advertising Image generation.
+    // Idempotent per asset_id (retries / Finalizar must not double-charge).
     // Commercial production sets billAdvertisingAsset: false and must not debit.
-    // Same-project refinements pass existingAssetId and must not consume again.
     if (billAdvertising && result.assetId) {
       logPersistCreationStage("entitlement consume:start", {
         assetId: result.assetId,

@@ -1,5 +1,6 @@
 export type {
   PublicPreview,
+  PublicPreviewKind,
   PublicPreviewPageResult,
   PreviewVisibility,
 } from "./types";

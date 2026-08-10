@@ -216,99 +216,81 @@ export async function persistStudioCreationServer(input: {
       extension: "mp4",
     });
 
-    let shareSlug = generateShareSlug();
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      assetUpdates = {
-        ...assetUpdates,
-        teaser_video_path: teaserUpload.path,
-        share_slug: shareSlug,
-        visibility: "public",
+    assetUpdates = {
+      ...assetUpdates,
+      teaser_video_path: teaserUpload.path,
+    };
+  }
+
+  // Commercial (teaser) and Advertising Image (enhanced-only) both get a
+  // public share_slug via existing assets.share_slug / visibility columns.
+  let shareSlug = generateShareSlug();
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const updatesWithShare = {
+      ...assetUpdates,
+      share_slug: shareSlug,
+      visibility: "public",
+    };
+
+    const updateResult = await supabase
+      .from("assets")
+      .update(updatesWithShare)
+      .eq("id", assetId)
+      .select("id, share_slug, visibility, payment_status")
+      .single();
+
+    if (!updateResult.error) {
+      await finalizeAdvertisingAssetConsume({
+        userId: input.userId,
+        assetId,
+        projectId,
+        billAdvertisingAsset: billAdvertising,
+      });
+
+      return {
+        projectId,
+        assetId,
+        asset: updateResult.data as PersistStudioCreationResult["asset"],
       };
-
-      const updateResult = await supabase
-        .from("assets")
-        .update(assetUpdates)
-        .eq("id", assetId)
-        .select("id, share_slug, visibility, payment_status")
-        .single();
-
-      if (!updateResult.error) {
-        await finalizeAdvertisingAssetConsume({
-          userId: input.userId,
-          assetId,
-          projectId,
-          billAdvertisingAsset: billAdvertising,
-        });
-
-        return {
-          projectId,
-          assetId,
-          asset: updateResult.data as PersistStudioCreationResult["asset"],
-        };
-      }
-
-      if (
-        !isShareSlugUniqueViolation(updateResult.error) &&
-        !isSchemaColumnMissingError(updateResult.error)
-      ) {
-        throw updateResult.error;
-      }
-
-      if (isSchemaColumnMissingError(updateResult.error)) {
-        const { share_slug: _shareSlug, visibility: _visibility, ...rest } =
-          assetUpdates;
-        const fallbackUpdate = await supabase
-          .from("assets")
-          .update(rest)
-          .eq("id", assetId)
-          .select("id, payment_status")
-          .single();
-
-        if (fallbackUpdate.error || !fallbackUpdate.data) {
-          throw fallbackUpdate.error ?? new Error("Failed to update asset.");
-        }
-
-        await finalizeAdvertisingAssetConsume({
-          userId: input.userId,
-          assetId,
-          projectId,
-          billAdvertisingAsset: billAdvertising,
-        });
-
-        return {
-          projectId,
-          assetId,
-          asset: fallbackUpdate.data as PersistStudioCreationResult["asset"],
-        };
-      }
-
-      shareSlug = generateShareSlug();
     }
 
-    throw new Error("Unable to assign a unique share slug.");
+    if (
+      !isShareSlugUniqueViolation(updateResult.error) &&
+      !isSchemaColumnMissingError(updateResult.error)
+    ) {
+      throw updateResult.error;
+    }
+
+    if (isSchemaColumnMissingError(updateResult.error)) {
+      const { share_slug: _shareSlug, visibility: _visibility, ...rest } =
+        updatesWithShare;
+      const fallbackUpdate = await supabase
+        .from("assets")
+        .update(rest)
+        .eq("id", assetId)
+        .select("id, payment_status")
+        .single();
+
+      if (fallbackUpdate.error || !fallbackUpdate.data) {
+        throw fallbackUpdate.error ?? new Error("Failed to update asset.");
+      }
+
+      await finalizeAdvertisingAssetConsume({
+        userId: input.userId,
+        assetId,
+        projectId,
+        billAdvertisingAsset: billAdvertising,
+      });
+
+      return {
+        projectId,
+        assetId,
+        asset: fallbackUpdate.data as PersistStudioCreationResult["asset"],
+      };
+    }
+
+    shareSlug = generateShareSlug();
   }
 
-  const updateResult = await supabase
-    .from("assets")
-    .update(assetUpdates)
-    .eq("id", assetId)
-    .select("id, share_slug, visibility, payment_status")
-    .single();
-
-  if (updateResult.error || !updateResult.data) {
-    throw updateResult.error ?? new Error("Failed to update asset.");
-  }
-
-  await finalizeAdvertisingAssetConsume({
-    userId: input.userId,
-    assetId,
-    projectId,
-    billAdvertisingAsset: billAdvertising,
-  });
-
-  return {
-    projectId,
-    assetId,
-    asset: updateResult.data as PersistStudioCreationResult["asset"],
-  };
+  throw new Error("Unable to assign a unique share slug.");
 }

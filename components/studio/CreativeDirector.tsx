@@ -30,6 +30,8 @@ import {
 } from "@/lib/product-catalog";
 import { recordMarketIntelligence } from "@/lib/market-intelligence";
 import {
+  AdvertisingImageAuthRequiredError,
+  AdvertisingImagePackageRequiredError,
   completeCheckoutAfterRedirect,
   createAdvertisingImage,
   createCommercialAssets,
@@ -41,6 +43,16 @@ import {
   type CreationMode,
   type CreationStep,
 } from "@/lib/studio-creation";
+import {
+  ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE,
+  ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+  ADVERTISING_IMAGE_WELCOME_AVAILABLE_MESSAGE,
+} from "@/lib/entitlements/advertising-image-gate";
+import {
+  clearAdvertisingGenerateContinuity,
+  readAdvertisingGenerateContinuity,
+  saveAdvertisingGenerateContinuity,
+} from "@/lib/studio/advertising-generate-continuity";
 import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
 import type { PaymentMethod } from "@/lib/payments/types";
 import { getPricingPackageById } from "@/lib/pricing";
@@ -228,6 +240,12 @@ export default function CreativeDirector({
     null,
   );
   const [showRegistrationInvite, setShowRegistrationInvite] = useState(false);
+  const [advertisingCreditsRemaining, setAdvertisingCreditsRemaining] =
+    useState<number | null>(null);
+  const [advertisingCreditMessage, setAdvertisingCreditMessage] = useState<
+    string | null
+  >(null);
+  const welcomeGrantAttemptedRef = useRef(false);
   const [directorMessages, setDirectorMessages] = useState<
     SerializablePanelMessage[]
   >([]);
@@ -274,6 +292,7 @@ export default function CreativeDirector({
   const resumeHandledRef = useRef(false);
   const authRedirectToRef = useRef("/studio");
   const finalizingImageRef = useRef(false);
+  const generatingImageRef = useRef(false);
   /** Fresh Studio / resetFlow intro — not phase changes or intentional close. */
   const directorIntroHandledRef = useRef(false);
 
@@ -295,21 +314,113 @@ export default function CreativeDirector({
     onWelcomeChange?.(phase === "welcome");
   }, [phase, onWelcomeChange]);
 
+  const restoreAdvertisingGenerateContinuity = useCallback(() => {
+    const snapshot = readAdvertisingGenerateContinuity();
+    if (!snapshot) return false;
+
+    setCreationMode(snapshot.creationMode);
+    creationModeRef.current = snapshot.creationMode;
+    customerIntentRef.current = snapshot.customerIntent;
+    setInput(snapshot.input || snapshot.customerIntent);
+    imagePromptRef.current = snapshot.imagePrompt;
+    if (snapshot.workflowId) {
+      const productId = snapshot.workflowId as keyof typeof PRODUCT_CATALOG;
+      const product =
+        PRODUCT_CATALOG[productId] ?? PRODUCT_CATALOG["premium-image"];
+      setMatchedProduct(product);
+      matchedProductRef.current = product;
+      projectMetadataRef.current = {
+        ...projectMetadataRef.current,
+        workflow_id: snapshot.workflowId,
+        industry: snapshot.industry,
+      };
+    }
+    if (snapshot.directorMessages?.length) {
+      setDirectorMessages(
+        snapshot.directorMessages.map((message, index) => ({
+          id: `continuity-${index}`,
+          role: message.role,
+          content: message.content,
+        })),
+      );
+    }
+    if (snapshot.directorSessionKey) {
+      setDirectorSessionKey(snapshot.directorSessionKey);
+    }
+    setShowRegistrationInvite(false);
+    setPendingCompanionMoment(null);
+    setPhase("intent");
+    setDirectorPanelOpen(false);
+    return true;
+  }, []);
+
+  const ensureWelcomeAdvertisingImage = useCallback(async () => {
+    if (welcomeGrantAttemptedRef.current) return;
+    welcomeGrantAttemptedRef.current = true;
+
+    try {
+      const response = await fetch(
+        "/api/entitlements/welcome-advertising-image",
+        { method: "POST" },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        advertisingAssetsRemaining?: number;
+        message?: string | null;
+        granted?: boolean;
+        reason?: string;
+      } | null;
+
+      if (!response.ok) {
+        welcomeGrantAttemptedRef.current = false;
+        return;
+      }
+
+      if (typeof payload?.advertisingAssetsRemaining === "number") {
+        setAdvertisingCreditsRemaining(payload.advertisingAssetsRemaining);
+      }
+
+      if (payload?.message) {
+        setAdvertisingCreditMessage(payload.message);
+      } else if (
+        payload?.granted ||
+        (payload?.advertisingAssetsRemaining ?? 0) > 0
+      ) {
+        setAdvertisingCreditMessage(ADVERTISING_IMAGE_WELCOME_AVAILABLE_MESSAGE);
+      }
+    } catch {
+      welcomeGrantAttemptedRef.current = false;
+    }
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAuthenticated(Boolean(user));
+      const authenticated = Boolean(user);
+      setIsAuthenticated(authenticated);
+      if (authenticated) {
+        void ensureWelcomeAdvertisingImage();
+        restoreAdvertisingGenerateContinuity();
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(Boolean(session?.user));
+      const authenticated = Boolean(session?.user);
+      setIsAuthenticated(authenticated);
+      if (authenticated) {
+        void ensureWelcomeAdvertisingImage();
+        restoreAdvertisingGenerateContinuity();
+      } else {
+        welcomeGrantAttemptedRef.current = false;
+        setAdvertisingCreditsRemaining(null);
+        setAdvertisingCreditMessage(null);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [ensureWelcomeAdvertisingImage, restoreAdvertisingGenerateContinuity]);
 
   // Fresh Studio starts with Director open. Resume/payment are not introductions.
   // /planes Hablar con Director (/studio?director=1) lands in the same cinematic experience.
@@ -404,20 +515,30 @@ export default function CreativeDirector({
     async (
       pendingAction?: StudioDraftPendingAction | null,
       overrides?: {
-        enhancedDataUrl?: string;
+        enhancedDataUrl?: string | null;
         teaserVideoBlob?: Blob | null;
+        /** Generate-gate: allow original + conversation without enhanced image. */
+        allowWithoutEnhanced?: boolean;
       },
     ) => {
       const file = sourceFilesRef.current[0] ?? null;
-      const enhancedDataUrl = overrides?.enhancedDataUrl ?? premiumImage;
-      if (!file || !enhancedDataUrl) {
+      const enhancedDataUrl =
+        overrides?.enhancedDataUrl === undefined
+          ? premiumImage
+          : overrides.enhancedDataUrl;
+      const allowWithoutEnhanced = overrides?.allowWithoutEnhanced === true;
+
+      if (!file) {
+        throw new Error("No hay suficiente información para guardar tu borrador.");
+      }
+      if (!enhancedDataUrl && !allowWithoutEnhanced) {
         throw new Error("No hay suficiente información para guardar tu borrador.");
       }
 
       const result = await saveStudioDraft({
         payload: buildDraftPayload(pendingAction),
         originalFile: file,
-        enhancedDataUrl,
+        enhancedDataUrl: enhancedDataUrl || null,
         teaserVideoBlob:
           overrides?.teaserVideoBlob ?? teaserVideoBlobStore.current,
       });
@@ -428,6 +549,43 @@ export default function CreativeDirector({
     },
     [buildDraftPayload, premiumImage],
   );
+
+  const requestAuthenticationForGenerate = useCallback(async () => {
+    setDraftRecoveryError(null);
+    setError(null);
+
+    saveAdvertisingGenerateContinuity({
+      creationMode: "advertising_image",
+      customerIntent: customerIntentRef.current.trim(),
+      imagePrompt: imagePromptRef.current,
+      input: input.trim() || customerIntentRef.current.trim(),
+      directorMessages: directorMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      directorSessionKey,
+      workflowId:
+        projectMetadataRef.current.workflow_id ??
+        matchedProductRef.current.id,
+      industry: projectMetadataRef.current.industry ?? null,
+    });
+
+    try {
+      await persistAnonymousDraft("save", {
+        enhancedDataUrl: null,
+        allowWithoutEnhanced: true,
+      });
+    } catch (saveError) {
+      // Continuity snapshot still covers prompt/Director; photo draft is best-effort.
+      console.error(saveError);
+    }
+
+    setPendingCompanionMoment("generate_invitation");
+    setShowRegistrationInvite(true);
+    setDirectorPanelOpen(true);
+    setPhase("intent");
+    setError(ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE);
+  }, [directorMessages, directorSessionKey, input, persistAnonymousDraft]);
 
   const restoreStudioFromDraft = useCallback(
     async (draftResponse: StudioDraftResponse) => {
@@ -511,18 +669,31 @@ export default function CreativeDirector({
       }
       setDirectorSessionKey(`restored-${draft.resume_token}`);
 
-      const isAdvertisingDraft = !urls.teaserUrl && Boolean(urls.enhancedUrl);
+      const isAdvertisingDraft =
+        !urls.teaserUrl &&
+        (Boolean(urls.enhancedUrl) ||
+          draft.workflow_id === "premium-image" ||
+          Boolean(readAdvertisingGenerateContinuity()));
+      if (isAdvertisingDraft && !urls.teaserUrl) {
+        setCreationMode("advertising_image");
+        creationModeRef.current = "advertising_image";
+      }
+
+      const awaitingGenerate =
+        isAdvertisingDraft && !urls.enhancedUrl;
       const restoredPhase =
         draft.phase === "checkout" ||
         draft.phase === "processing_payment" ||
         draft.phase === "processing_premium" ||
         draft.phase === "ready"
           ? draft.phase
-          : isAdvertisingDraft
-            ? "image_result"
-            : "preview";
+          : awaitingGenerate
+            ? "intent"
+            : isAdvertisingDraft
+              ? "image_result"
+              : "preview";
       setPhase(restoredPhase);
-      setAutoSaveStatus("local-only");
+      setAutoSaveStatus(awaitingGenerate ? "idle" : "local-only");
       setDirectorPanelOpen(false);
       setShowRegistrationInvite(false);
     },
@@ -618,9 +789,26 @@ export default function CreativeDirector({
         } = await supabase.auth.getUser();
 
         if (user) {
+          // Generate-gate resume: restore prepared Advertising Image intent
+          // without claiming/persisting (no image yet — wait for explicit Generar).
+          const continuity = readAdvertisingGenerateContinuity();
+          const draftResponse = await fetchStudioDraft(token).catch(() => null);
+          if (cancelled) return;
+
+          if (continuity || (draftResponse && !draftResponse.urls.enhancedUrl)) {
+            if (draftResponse) {
+              await restoreStudioFromDraft(draftResponse);
+            }
+            restoreAdvertisingGenerateContinuity();
+            void ensureWelcomeAdvertisingImage();
+            resumeHandledRef.current = true;
+            return;
+          }
+
           const claimResult = await claimStudioDraft(token);
           if (cancelled) return;
           await applyClaimResult(claimResult);
+          void ensureWelcomeAdvertisingImage();
           resumeHandledRef.current = true;
           return;
         }
@@ -648,7 +836,12 @@ export default function CreativeDirector({
     return () => {
       cancelled = true;
     };
-  }, [applyClaimResult, restoreStudioFromDraft]);
+  }, [
+    applyClaimResult,
+    ensureWelcomeAdvertisingImage,
+    restoreAdvertisingGenerateContinuity,
+    restoreStudioFromDraft,
+  ]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -871,6 +1064,8 @@ export default function CreativeDirector({
     const isAdvertising =
       creationModeRef.current === "advertising_image";
 
+    // Advertising: successful generation persist consumes 1 credit.
+    // Commercial: teaser persist never bills advertising_asset.
     void persistToLibrary({
       originalFile: file,
       enhancedDataUrl: premiumImage,
@@ -884,6 +1079,8 @@ export default function CreativeDirector({
   }, [autoSaveStatus, isAuthenticated, persistToLibrary, premiumImage]);
 
   const runCreation = useCallback(async () => {
+    if (generatingImageRef.current) return;
+
     const file = sourceFilesRef.current[0] ?? null;
     if (!file) {
       setError("Sube una foto para continuar.");
@@ -897,6 +1094,14 @@ export default function CreativeDirector({
       return;
     }
     const isAdvertising = mode === "advertising_image";
+
+    // Advertising Image: auth gate BEFORE provider. Director/prompt stay free.
+    if (isAdvertising && !isAuthenticated) {
+      await requestAuthenticationForGenerate();
+      return;
+    }
+
+    generatingImageRef.current = true;
 
     if (!isAdvertising) {
       primeCinematicFullscreen();
@@ -919,8 +1124,8 @@ export default function CreativeDirector({
     setVideoUrl(null);
     setAutoSaveStatus("idle");
     setShareSlug(null);
-    // New generation attempt: clear ids so first finalize can bill once.
-    // Refinements before finalize never hit persist/billing.
+    // New generation attempt: clear ids so a successful generate bills once
+    // for the new finished asset (idempotent per asset_id).
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
     setCheckoutAssetId(null);
@@ -957,7 +1162,35 @@ export default function CreativeDirector({
         setCreationPreparing(false);
         setCreationProgressComplete(true);
         await sleep(650);
-        // Image-only: do not persist or consume until Finalizar Imagen.
+
+        // Billable event: successful provider-backed generation persist.
+        // Finalizar Imagen must not charge again (idempotent per asset_id).
+        const persistResult = await persistToLibrary({
+          originalFile: file,
+          enhancedDataUrl: result.premiumImage,
+          imagePrompt: result.imagePrompt,
+          videoPrompt: "",
+          billAdvertisingAsset: true,
+        });
+
+        if (persistResult.status === "requires-package") {
+          setAdvertisingCreditsRemaining(0);
+          setAutoSaveStatus("requires-package");
+          setError(
+            persistResult.message ?? ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
+          );
+          setPhase("intent");
+          return;
+        }
+
+        if (persistResult.status === "saved") {
+          setAdvertisingCreditsRemaining((current) =>
+            typeof current === "number" ? Math.max(0, current - 1) : 0,
+          );
+          setAdvertisingCreditMessage(null);
+          clearAdvertisingGenerateContinuity();
+        }
+
         setPhase("image_result");
         return;
       }
@@ -1001,15 +1234,36 @@ export default function CreativeDirector({
       setCreationPreparing(false);
       setCommercialPersisting(false);
       setCreationProgressComplete(false);
+
+      if (createError instanceof AdvertisingImageAuthRequiredError) {
+        await requestAuthenticationForGenerate();
+        return;
+      }
+
+      if (createError instanceof AdvertisingImagePackageRequiredError) {
+        setAdvertisingCreditsRemaining(0);
+        setAutoSaveStatus("requires-package");
+        setError(createError.message);
+        setPhase("intent");
+        return;
+      }
+
       setError(
         mapCreationError(
           createError instanceof Error ? createError.message : undefined,
         ) || "Algo salió mal. Intenta de nuevo.",
       );
       // Advertising: back to intent. Commercial: preserve prior upload recovery.
+      // Provider failure does not consume an Advertising Image credit.
       setPhase(isAdvertising ? "intent" : "upload");
+    } finally {
+      generatingImageRef.current = false;
     }
-  }, [persistToLibrary]);
+  }, [
+    isAuthenticated,
+    persistToLibrary,
+    requestAuthenticationForGenerate,
+  ]);
 
   const handleIntentSubmit = useCallback(
     async (event: FormEvent) => {
@@ -1175,20 +1429,16 @@ export default function CreativeDirector({
         return;
       }
 
+      // Generation already consumed the Advertising Image credit.
+      // Finalizar only persists / completes Biblioteca — no second charge.
       const result = await persistToLibrary({
         originalFile: file,
         enhancedDataUrl: premiumImage,
         // Standalone image: no teaser / no video.
         imagePrompt: imagePromptRef.current,
         videoPrompt: "",
-        billAdvertisingAsset: true,
+        billAdvertisingAsset: false,
       });
-
-      if (result.status === "requires-package") {
-        setFinalizeProgressComplete(false);
-        setPhase("image_result");
-        return;
-      }
 
       if (result.status === "local-only") {
         setFinalizeProgressComplete(false);
@@ -1941,6 +2191,23 @@ export default function CreativeDirector({
                   ? "Descríbelo con tus palabras. Metaprom interpreta el uso."
                   : "Describe tu comercial. Metaprom interpreta tu intención."}
               </p>
+              {creationMode === "advertising_image" &&
+              advertisingCreditMessage ? (
+                <p
+                  className="text-sm font-medium text-emerald-300/90"
+                  role="status"
+                >
+                  {advertisingCreditMessage}
+                </p>
+              ) : null}
+              {creationMode === "advertising_image" &&
+              typeof advertisingCreditsRemaining === "number" ? (
+                <p className="text-sm text-white/50" role="status">
+                  {advertisingCreditsRemaining === 1
+                    ? "1 imagen disponible"
+                    : `${advertisingCreditsRemaining} imágenes disponibles`}
+                </p>
+              ) : null}
             </div>
 
             <form onSubmit={handleIntentSubmit} className="space-y-5">
@@ -2149,6 +2416,11 @@ export default function CreativeDirector({
                   onAdjust={handleReviewAdjust}
                   onContinue={handleReviewContinue}
                   conversationHostRef={reviewDirectorHostRef}
+                  shareSlug={shareSlug}
+                  publicPreviewUrl={
+                    shareSlug ? buildPublicPreviewUrl(shareSlug) : null
+                  }
+                  shareAssetType="advertising_image"
                 />
               }
             />

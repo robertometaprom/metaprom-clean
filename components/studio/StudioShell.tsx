@@ -90,11 +90,16 @@ export default function StudioShell({
             aria-label="Metaprom AI"
             className="pointer-events-auto inline-flex items-center"
           >
-            <MetapromLogo
-              variant={variant === "welcome" ? "dark" : "light"}
-              height={46}
-              priority
-            />
+            <span className="md:hidden">
+              <MetapromLogo variant="symbol" height={34} priority />
+            </span>
+            <span className="hidden md:inline-flex">
+              <MetapromLogo
+                variant={variant === "welcome" ? "dark" : "light"}
+                height={46}
+                priority
+              />
+            </span>
           </Link>
         </div>
       </div>

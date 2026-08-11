@@ -1,4 +1,5 @@
 import type { ConversationMessage, ProjectContext } from "@/lib/creative-director/types";
+import { MAX_BATCH_SOURCE_FILES } from "@/lib/instant-capture";
 import {
   MAX_CONVERSATION_HISTORY_MESSAGES,
   MAX_CONVERSATION_MESSAGE_LENGTH,
@@ -178,6 +179,17 @@ export function sanitizeProjectContext(
         .trim()
         .slice(0, MAX_CONVERSATION_MESSAGE_LENGTH);
     }
+  }
+
+  if (
+    typeof record.sourcePhotoCount === "number" &&
+    Number.isFinite(record.sourcePhotoCount) &&
+    record.sourcePhotoCount > 0
+  ) {
+    next.sourcePhotoCount = Math.min(
+      MAX_BATCH_SOURCE_FILES,
+      Math.floor(record.sourcePhotoCount),
+    );
   }
 
   if (

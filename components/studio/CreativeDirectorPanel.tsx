@@ -63,6 +63,12 @@ export type CreativeDirectorPanelProps = {
   embeddedHostRef?: RefObject<HTMLElement | null>;
   /** Optional secondary creation paths (e.g. manual Studio chooser on welcome). */
   secondaryActions?: ReactNode;
+  /** Permanent Studio photo tools shown above the composer whenever the panel is open. */
+  photoActions?: ReactNode;
+  /** Compact account entry (login/register) for unauthenticated Studio — header area only. */
+  accountActions?: ReactNode;
+  /** When true, desktop Director stage shifts left to clear the Biblioteca panel. */
+  libraryOpen?: boolean;
 };
 
 function createMessageId(): string {
@@ -124,6 +130,9 @@ export default function CreativeDirectorPanel({
   presentation = "overlay",
   embeddedHostRef,
   secondaryActions = null,
+  photoActions = null,
+  accountActions = null,
+  libraryOpen = false,
 }: CreativeDirectorPanelProps) {
   const stageZ = stackLayer === "elevated" ? "z-[120]" : "z-50";
   const isEmbedded = presentation === "embedded";
@@ -360,12 +369,17 @@ export default function CreativeDirectorPanel({
 
   if (!open) return null;
 
+  // Biblioteca open (desktop only): nudge interaction column 24px left.
+  // Artwork / DirectorStage row / presence / closed state stay untouched.
+  const libraryInteractionShiftClass =
+    !isEmbedded && libraryOpen ? "sm:-translate-x-[24px]" : "";
+
   const conversationBody = (
         <div
           className={
             isEmbedded
               ? "flex max-h-[min(58vh,28rem)] flex-col text-left sm:max-h-[min(64vh,32rem)] lg:max-h-[min(70vh,36rem)]"
-              : "flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)]"
+              : `flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)] ${libraryInteractionShiftClass}`
           }
         >
           <header className="mb-3 flex items-start justify-between gap-3">
@@ -377,26 +391,36 @@ export default function CreativeDirectorPanel({
                 {headerSubtitle}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="shrink-0 rounded-full p-2 text-white/55 transition hover:bg-white/10 hover:text-white"
-              aria-label="Cerrar Director Creativo"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+            <div className="flex shrink-0 items-center gap-1">
+              {accountActions ? (
+                <div
+                  className="mr-0.5 flex items-center gap-0.5"
+                  aria-label="Acceso a cuenta"
+                >
+                  {accountActions}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-2 text-white/55 transition hover:bg-white/10 hover:text-white"
+                aria-label="Cerrar Director Creativo"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </header>
 
           <div
@@ -527,10 +551,22 @@ export default function CreativeDirectorPanel({
                       : "Crear cuenta gratuita"
                   }
                 />
+                <p className="text-center text-sm text-white/55">
+                  ¿Ya tienes cuenta?{" "}
+                  <a
+                    href={`/login?redirect=${encodeURIComponent(authRedirectTo || "/studio")}`}
+                    className="text-white/80 underline decoration-white/30 underline-offset-2 transition hover:text-white hover:decoration-white/60"
+                  >
+                    Inicia sesión
+                  </a>
+                </p>
               </div>
             ) : null}
 
             <form onSubmit={handleSend} className="space-y-3">
+              {photoActions ? (
+                <div aria-label="Acciones de foto">{photoActions}</div>
+              ) : null}
               <label htmlFor="creative-director-composer" className="sr-only">
                 Escribe tu mensaje al Director Creativo
               </label>
@@ -586,7 +622,9 @@ export default function CreativeDirectorPanel({
       aria-modal="true"
       aria-label="Director Creativo"
     >
-      <DirectorStage mode="talking">{conversationBody}</DirectorStage>
+      <DirectorStage mode="talking" libraryOpen={libraryOpen}>
+        {conversationBody}
+      </DirectorStage>
     </div>
   );
 }

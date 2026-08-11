@@ -18,6 +18,11 @@ import type { PaymentMethod } from "@/lib/payments/types";
 import type { Mode } from "@/lib/prompts";
 import { toDestinationGenerationPayload } from "@/lib/destination-generation";
 import type { StudioDestination } from "@/lib/studio-destination";
+import {
+  buildAdvertisingImagePrompt,
+  resolveImageIntent,
+  type ImageIntent,
+} from "@/lib/studio/image-intent";
 import { persistStudioCreation } from "@/lib/studio-persistence";
 import {
   buildStudioImagePrompt,
@@ -62,12 +67,18 @@ export type CreateAdvertisingImageInput = {
   file: File;
   customerIntent: string;
   productMode: Mode;
+  /**
+   * Runtime Advertising Image intent. When omitted, resolved from customerIntent.
+   * Batch Multi-Photo passes one shared intent for the whole job.
+   */
+  imageIntent?: ImageIntent;
   onStep?: (step: CreationStep, message: string) => void;
 };
 
 export type CreateAdvertisingImageResult = {
   premiumImage: string;
   imagePrompt: string;
+  imageIntent: ImageIntent;
 };
 
 export class AdvertisingImageAuthRequiredError extends Error {
@@ -361,23 +372,45 @@ export async function createCommercialAssets(
 /**
  * Standalone Advertising Image generation — Premium Image only.
  * Must never call /api/video or enter Commercial destination/video flows.
+ *
+ * Routes by ImageIntent BEFORE prompt construction:
+ * platform_fidelity / professional_enhancement must never receive the
+ * creative advertising wrapper. creative_advertising preserves it.
  */
 export async function createAdvertisingImage(
   input: CreateAdvertisingImageInput,
 ): Promise<CreateAdvertisingImageResult> {
   const customerIntent = input.customerIntent.trim();
-  const imagePrompt = buildStudioImagePrompt(
-    customerIntent,
-    input.productMode,
-    null,
-  );
 
-  input.onStep?.("image", "Preparando tu imagen publicitaria...");
+  const intentResolution = resolveImageIntent(customerIntent, {
+    productMode: input.productMode,
+    forcedIntent: input.imageIntent ?? null,
+  });
+
+  if (intentResolution.status === "needs_clarification") {
+    throw new Error(
+      "Necesitamos aclarar el tipo de imagen antes de generar. Indica si es para plataforma, mejora profesional o publicidad.",
+    );
+  }
+
+  const built = buildAdvertisingImagePrompt({
+    customerIntent,
+    productMode: input.productMode,
+    intent: intentResolution.intent,
+    providerMode: intentResolution.providerMode,
+  });
+
+  input.onStep?.(
+    "image",
+    built.acknowledgment || "Preparando tu imagen publicitaria...",
+  );
 
   const formData = new FormData();
   formData.append("image", input.file);
-  formData.append("mode", "custom");
-  formData.append("aiInstructions", imagePrompt);
+  // Intent-specific Mode — marketplace reuses amazon/mercado-libre/premium.
+  // Do NOT force "custom" for all Advertising Image jobs.
+  formData.append("mode", built.providerMode);
+  formData.append("aiInstructions", built.aiInstructions);
   // Marks this request for server-side Advertising Image auth/credit gate.
   formData.append(ADVERTISING_IMAGE_PURPOSE_FIELD, ADVERTISING_IMAGE_PURPOSE_VALUE);
 
@@ -418,7 +451,8 @@ export async function createAdvertisingImage(
 
   return {
     premiumImage: data.image,
-    imagePrompt,
+    imagePrompt: built.imagePrompt,
+    imageIntent: built.intent,
   };
 }
 

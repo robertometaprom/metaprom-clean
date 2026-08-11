@@ -73,6 +73,7 @@ export default function StudioPageClient({
       <CreativeDirector
         paymentProviderDisplay={paymentProviderDisplay}
         onWelcomeChange={setIsWelcome}
+        libraryOpen={libraryOpen}
         onOpenLibrary={handleOpenLibrary}
         onLibraryUpdated={handleLibraryUpdated}
       />

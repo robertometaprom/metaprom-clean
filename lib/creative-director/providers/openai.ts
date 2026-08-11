@@ -42,6 +42,19 @@ function formatProjectContext(context: ProjectContext): string {
     sections.push(`## Current Image\n${imageParts.join("\n")}`);
   }
 
+  if (
+    typeof context.sourcePhotoCount === "number" &&
+    Number.isFinite(context.sourcePhotoCount) &&
+    context.sourcePhotoCount > 0
+  ) {
+    const count = Math.floor(context.sourcePhotoCount);
+    sections.push(
+      count === 1
+        ? "## Source Photos\n1 source photo loaded."
+        : `## Source Photos\n${count} source photos loaded.`,
+    );
+  }
+
   if (context.currentCommercialDescription) {
     sections.push(
       `## Current Commercial Description\n${context.currentCommercialDescription}`,

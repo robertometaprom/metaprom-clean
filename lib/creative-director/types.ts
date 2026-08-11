@@ -40,6 +40,8 @@ export type PreviousPreviewContext = {
  */
 export type ProjectContext = {
   currentImage?: CurrentImageContext;
+  /** Canonical Studio source-photo count (sourceFiles.length). */
+  sourcePhotoCount?: number;
   currentCommercialDescription?: string;
   destination?: DestinationContext;
   /** Resolved Metaprom workflow identifier for this commercial type. */

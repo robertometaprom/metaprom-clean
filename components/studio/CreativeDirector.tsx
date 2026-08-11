@@ -65,18 +65,36 @@ import InstantCaptureButtons from "@/components/studio/InstantCaptureButtons";
 import DirectorStage from "@/components/studio/DirectorStage";
 import StudioProgress from "@/components/studio/StudioProgress";
 import {
+  formatSourceFileSelectionMessage,
+  IMAGE_ACCEPT,
+  validateSourceImageFiles,
+} from "@/lib/instant-capture";
+import {
   getAdvertisingImageBand,
+  getBatchAdvertisingBand,
   getCommercialCreationBand,
   getFinalizeImageBand,
   getPremiumProcessingBand,
   sleep,
   useStudioProgress,
 } from "@/lib/studio-progress";
+import {
+  BatchInsufficientCreditsError,
+  runBatchAdvertisingImages,
+  type BatchAdvertisingItem,
+  type BatchAdvertisingProgress,
+} from "@/lib/studio/batch-advertising-orchestrator";
+import {
+  IMAGE_INTENT_CHOICES,
+  resolveImageIntent,
+  type ImageIntent,
+} from "@/lib/studio/image-intent";
 import type { ProjectContext } from "@/lib/creative-director/types";
 import type { CompanionMoment } from "@/lib/studio/creative-director-companion";
 import {
   type DirectorReviewFocus,
 } from "@/lib/studio/director-review";
+import { DIRECTOR_ARTWORK_SRC } from "@/lib/studio/director-stage";
 import { primeCinematicFullscreen } from "@/lib/cinematic-fullscreen";
 import type { StudioDestination } from "@/lib/studio-destination";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
@@ -97,6 +115,13 @@ import type { ConversationMessage } from "@/lib/creative-director/types";
 import { createClient } from "@/lib/supabase/client";
 import type { SerializablePanelMessage } from "@/components/studio/CreativeDirectorPanel";
 
+/** Commercial Multi-Photo remains out of scope for Batch V1. */
+const COMMERCIAL_BATCH_BLOCKED_MESSAGE =
+  "El lote multi-foto está disponible solo para Imagen Publicitaria.";
+
+const BATCH_RESELECT_MESSAGE =
+  "Vuelve a seleccionar las fotos del lote para continuar. No se generó ninguna imagen.";
+
 type Phase =
   | "welcome"
   | "unavailable"
@@ -104,7 +129,9 @@ type Phase =
   | "creation_mode"
   | "destination"
   | "intent"
+  | "image_intent"
   | "creating"
+  | "batch_result"
   | "preview"
   | "image_result"
   | "image_ready"
@@ -163,6 +190,8 @@ function describeRuntimeError(error: unknown): string {
 type CreativeDirectorProps = {
   paymentProviderDisplay: PaymentProviderDisplayMetadata;
   onWelcomeChange?: (isWelcome: boolean) => void;
+  /** When true, compact presence sits left of the Biblioteca panel (desktop). */
+  libraryOpen?: boolean;
   onOpenLibrary?: (focus?: {
     projectId?: string;
     assetId?: string;
@@ -176,6 +205,7 @@ type CreativeDirectorProps = {
 export default function CreativeDirector({
   paymentProviderDisplay,
   onWelcomeChange,
+  libraryOpen = false,
   onOpenLibrary,
   onLibraryUpdated,
 }: CreativeDirectorProps) {
@@ -194,12 +224,21 @@ export default function CreativeDirector({
   );
 
   /**
-   * Job inputs. Phase 4C uses 0..1 files; prefer this over deepening
-   * a permanent single-file assumption before Phase 4D multi-photo.
+   * Job inputs. Single-image production uses length === 1 unchanged.
+   * Batch Multi-Photo Phase A allows 2..40 local Files with no generation.
    */
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
   const selectedFile = sourceFiles[0] ?? null;
+  const isBatchSelection = sourceFiles.length > 1;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  /** Object URLs aligned with sourceFiles for thumbnails / primary preview. */
+  const [sourcePreviewUrls, setSourcePreviewUrls] = useState<string[]>([]);
+  /** Batch Multi-Photo runtime state (client-only; not a DB queue). */
+  const [batchItems, setBatchItems] = useState<BatchAdvertisingItem[]>([]);
+  const [batchProjectId, setBatchProjectId] = useState<string | null>(null);
+  const [batchProgressMessage, setBatchProgressMessage] = useState("");
+  const batchItemsRef = useRef<BatchAdvertisingItem[]>([]);
+  const batchProjectIdRef = useRef<string | null>(null);
   const [premiumImage, setPremiumImage] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(() =>
     isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_VIDEO_URL : null,
@@ -263,6 +302,7 @@ export default function CreativeDirector({
   );
 
   const previewUrlRef = useRef<string | null>(null);
+  const sourcePreviewUrlsRef = useRef<string[]>([]);
   const reviewDirectorHostRef = useRef<HTMLDivElement | null>(null);
   const intentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const videoUrlRef = useRef<string | null>(
@@ -274,6 +314,11 @@ export default function CreativeDirector({
     PRODUCT_CATALOG["premium-image"],
   );
   const customerIntentRef = useRef("");
+  /** Resolved Advertising Image intent for the current job (batch-shared). */
+  const imageIntentRef = useRef<ImageIntent | null>(null);
+  const [imageIntentQuestion, setImageIntentQuestion] = useState(
+    "¿Qué quieres hacer con tus fotos?",
+  );
   const savedProjectIdRef = useRef<string | null>(null);
   const savedAssetIdRef = useRef<string | null>(null);
   const imagePromptRef = useRef("");
@@ -304,15 +349,78 @@ export default function CreativeDirector({
     sourceFilesRef.current = sourceFiles;
   }, [sourceFiles]);
 
-  const setPrimarySourceFile = useCallback((file: File | null) => {
-    const next = file ? [file] : [];
-    sourceFilesRef.current = next;
-    setSourceFiles(next);
+  useEffect(() => {
+    sourcePreviewUrlsRef.current = sourcePreviewUrls;
+  }, [sourcePreviewUrls]);
+
+  const revokeBlobUrl = useCallback((url: string | null | undefined) => {
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+    }
   }, []);
+
+  const revokeSourcePreviewUrls = useCallback(
+    (urls: string[]) => {
+      for (const url of urls) {
+        revokeBlobUrl(url);
+      }
+    },
+    [revokeBlobUrl],
+  );
+
+  const syncPrimaryPreview = useCallback((url: string | null) => {
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+  }, []);
+
+  const setSourceSelection = useCallback(
+    (files: File[], urls: string[]) => {
+      sourceFilesRef.current = files;
+      setSourceFiles(files);
+      sourcePreviewUrlsRef.current = urls;
+      setSourcePreviewUrls(urls);
+      syncPrimaryPreview(urls[0] ?? null);
+    },
+    [syncPrimaryPreview],
+  );
+
+  /** Single-file path used by draft restore — collapses to 0..1. */
+  const setPrimarySourceFile = useCallback(
+    (file: File | null) => {
+      const next = file ? [file] : [];
+      sourceFilesRef.current = next;
+      setSourceFiles(next);
+    },
+    [],
+  );
 
   useEffect(() => {
     onWelcomeChange?.(phase === "welcome");
   }, [phase, onWelcomeChange]);
+
+  const enforceBatchReselectIfNeeded = useCallback(
+    (batchExpectedCount: number | undefined) => {
+      if (!batchExpectedCount || batchExpectedCount <= 1) return false;
+      // File[] does not survive auth navigation. Never silently use sourceFiles[0].
+      if (sourceFilesRef.current.length >= batchExpectedCount) return false;
+
+      revokeSourcePreviewUrls(sourcePreviewUrlsRef.current);
+      setSourceSelection([], []);
+      setPremiumImage(null);
+      setVideoUrl(null);
+      setBatchItems([]);
+      batchItemsRef.current = [];
+      setBatchProjectId(null);
+      batchProjectIdRef.current = null;
+      setError(BATCH_RESELECT_MESSAGE);
+      setPhase("upload");
+      setDirectorPanelOpen(false);
+      setShowRegistrationInvite(false);
+      setPendingCompanionMoment(null);
+      return true;
+    },
+    [revokeSourcePreviewUrls, setSourceSelection],
+  );
 
   const restoreAdvertisingGenerateContinuity = useCallback(() => {
     const snapshot = readAdvertisingGenerateContinuity();
@@ -349,10 +457,15 @@ export default function CreativeDirector({
     }
     setShowRegistrationInvite(false);
     setPendingCompanionMoment(null);
-    setPhase("intent");
     setDirectorPanelOpen(false);
+
+    if (enforceBatchReselectIfNeeded(snapshot.batchExpectedCount)) {
+      return true;
+    }
+
+    setPhase("intent");
     return true;
-  }, []);
+  }, [enforceBatchReselectIfNeeded]);
 
   const ensureWelcomeAdvertisingImage = useCallback(async () => {
     if (welcomeGrantAttemptedRef.current) return;
@@ -406,16 +519,31 @@ export default function CreativeDirector({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION can emit session=null before cookies hydrate and would
+      // overwrite a valid getUser() result — only apply a positive INITIAL_SESSION
+      // or real auth transitions (SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED / etc.).
+      if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          setIsAuthenticated(true);
+          setShowRegistrationInvite(false);
+          void ensureWelcomeAdvertisingImage();
+          restoreAdvertisingGenerateContinuity();
+        }
+        return;
+      }
+
       const authenticated = Boolean(session?.user);
       setIsAuthenticated(authenticated);
       if (authenticated) {
+        setShowRegistrationInvite(false);
         void ensureWelcomeAdvertisingImage();
         restoreAdvertisingGenerateContinuity();
       } else {
         welcomeGrantAttemptedRef.current = false;
         setAdvertisingCreditsRemaining(null);
         setAdvertisingCreditMessage(null);
+        setShowRegistrationInvite(false);
       }
     });
 
@@ -554,6 +682,8 @@ export default function CreativeDirector({
     setDraftRecoveryError(null);
     setError(null);
 
+    const batchExpectedCount = sourceFilesRef.current.length;
+
     saveAdvertisingGenerateContinuity({
       creationMode: "advertising_image",
       customerIntent: customerIntentRef.current.trim(),
@@ -568,6 +698,7 @@ export default function CreativeDirector({
         projectMetadataRef.current.workflow_id ??
         matchedProductRef.current.id,
       industry: projectMetadataRef.current.industry ?? null,
+      ...(batchExpectedCount > 1 ? { batchExpectedCount } : {}),
     });
 
     try {
@@ -634,11 +765,10 @@ export default function CreativeDirector({
       }
 
       if (urls.originalUrl) {
-        if (previewUrlRef.current?.startsWith("blob:")) {
-          URL.revokeObjectURL(previewUrlRef.current);
-        }
-        previewUrlRef.current = urls.originalUrl;
-        setPreviewUrl(urls.originalUrl);
+        revokeSourcePreviewUrls(sourcePreviewUrlsRef.current);
+        sourcePreviewUrlsRef.current = [urls.originalUrl];
+        setSourcePreviewUrls([urls.originalUrl]);
+        syncPrimaryPreview(urls.originalUrl);
 
         try {
           const response = await fetch(urls.originalUrl);
@@ -697,7 +827,7 @@ export default function CreativeDirector({
       setDirectorPanelOpen(false);
       setShowRegistrationInvite(false);
     },
-    [setPrimarySourceFile],
+    [revokeSourcePreviewUrls, setPrimarySourceFile, syncPrimaryPreview],
   );
 
   const applyClaimResult = useCallback(
@@ -933,7 +1063,16 @@ export default function CreativeDirector({
 
   useEffect(() => {
     return () => {
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      for (const url of sourcePreviewUrlsRef.current) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
+      // Primary preview may be a draft HTTP URL or the same blob as [0].
+      if (
+        previewUrlRef.current?.startsWith("blob:") &&
+        !sourcePreviewUrlsRef.current.includes(previewUrlRef.current)
+      ) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
       if (videoUrlRef.current?.startsWith("blob:")) {
         URL.revokeObjectURL(videoUrlRef.current);
       }
@@ -943,12 +1082,25 @@ export default function CreativeDirector({
   const autoSaveMessage = getAutoSaveMessage(autoSaveStatus);
 
   const isAdvertisingCreation = creationMode === "advertising_image";
-  const creationBand = isAdvertisingCreation
-    ? getAdvertisingImageBand(creationStep, creationPreparing)
-    : getCommercialCreationBand(creationStep, {
-        preparing: creationPreparing,
-        persisting: commercialPersisting,
-      });
+  const batchCompletedCount = batchItems.filter(
+    (item) => item.status === "completed",
+  ).length;
+  const isBatchCreating =
+    phase === "creating" &&
+    isAdvertisingCreation &&
+    (batchItems.length > 1 || sourceFiles.length > 1);
+  const creationBand = isBatchCreating
+    ? getBatchAdvertisingBand(
+        batchCompletedCount,
+        batchItems.length,
+        { complete: creationProgressComplete },
+      )
+    : isAdvertisingCreation
+      ? getAdvertisingImageBand(creationStep, creationPreparing)
+      : getCommercialCreationBand(creationStep, {
+          preparing: creationPreparing,
+          persisting: commercialPersisting,
+        });
   const creationProgress = useStudioProgress({
     running: phase === "creating" && !creationProgressComplete,
     floor: creationBand.floor,
@@ -1078,8 +1230,259 @@ export default function CreativeDirector({
     });
   }, [autoSaveStatus, isAuthenticated, persistToLibrary, premiumImage]);
 
+  const applyBatchProgress = useCallback(
+    (progress: BatchAdvertisingProgress) => {
+      batchItemsRef.current = progress.items;
+      setBatchItems(progress.items);
+      batchProjectIdRef.current = progress.projectId;
+      setBatchProjectId(progress.projectId);
+      setBatchProgressMessage(progress.message);
+      if (progress.projectId) {
+        savedProjectIdRef.current = progress.projectId;
+      }
+      setCreationPreparing(false);
+      setCreationStep("image");
+      setCreationMessage(progress.message);
+    },
+    [],
+  );
+
+  const runBatchCreation = useCallback(
+    async (options?: { retryFailedOnly?: boolean }) => {
+      if (generatingImageRef.current) return;
+
+      const mode = creationModeRef.current;
+      if (mode !== "advertising_image") {
+        setError(COMMERCIAL_BATCH_BLOCKED_MESSAGE);
+        setPhase("intent");
+        return;
+      }
+
+      if (!isAuthenticated) {
+        await requestAuthenticationForGenerate();
+        return;
+      }
+
+      const files = sourceFilesRef.current;
+      const existingItems = batchItemsRef.current;
+      const retryFailedOnly = options?.retryFailedOnly === true;
+
+      if (retryFailedOnly) {
+        if (existingItems.length === 0) return;
+        const failedIds = existingItems
+          .filter((item) => item.status === "failed")
+          .map((item) => item.id);
+        if (failedIds.length === 0) return;
+
+        generatingImageRef.current = true;
+        setPhase("creating");
+        setDirectorPanelOpen(false);
+        setCreationPreparing(true);
+        setCreationProgressComplete(false);
+        setCreationProgressRunId((current) => current + 1);
+        setCreationMessage("Verificando créditos…");
+        setError(null);
+        setAutoSaveStatus("idle");
+
+        try {
+          const product = matchedProductRef.current;
+          const result = await runBatchAdvertisingImages({
+            files,
+            customerIntent: customerIntentRef.current.trim(),
+            productMode: product.mode,
+            imageIntent: imageIntentRef.current ?? undefined,
+            projectMetadata: {
+              ...projectMetadataRef.current,
+              workflow_id: product.id,
+              industry: product.industry ?? projectMetadataRef.current.industry,
+              intended_destination:
+                destinationRef.current?.platform ?? product.destination,
+              destination: destinationRef.current,
+            },
+            existingProjectId: batchProjectIdRef.current,
+            existingItems,
+            onlyItemIds: failedIds,
+            onProgress: applyBatchProgress,
+          });
+
+          applyBatchProgress(result);
+
+          if (result.phase === "blocked") {
+            setAdvertisingCreditsRemaining(result.remainingCredits ?? 0);
+            setAutoSaveStatus("requires-package");
+            setError(result.message);
+            setPhase("batch_result");
+            return;
+          }
+
+          const newlyCompleted = result.items.filter(
+            (item) =>
+              failedIds.includes(item.id) && item.status === "completed",
+          ).length;
+          if (newlyCompleted > 0) {
+            setAdvertisingCreditsRemaining((current) =>
+              typeof current === "number"
+                ? Math.max(0, current - newlyCompleted)
+                : current,
+            );
+            setAdvertisingCreditMessage(null);
+          }
+
+          if (result.projectId) {
+            onLibraryUpdated?.({ projectId: result.projectId });
+          }
+
+          setCreationProgressComplete(true);
+          await sleep(500);
+          setPhase("batch_result");
+        } catch (batchError) {
+          console.error(batchError);
+          setError(
+            batchError instanceof BatchInsufficientCreditsError
+              ? batchError.message
+              : mapCreationError(
+                  batchError instanceof Error
+                    ? batchError.message
+                    : undefined,
+                ) || "Algo salió mal con el lote. Intenta de nuevo.",
+          );
+          if (batchError instanceof BatchInsufficientCreditsError) {
+            setAutoSaveStatus("requires-package");
+            setAdvertisingCreditsRemaining(batchError.remaining);
+          }
+          setPhase("batch_result");
+        } finally {
+          generatingImageRef.current = false;
+        }
+        return;
+      }
+
+      if (files.length < 2) {
+        setError("Selecciona al menos 2 fotos para el lote.");
+        setPhase("upload");
+        return;
+      }
+
+      generatingImageRef.current = true;
+      setPhase("creating");
+      setDirectorPanelOpen(false);
+      setCreationPreparing(true);
+      setCreationProgressComplete(false);
+      setCreationProgressRunId((current) => current + 1);
+      setCreationMessage("Verificando créditos…");
+      setBatchProgressMessage("Verificando créditos…");
+      setError(null);
+      setPremiumImage(null);
+      setVideoUrl(null);
+      setAutoSaveStatus("idle");
+      setShareSlug(null);
+      savedProjectIdRef.current = null;
+      savedAssetIdRef.current = null;
+      setCheckoutAssetId(null);
+      setBatchItems([]);
+      batchItemsRef.current = [];
+      setBatchProjectId(null);
+      batchProjectIdRef.current = null;
+
+      try {
+        const product = matchedProductRef.current;
+        const result = await runBatchAdvertisingImages({
+          files,
+          customerIntent: customerIntentRef.current.trim(),
+          productMode: product.mode,
+          imageIntent: imageIntentRef.current ?? undefined,
+          projectMetadata: {
+            ...projectMetadataRef.current,
+            workflow_id: product.id,
+            industry: product.industry ?? projectMetadataRef.current.industry,
+            intended_destination:
+              destinationRef.current?.platform ?? product.destination,
+            destination: destinationRef.current,
+          },
+          onProgress: applyBatchProgress,
+        });
+
+        applyBatchProgress(result);
+
+        if (result.phase === "blocked") {
+          setAdvertisingCreditsRemaining(result.remainingCredits ?? 0);
+          setAutoSaveStatus("requires-package");
+          setError(result.message);
+          setPhase("intent");
+          return;
+        }
+
+        if (result.completedCount > 0) {
+          setAdvertisingCreditsRemaining((current) =>
+            typeof current === "number"
+              ? Math.max(0, current - result.completedCount)
+              : current,
+          );
+          setAdvertisingCreditMessage(null);
+          clearAdvertisingGenerateContinuity();
+        }
+
+        if (result.projectId) {
+          onLibraryUpdated?.({ projectId: result.projectId });
+        }
+
+        setCreationProgressComplete(true);
+        await sleep(650);
+        setPhase("batch_result");
+      } catch (batchError) {
+        console.error(batchError);
+        if (batchError instanceof AdvertisingImageAuthRequiredError) {
+          await requestAuthenticationForGenerate();
+          return;
+        }
+        setError(
+          batchError instanceof BatchInsufficientCreditsError
+            ? batchError.message
+            : mapCreationError(
+                batchError instanceof Error ? batchError.message : undefined,
+              ) || "Algo salió mal con el lote. Intenta de nuevo.",
+        );
+        if (batchError instanceof BatchInsufficientCreditsError) {
+          setAutoSaveStatus("requires-package");
+          setAdvertisingCreditsRemaining(batchError.remaining);
+        }
+        setPhase("intent");
+      } finally {
+        generatingImageRef.current = false;
+      }
+    },
+    [
+      applyBatchProgress,
+      isAuthenticated,
+      onLibraryUpdated,
+      requestAuthenticationForGenerate,
+    ],
+  );
+
   const runCreation = useCallback(async () => {
     if (generatingImageRef.current) return;
+
+    const mode = creationModeRef.current;
+    if (!mode) {
+      setPhase("creation_mode");
+      return;
+    }
+
+    // Commercial Multi-Photo remains blocked.
+    if (sourceFilesRef.current.length > 1 && mode === "commercial") {
+      setError(COMMERCIAL_BATCH_BLOCKED_MESSAGE);
+      setPhase("intent");
+      return;
+    }
+
+    // Batch Advertising Image — orchestrator path (never sourceFiles[0] alone).
+    if (
+      sourceFilesRef.current.length > 1 &&
+      mode === "advertising_image"
+    ) {
+      await runBatchCreation();
+      return;
+    }
 
     const file = sourceFilesRef.current[0] ?? null;
     if (!file) {
@@ -1088,11 +1491,6 @@ export default function CreativeDirector({
       return;
     }
 
-    const mode = creationModeRef.current;
-    if (!mode) {
-      setPhase("creation_mode");
-      return;
-    }
     const isAdvertising = mode === "advertising_image";
 
     // Advertising Image: auth gate BEFORE provider. Director/prompt stay free.
@@ -1149,6 +1547,7 @@ export default function CreativeDirector({
           file,
           customerIntent,
           productMode: product.mode,
+          imageIntent: imageIntentRef.current ?? undefined,
           onStep: (step, message) => {
             setCreationPreparing(false);
             setCreationStep(step);
@@ -1156,6 +1555,7 @@ export default function CreativeDirector({
           },
         });
 
+        imageIntentRef.current = result.imageIntent;
         imagePromptRef.current = result.imagePrompt;
         videoPromptRef.current = "";
         setPremiumImage(result.premiumImage);
@@ -1263,6 +1663,7 @@ export default function CreativeDirector({
     isAuthenticated,
     persistToLibrary,
     requestAuthenticationForGenerate,
+    runBatchCreation,
   ]);
 
   const handleIntentSubmit = useCallback(
@@ -1313,9 +1714,34 @@ export default function CreativeDirector({
       setError(null);
       setDirectorProposalApplied(false);
 
+      // Advertising Image: route output type before generation. Ask once if ambiguous.
+      if (creationModeRef.current === "advertising_image") {
+        const intentResolution = resolveImageIntent(trimmed, {
+          productMode: resolution.product.mode,
+        });
+        if (intentResolution.status === "needs_clarification") {
+          imageIntentRef.current = null;
+          setImageIntentQuestion(intentResolution.question);
+          setPhase("image_intent");
+          return;
+        }
+        imageIntentRef.current = intentResolution.intent;
+      } else {
+        imageIntentRef.current = null;
+      }
+
       await runCreation();
     },
     [input, runCreation],
+  );
+
+  const selectImageIntent = useCallback(
+    async (intent: ImageIntent) => {
+      imageIntentRef.current = intent;
+      setError(null);
+      await runCreation();
+    },
+    [runCreation],
   );
 
   const routeAfterCreationMode = useCallback((mode: CreationMode) => {
@@ -1366,34 +1792,95 @@ export default function CreativeDirector({
     [],
   );
 
-  const applySelectedFile = useCallback(
-    (file: File, options?: { autoContinue?: boolean }) => {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-        previewUrlRef.current = null;
+  const appendSourceFiles = useCallback(
+    (incoming: File[], options?: { autoContinue?: boolean }) => {
+      if (incoming.length === 0) return;
+
+      let baseFiles = sourceFilesRef.current;
+      let baseUrls = sourcePreviewUrlsRef.current;
+
+      // Repair URL parity after draft restore (HTTP preview, no blob list).
+      if (baseFiles.length > 0 && baseUrls.length !== baseFiles.length) {
+        baseUrls = baseFiles.map((file, index) => {
+          if (baseUrls[index]) return baseUrls[index];
+          if (index === 0 && previewUrlRef.current) return previewUrlRef.current;
+          return URL.createObjectURL(file);
+        });
       }
 
-      setPrimarySourceFile(file);
+      const { accepted, rejected } = validateSourceImageFiles(
+        incoming,
+        baseFiles,
+      );
+      const statusMessage = formatSourceFileSelectionMessage(
+        accepted.length,
+        rejected,
+      );
+
+      if (accepted.length === 0) {
+        setError(statusMessage);
+        return;
+      }
+
+      const newUrls = accepted.map((file) => URL.createObjectURL(file));
+      const nextFiles = [...baseFiles, ...accepted];
+      const nextUrls = [...baseUrls, ...newUrls];
+
+      setSourceSelection(nextFiles, nextUrls);
       setPremiumImage(null);
       setVideoUrl(null);
-      setError(null);
+      setError(statusMessage);
 
-      const url = URL.createObjectURL(file);
-      previewUrlRef.current = url;
-      setPreviewUrl(url);
-
-      if (!options?.autoContinue || phase !== "upload") return;
-
-      continueAfterPhoto();
+      // Single-image path: keep existing auto-continue. Batch stays on upload.
+      if (
+        options?.autoContinue &&
+        phase === "upload" &&
+        nextFiles.length === 1 &&
+        rejected.length === 0
+      ) {
+        continueAfterPhoto();
+      }
     },
-    [continueAfterPhoto, phase, setPrimarySourceFile],
+    [continueAfterPhoto, phase, setSourceSelection],
+  );
+
+  const removeSourceFileAt = useCallback(
+    (index: number) => {
+      const files = sourceFilesRef.current;
+      const urls = sourcePreviewUrlsRef.current;
+      if (index < 0 || index >= files.length) return;
+
+      revokeBlobUrl(urls[index]);
+      setSourceSelection(
+        files.filter((_, i) => i !== index),
+        urls.filter((_, i) => i !== index),
+      );
+      setError(null);
+    },
+    [revokeBlobUrl, setSourceSelection],
+  );
+
+  const clearSourceFiles = useCallback(() => {
+    revokeSourcePreviewUrls(sourcePreviewUrlsRef.current);
+    setSourceSelection([], []);
+    setPremiumImage(null);
+    setVideoUrl(null);
+    setError(null);
+  }, [revokeSourcePreviewUrls, setSourceSelection]);
+
+  /** @deprecated path name kept for InstantCapture single-file camera capture. */
+  const applySelectedFile = useCallback(
+    (file: File, options?: { autoContinue?: boolean }) => {
+      appendSourceFiles([file], options);
+    },
+    [appendSourceFiles],
   );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file) return;
-    applySelectedFile(file, {
+    if (files.length === 0) return;
+    appendSourceFiles(files, {
       autoContinue: phase === "upload",
     });
   };
@@ -1563,6 +2050,7 @@ export default function CreativeDirector({
     setMatchedProduct(null);
     matchedProductRef.current = PRODUCT_CATALOG["premium-image"];
     customerIntentRef.current = "";
+    imageIntentRef.current = null;
     setPrimarySourceFile(null);
     setPremiumImage(null);
     setVideoUrl(null);
@@ -1599,6 +2087,11 @@ export default function CreativeDirector({
     setRevealStage(null);
     setDirectorReviewFocus("invite");
     setReviewVisualMock(false);
+    setBatchItems([]);
+    batchItemsRef.current = [];
+    setBatchProjectId(null);
+    batchProjectIdRef.current = null;
+    setBatchProgressMessage("");
     imagePromptRef.current = "";
     videoPromptRef.current = "";
     projectMetadataRef.current = {};
@@ -1609,10 +2102,17 @@ export default function CreativeDirector({
     }
     videoUrlRef.current = null;
 
-    if (previewUrlRef.current) {
+    const previousPreviewUrls = sourcePreviewUrlsRef.current;
+    revokeSourcePreviewUrls(previousPreviewUrls);
+    sourcePreviewUrlsRef.current = [];
+    setSourcePreviewUrls([]);
+    if (
+      previewUrlRef.current?.startsWith("blob:") &&
+      !previousPreviewUrls.includes(previewUrlRef.current)
+    ) {
       URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
     }
+    previewUrlRef.current = null;
     setPreviewUrl(null);
   };
 
@@ -1623,10 +2123,28 @@ export default function CreativeDirector({
     }
 
     onOpenLibrary?.({
-      projectId: savedProjectIdRef.current ?? undefined,
+      projectId:
+        batchProjectIdRef.current ??
+        savedProjectIdRef.current ??
+        undefined,
       assetId: savedAssetIdRef.current ?? undefined,
     });
   }, [autoSaveStatus, isAuthenticated, onOpenLibrary, requestAuthentication]);
+
+  const batchStatusLabel = useCallback((status: BatchAdvertisingItem["status"]) => {
+    switch (status) {
+      case "queued":
+        return "En cola";
+      case "processing":
+        return "Procesando";
+      case "completed":
+        return "Lista";
+      case "failed":
+        return "Falló";
+      default:
+        return "";
+    }
+  }, []);
 
   const handleUnlock = useCallback(() => {
     if (!isAuthenticated || !savedAssetIdRef.current) {
@@ -1646,6 +2164,9 @@ export default function CreativeDirector({
 
   const creativeDirectorProjectContext: ProjectContext = {
     currentImage: previewUrl ? { url: previewUrl } : undefined,
+    ...(sourceFiles.length > 0
+      ? { sourcePhotoCount: sourceFiles.length }
+      : {}),
     currentCommercialDescription: input.trim() || undefined,
     destination: destination
       ? {
@@ -1803,7 +2324,8 @@ export default function CreativeDirector({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        accept={IMAGE_ACCEPT}
+        multiple
         onChange={handleFileChange}
         className="sr-only"
       />
@@ -1882,16 +2404,20 @@ export default function CreativeDirector({
               tone="director"
               label={
                 creationProgressComplete
-                  ? creationMode === "advertising_image"
-                    ? "Imagen lista"
-                    : "Comercial listo"
+                  ? isBatchCreating
+                    ? "Procesando tus imágenes"
+                    : creationMode === "advertising_image"
+                      ? "Imagen lista"
+                      : "Comercial listo"
                   : creationBand.label
               }
               stage={
                 creationProgressComplete
-                  ? creationMode === "advertising_image"
-                    ? "Tu imagen publicitaria está lista."
-                    : "Tu comercial está listo."
+                  ? isBatchCreating
+                    ? batchProgressMessage || creationBand.stage
+                    : creationMode === "advertising_image"
+                      ? "Tu imagen publicitaria está lista."
+                      : "Tu comercial está listo."
                   : creationBand.stage || creationMessage
               }
               progress={creationProgress.progress}
@@ -1899,6 +2425,41 @@ export default function CreativeDirector({
               longWait={creationProgress.longWait}
             />
           </DirectorStage>
+          {isBatchCreating && batchItems.length > 0 ? (
+            <ul className="mx-auto mt-6 grid max-w-2xl grid-cols-4 gap-2 px-6 sm:grid-cols-5 md:grid-cols-6">
+              {batchItems.map((item, index) => (
+                <li
+                  key={item.id}
+                  className="relative overflow-hidden rounded-lg border border-white/10 bg-white/5"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      item.premiumImage ||
+                      sourcePreviewUrls[index] ||
+                      previewUrl ||
+                      ""
+                    }
+                    alt={item.originalFilename}
+                    className="aspect-square w-full object-cover opacity-90"
+                  />
+                  <span
+                    className={`absolute inset-x-0 bottom-0 px-1 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wide ${
+                      item.status === "completed"
+                        ? "bg-emerald-500/90 text-white"
+                        : item.status === "failed"
+                          ? "bg-red-500/90 text-white"
+                          : item.status === "processing"
+                            ? "bg-violet-500/90 text-white"
+                            : "bg-black/70 text-white/80"
+                    }`}
+                  >
+                    {batchStatusLabel(item.status)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </motion.div>
       ) : premiumPhaseActive ? (
         <motion.div
@@ -1967,6 +2528,114 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
+        {phase === "batch_result" && (
+          <motion.div
+            key="batch_result"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 shadow-lg sm:p-8"
+          >
+            <div className="space-y-2 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                {batchItems.filter((item) => item.status === "completed").length}{" "}
+                de {batchItems.length || sourceFiles.length} imágenes listas
+              </h2>
+              <p className="text-sm text-neutral-500">
+                {batchItems.some((item) => item.status === "failed")
+                  ? "Algunas fotos no se pudieron procesar. Puedes reintentar solo las fallidas."
+                  : "Tu lote está en Biblioteca."}
+              </p>
+            </div>
+
+            {batchItems.length > 0 ? (
+              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                {batchItems.map((item, index) => (
+                  <li
+                    key={item.id}
+                    className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        item.premiumImage ||
+                        sourcePreviewUrls[index] ||
+                        previewUrl ||
+                        ""
+                      }
+                      alt={item.originalFilename}
+                      className="aspect-square w-full object-cover"
+                    />
+                    <span
+                      className={`absolute inset-x-0 bottom-0 px-1 py-0.5 text-center text-[10px] font-semibold ${
+                        item.status === "completed"
+                          ? "bg-emerald-600 text-white"
+                          : item.status === "failed"
+                            ? "bg-red-600 text-white"
+                            : "bg-neutral-800 text-white"
+                      }`}
+                    >
+                      {batchStatusLabel(item.status)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {error ? (
+              <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <p className="whitespace-pre-line">{error}</p>
+                {autoSaveStatus === "requires-package" && (
+                  <Link
+                    href="/planes"
+                    className="inline-flex font-semibold text-red-700 underline underline-offset-2"
+                  >
+                    Ver planes
+                  </Link>
+                )}
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-3">
+              {batchItems.some((item) => item.status === "failed") ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void runBatchCreation({ retryFailedOnly: true })
+                  }
+                  className="rounded-2xl border border-neutral-200 bg-neutral-50 py-3.5 text-sm font-semibold text-neutral-900 transition hover:border-violet-300 hover:bg-violet-50/40"
+                >
+                  Reintentar fallidas
+                </button>
+              ) : null}
+              {batchProjectId ||
+              batchItems.some((item) => item.status === "completed") ? (
+                <button
+                  type="button"
+                  onClick={handleOpenLibrary}
+                  className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+                >
+                  Ver en Biblioteca
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setPhase("intent")}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-400 transition hover:text-neutral-700"
+              >
+                Crear otra pieza
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {phase === "upload" && (
           <motion.div
             key="upload"
@@ -1983,35 +2652,92 @@ export default function CreativeDirector({
             </div>
 
             <InstantCaptureButtons
+              multiple
               onFileSelected={(file) =>
                 applySelectedFile(file, { autoContinue: true })
               }
+              onFilesSelected={(files) =>
+                appendSourceFiles(files, { autoContinue: true })
+              }
             />
 
-            <label
-              className="group block cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="overflow-hidden rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 transition group-hover:border-violet-300 group-hover:bg-violet-50/30">
-                {previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={previewUrl}
-                    alt="Vista previa"
-                    className="mx-auto max-h-80 w-full object-contain p-4"
-                  />
-                ) : (
-                  <div className="flex min-h-32 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
-                    <p className="text-sm text-neutral-500">
-                      o arrastra tu foto aquí
-                    </p>
-                    <p className="text-xs text-neutral-400">
-                      Una foto de celular es suficiente
-                    </p>
+            {isBatchSelection ? (
+              <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {sourceFiles.length} fotos seleccionadas
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-violet-300 hover:bg-violet-50/40"
+                    >
+                      Agregar más fotos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearSourceFiles}
+                      className="rounded-xl px-3 py-1.5 text-xs font-semibold text-neutral-500 transition hover:text-neutral-800"
+                    >
+                      Limpiar todo
+                    </button>
                   </div>
-                )}
+                </div>
+
+                <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                  {sourceFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                      className="relative overflow-hidden rounded-xl border border-neutral-200 bg-white"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={sourcePreviewUrls[index] ?? previewUrl ?? ""}
+                        alt={file.name}
+                        className="aspect-square w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSourceFileAt(index)}
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900/80 text-xs font-bold text-white transition hover:bg-neutral-900"
+                        aria-label={`Quitar ${file.name}`}
+                      >
+                        ×
+                      </button>
+                      <p className="truncate px-1.5 py-1 text-[10px] text-neutral-500">
+                        {file.name}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </label>
+            ) : (
+              <label
+                className="group block cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="overflow-hidden rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 transition group-hover:border-violet-300 group-hover:bg-violet-50/30">
+                  {previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewUrl}
+                      alt="Vista previa"
+                      className="mx-auto max-h-80 w-full object-contain p-4"
+                    />
+                  ) : (
+                    <div className="flex min-h-32 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
+                      <p className="text-sm text-neutral-500">
+                        o arrastra tu foto aquí
+                      </p>
+                      <p className="text-xs text-neutral-400">
+                        Una foto de celular es suficiente
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </label>
+            )}
 
             {error && (
               <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -2166,6 +2892,45 @@ export default function CreativeDirector({
           </motion.div>
         )}
 
+        {phase === "image_intent" && (
+          <motion.div
+            key="image_intent"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="-mx-6 space-y-8 rounded-3xl bg-black px-6 py-8 sm:-mx-0"
+          >
+            <div className="space-y-3 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {imageIntentQuestion}
+              </h2>
+              <p className="text-base text-white/55">
+                Elige una opción para preparar el resultado correcto.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {IMAGE_INTENT_CHOICES.map((choice) => (
+                <button
+                  key={choice.intent}
+                  type="button"
+                  onClick={() => void selectImageIntent(choice.intent)}
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-4 text-base font-semibold text-white transition hover:border-white/30 hover:bg-white/[0.08]"
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setPhase("intent")}
+              className="w-full rounded-2xl py-3 text-sm font-semibold text-white/50 transition hover:text-white/80"
+            >
+              Volver
+            </button>
+          </motion.div>
+        )}
+
         {phase === "intent" && (
           <motion.div
             key="intent"
@@ -2208,6 +2973,14 @@ export default function CreativeDirector({
                     : `${advertisingCreditsRemaining} imágenes disponibles`}
                 </p>
               ) : null}
+              {isBatchSelection ? (
+                <p className="text-sm text-white/55" role="status">
+                  {sourceFiles.length} fotos seleccionadas
+                  {creationMode === "commercial"
+                    ? ` · ${COMMERCIAL_BATCH_BLOCKED_MESSAGE}`
+                    : " · Se aplicará la misma instrucción a cada foto"}
+                </p>
+              ) : null}
             </div>
 
             <form onSubmit={handleIntentSubmit} className="space-y-5">
@@ -2242,7 +3015,10 @@ export default function CreativeDirector({
 
               <button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={
+                  !input.trim() ||
+                  (isBatchSelection && creationMode !== "advertising_image")
+                }
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 px-5 py-3.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <span aria-hidden="true">✨</span>
@@ -2573,7 +3349,10 @@ export default function CreativeDirector({
         !directorReviewActive &&
         !(phase === "preview" && Boolean(videoUrl)) &&
         phase !== "unavailable" && (
-        <CreativeDirectorPresence onOpen={handleOpenDirectorPanel} />
+        <CreativeDirectorPresence
+          onOpen={handleOpenDirectorPanel}
+          libraryOpen={libraryOpen}
+        />
       )}
 
       <CreativeDirectorPanel
@@ -2589,6 +3368,7 @@ export default function CreativeDirector({
             ? "elevated"
             : "default"
         }
+        libraryOpen={libraryOpen}
         onClose={handleCloseDirectorPanel}
         projectContext={creativeDirectorProjectContext}
         onUseProposal={handleUseDirectorProposal}
@@ -2599,6 +3379,61 @@ export default function CreativeDirector({
         onMessagesChange={setDirectorMessages}
         authRedirectTo={authRedirectToRef.current}
         showRegistrationInvite={showRegistrationInvite}
+        photoActions={
+          <div className="space-y-2">
+            <InstantCaptureButtons
+              multiple
+              variant="dark"
+              size="compact"
+              order="gallery-first"
+              galleryLabel="Subir foto(s)"
+              cameraLabel="Tomar foto"
+              onFileSelected={(file) => {
+                applySelectedFile(file);
+                // Enter existing upload surface so single/batch Phase A UI can show.
+                setPhase((current) =>
+                  current === "welcome" ? "upload" : current,
+                );
+              }}
+              onFilesSelected={(files) => {
+                appendSourceFiles(files);
+                setPhase((current) =>
+                  current === "welcome" ? "upload" : current,
+                );
+              }}
+            />
+            {sourceFiles.length > 0 ? (
+              <p
+                className="text-center text-[11px] font-medium tracking-wide text-white/45"
+                role="status"
+                aria-live="polite"
+              >
+                ✓{" "}
+                {sourceFiles.length === 1
+                  ? "1 foto cargada"
+                  : `${sourceFiles.length} fotos cargadas`}
+              </p>
+            ) : null}
+          </div>
+        }
+        accountActions={
+          !isAuthenticated ? (
+            <>
+              <Link
+                href="/login?redirect=%2Fstudio"
+                className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
+              >
+                Iniciar sesión
+              </Link>
+              <Link
+                href="/login?redirect=%2Fstudio"
+                className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
+              >
+                Crear cuenta
+              </Link>
+            </>
+          ) : null
+        }
         secondaryActions={
           phase === "welcome" ? (
             <div className="space-y-2">
@@ -2631,23 +3466,57 @@ export default function CreativeDirector({
  * Compact persistent entry point while the Director panel is closed.
  * One shared conversation remains owned by CreativeDirectorPanel + sessionKey.
  * Anchored bottom-right above primary CTA stacks (see flow pb-36 / mobile offset).
+ * When Biblioteca is open: desktop sits just left of the panel (max-w-md);
+ * mobile keeps compact placement (no desktop panel-offset).
+ * Visual presence only — same onOpen handler; canonical Director artwork.
  */
-function CreativeDirectorPresence({ onOpen }: { onOpen: () => void }) {
+function CreativeDirectorPresence({
+  onOpen,
+  libraryOpen = false,
+}: {
+  onOpen: () => void;
+  libraryOpen?: boolean;
+}) {
+  // Biblioteca aside uses max-w-md (28rem). Desktop: sit just left of that boundary.
+  // Mobile Biblioteca is full-width — keep compact closed-state placement; hide while open.
+  const positionClass = libraryOpen
+    ? "pointer-events-none fixed bottom-24 right-3 z-[105] max-sm:hidden sm:bottom-8 sm:right-[calc(28rem+1.5rem)]"
+    : "pointer-events-none fixed bottom-24 right-3 z-[105] sm:bottom-8 sm:right-6";
+
   return (
-    <div className="pointer-events-none fixed bottom-24 right-3 z-[105] sm:bottom-8 sm:right-6">
+    <div className={positionClass}>
       <button
         type="button"
         onClick={onOpen}
-        className="pointer-events-auto flex w-[10.75rem] flex-col items-start rounded-2xl border border-neutral-200/90 bg-white/95 px-3 py-2.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:border-violet-200 hover:shadow-[0_16px_44px_rgba(0,0,0,0.14)]"
+        className="pointer-events-auto group flex w-[11.5rem] flex-col overflow-hidden rounded-2xl border border-white/12 bg-[#0c0c14]/96 text-left shadow-[0_18px_48px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:border-fuchsia-300/35 hover:shadow-[0_22px_56px_rgba(0,0,0,0.5)] sm:w-[12.25rem]"
         aria-label="Abrir Director Creativo"
       >
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-600">
-          <span aria-hidden="true">✨</span>
-          Director Creativo
+        <span className="relative flex h-[5.75rem] w-full items-end justify-center overflow-hidden sm:h-[6.5rem]">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(217,70,239,0.28)_0%,rgba(12,12,20,0.2)_55%,rgba(12,12,20,0.95)_100%)]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-[28%] h-[55%] w-[55%] -translate-x-1/2 rounded-full bg-fuchsia-500/20 blur-2xl"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element -- approved transparent PNG; match DirectorStage slot */}
+          <img
+            src={DIRECTOR_ARTWORK_SRC}
+            alt=""
+            className="relative z-[1] h-[5.5rem] w-auto max-w-[7.5rem] object-contain object-bottom drop-shadow-[0_12px_24px_rgba(0,0,0,0.55)] transition duration-300 group-hover:scale-[1.03] sm:h-[6.25rem] sm:max-w-[8.25rem]"
+          />
         </span>
-        <span className="mt-0.5 text-[11px] text-neutral-500">Disponible</span>
-        <span className="mt-1.5 inline-flex items-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2.5 py-1 text-[11px] font-semibold text-white">
-          Pregúntame
+        <span className="flex flex-col px-3 pb-3 pt-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-fuchsia-300/90">
+            Director Creativo
+          </span>
+          <span className="mt-1 text-[12px] leading-snug text-white/75">
+            ¿Qué hacemos ahora?
+          </span>
+          <span className="mt-2 inline-flex w-fit items-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+            Pregúntame
+          </span>
         </span>
       </button>
     </div>

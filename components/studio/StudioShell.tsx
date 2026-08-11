@@ -47,6 +47,9 @@ export function useStudioAuth() {
       // INITIAL_SESSION can emit session=null before cookies hydrate and would
       // overwrite a valid getUser() result — only react to real auth transitions.
       if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          setUser(session.user);
+        }
         setReady(true);
         return;
       }
@@ -131,38 +134,66 @@ export default function StudioShell({
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 z-50 mt-2 min-w-[180px] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLibrary?.();
-                    }}
-                  >
-                    Mi Biblioteca
-                  </button>
-                  <Link
-                    href="/creditos"
-                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Mis Créditos
-                  </Link>
-                  <Link
-                    href="/planes"
-                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Planes y Precios
-                  </Link>
-                  <Link
-                    href="/auth/signout"
-                    prefetch={false}
-                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Salir
-                  </Link>
+                  {authUser ? (
+                    <>
+                      <button
+                        type="button"
+                        className="block w-full px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onOpenLibrary?.();
+                        }}
+                      >
+                        Mi Biblioteca
+                      </button>
+                      <Link
+                        href="/creditos"
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Mis Créditos
+                      </Link>
+                      <Link
+                        href="/planes"
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Planes y Precios
+                      </Link>
+                      <Link
+                        href="/auth/signout"
+                        prefetch={false}
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Salir
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login?redirect=%2Fstudio"
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Iniciar sesión
+                      </Link>
+                      <Link
+                        href="/login?redirect=%2Fstudio"
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Crear cuenta
+                      </Link>
+                      <Link
+                        href="/planes"
+                        className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Planes y Precios
+                      </Link>
+                    </>
+                  )}
                 </div>
               </>
             )}

@@ -21,6 +21,11 @@ export type AdvertisingGenerateContinuity = {
   industry: string | null;
   awaitingGenerate: true;
   savedAt: string;
+  /**
+   * When > 1, Generate was for a Batch Multi-Photo selection.
+   * File[] does not survive OAuth — after return, require re-select.
+   */
+  batchExpectedCount?: number;
 };
 
 export function saveAdvertisingGenerateContinuity(

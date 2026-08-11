@@ -3,7 +3,8 @@ export type Mode =
   | "mercado-libre"
   | "premium"
   | "social"
-  | "custom";
+  | "custom"
+  | "enhancement";
 
 export const PROMPTS: Record<Mode, string> = {
   amazon: `Goal: Create a marketplace-ready Amazon listing image.
@@ -64,6 +65,18 @@ Requirements:
 - Allow creative compositions
 - Follow user instructions as closely as possible
 - The default output may include alternative environments, scenes, backgrounds, and creative concepts when requested.`,
+
+  enhancement: `Goal: Professionally enhance the supplied photograph while preserving reality.
+
+THIS IS A PHOTOGRAPHIC ENHANCEMENT TASK.
+
+Requirements:
+- Preserve the physical reality represented in the original photograph
+- Improve light, color, exposure, perspective, clarity, and professional presentation
+- Do not redesign or materially change the subject/property
+- Do not invent advertising scenes, props, environments, or storytelling elements
+- For real estate: preserve architecture, room dimensions, windows, floors, fixtures, and actual view
+- Default output should look like an excellent professional photograph of the same subject`,
 };
 
 

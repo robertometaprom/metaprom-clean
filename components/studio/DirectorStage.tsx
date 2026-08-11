@@ -21,6 +21,11 @@ type DirectorStageProps = {
    * `contained` — fills parent without breaking out (nested surfaces).
    */
   layout?: "viewport" | "contained";
+  /**
+   * When Biblioteca is open on desktop, shift the Director row left so the
+   * interaction block clears the white panel. Mobile position unchanged.
+   */
+  libraryOpen?: boolean;
   className?: string;
 };
 
@@ -35,6 +40,7 @@ export default function DirectorStage({
   artworkSrc = DIRECTOR_ARTWORK_SRC,
   backdropSrc = PRODUCTION_BACKDROP_SRC,
   layout = "viewport",
+  libraryOpen = false,
   className = "",
 }: DirectorStageProps) {
   const [artworkReady, setArtworkReady] = useState(false);
@@ -43,11 +49,14 @@ export default function DirectorStage({
     layout === "viewport"
       ? "relative w-screen max-w-none left-1/2 -translate-x-1/2"
       : "relative w-full";
+  // Desktop + Biblioteca open: clear gap before max-w-md panel (~140px left).
+  const libraryDesktopShiftClass = libraryOpen
+    ? "sm:-translate-x-[200px]"
+    : "";
   // Talking: clear StudioShell header + breath as one unit. Working: frozen.
   const stageRowClass = isTalking
-    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-2 px-4 pb-6 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10`
-    : "relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10";
-
+    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-2 px-4 pb-6 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10 ${libraryDesktopShiftClass}`
+    : `relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10 ${libraryDesktopShiftClass}`;
   useEffect(() => {
     let cancelled = false;
     const probe = new window.Image();

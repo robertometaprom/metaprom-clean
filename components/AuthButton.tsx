@@ -24,7 +24,18 @@ export default function AuthButton({ labels }: AuthButtonProps) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION can emit session=null before cookies hydrate and would
+      // overwrite a valid getUser() result — only apply a positive INITIAL_SESSION
+      // or real auth transitions.
+      if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          setUser(session.user);
+        }
+        setLoading(false);
+        return;
+      }
+
       setUser(session?.user ?? null);
       setLoading(false);
     });

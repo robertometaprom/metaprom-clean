@@ -156,6 +156,36 @@ export function getAdvertisingImageBand(
   };
 }
 
+/** Batch Multi-Photo Advertising Image progress band (presentation only). */
+export function getBatchAdvertisingBand(
+  completedCount: number,
+  totalCount: number,
+  options?: { complete?: boolean },
+): StudioProgressBand {
+  const total = Math.max(0, totalCount);
+  const completed = Math.max(0, Math.min(completedCount, total));
+
+  if (options?.complete || (total > 0 && completed >= total)) {
+    return {
+      floor: 100,
+      ceiling: 100,
+      label: "Procesando tus imágenes",
+      stage: `${completed} de ${total} imágenes listas`,
+    };
+  }
+
+  const ratio = total > 0 ? completed / total : 0;
+  const floor = Math.max(5, Math.min(90, Math.floor(ratio * 88) + 5));
+  const ceiling = Math.min(95, floor + 12);
+
+  return {
+    floor,
+    ceiling,
+    label: "Procesando tus imágenes",
+    stage: `${completed} de ${total} completadas`,
+  };
+}
+
 export function getCommercialCreationBand(
   step: CreationStep,
   options: { preparing?: boolean; persisting?: boolean } = {},

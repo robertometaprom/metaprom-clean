@@ -6,7 +6,11 @@ const DEFAULT_COMMERCIAL_VISION =
   "Create a compelling luxury product advertisement that makes the customer want to buy immediately.";
 
 /**
- * Builds the image prompt for Studio — commercial transformation, not photo cleanup.
+ * Builds the CREATIVE ADVERTISING image prompt for Studio commercials
+ * and Advertising Image jobs routed as creative_advertising.
+ *
+ * Do NOT use this for platform_fidelity or professional_enhancement —
+ * those route through lib/studio/image-intent.ts instead.
  */
 export function buildStudioImagePrompt(
   customerIntent: string,

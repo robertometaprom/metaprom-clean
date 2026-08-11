@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import MetapromInfinityLogo from "@/components/studio/MetapromInfinityLogo";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 import {
   EXPERIENCE_PHASE_LABELS,
   EXPERIENCE_PHASES,
@@ -31,7 +31,7 @@ export default function ExperienceShell({
       {showHeader && (
         <header className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-xl">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-            <MetapromInfinityLogo size={48} />
+            <MetapromLogo variant="dark" height={28} />
             {userName ? (
               <span className="text-sm text-white/50">{userName}</span>
             ) : (

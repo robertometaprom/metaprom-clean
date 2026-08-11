@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import MisCreditos from "@/components/creditos/MisCreditos";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -29,8 +30,8 @@ export default async function CreditosPage() {
 
       <header className="relative z-10 border-b border-white/5">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-5 sm:px-6">
-          <Link href="/" className="text-xl font-semibold tracking-tight">
-            Metaprom
+          <Link href="/" aria-label="Metaprom">
+            <MetapromLogo variant="dark" height={32} priority />
           </Link>
           <nav className="flex items-center gap-4 sm:gap-5">
             <Link

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { Messages } from "@/lib/i18n";
 
 type FooterProps = {
@@ -11,11 +12,8 @@ export default function Footer({ labels, brand }: FooterProps) {
     <footer className="border-t border-white/5">
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-6 py-16 md:flex-row md:items-center md:py-20">
         <div>
-          <Link
-            href="/"
-            className="text-lg font-semibold tracking-tight text-[#F5F5F0] md:text-xl"
-          >
-            {brand}
+          <Link href="/" aria-label={brand}>
+            <MetapromLogo variant="dark" height={28} />
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/40">
             {labels.tagline}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { Messages } from "@/lib/i18n";
 
 type NavbarProps = {
@@ -8,22 +9,22 @@ type NavbarProps = {
 
 export default function Navbar({ labels }: NavbarProps) {
   return (
-    <nav className="fixed top-0 left-0 z-50 w-full px-6 py-6">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link
-            href="/"
-            className="text-xl font-semibold tracking-tight text-[#F5F5F0] md:text-2xl"
-          >
-            {labels.brand}
-          </Link>
-          <Link
-            href="/planes"
-            className="text-sm font-medium tracking-wide text-white/70 transition hover:text-white md:text-base"
-          >
-            {labels.planes}
-          </Link>
-        </div>
+    <nav className="pointer-events-none fixed top-0 left-0 z-50 w-full px-5 pt-4 pb-3 md:px-8 md:pt-5 md:pb-4">
+      <div className="pointer-events-auto mx-auto flex max-w-7xl items-center justify-between gap-3 md:gap-4">
+        <Link href="/" aria-label={labels.brand} className="inline-flex shrink-0 items-center">
+          <MetapromLogo
+            variant="dark"
+            height={34}
+            priority
+            className="md:hidden"
+          />
+          <MetapromLogo
+            variant="dark"
+            height={48}
+            priority
+            className="hidden md:inline-block"
+          />
+        </Link>
 
         <AuthButton labels={labels} />
       </div>

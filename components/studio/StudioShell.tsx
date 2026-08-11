@@ -82,18 +82,33 @@ export default function StudioShell({
         variant === "welcome" ? "bg-black text-white" : "bg-[#ececec] text-neutral-900"
       }`}
     >
-      <header
-        className={`relative z-30 backdrop-blur-md ${
-          variant === "welcome"
-            ? "border-b border-white/10 bg-black/90"
-            : "border-b border-neutral-200/60 bg-[#ececec]/90"
-        }`}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-10">
-          <Link href="/">
-            <MetapromLogo variant={variant === "welcome" ? "light" : "dark"} />
+      {/* Logo overlay sits above the header blur layer (approved Studio chrome) */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40">
+        <div className="mx-auto flex max-w-6xl items-center px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 lg:px-10">
+          <Link
+            href="/"
+            aria-label="Metaprom AI"
+            className="pointer-events-auto inline-flex items-center"
+          >
+            <MetapromLogo
+              variant={variant === "welcome" ? "dark" : "light"}
+              height={46}
+              priority
+            />
           </Link>
+        </div>
+      </div>
 
+      <header className="relative z-30">
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 backdrop-blur-xl ${
+            variant === "welcome"
+              ? "border-b border-white/5 bg-black/35"
+              : "border-b border-neutral-200/50 bg-[#ececec]/72"
+          }`}
+        />
+        <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-end px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 lg:px-10">
           <div className="relative">
             <button
               type="button"

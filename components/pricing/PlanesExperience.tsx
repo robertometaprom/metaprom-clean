@@ -4,6 +4,7 @@ import PackageCard, {
   type PackageCardView,
 } from "@/components/pricing/PackageCard";
 import PricingFaq from "@/components/pricing/PricingFaq";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
 import { PRICING_FAQ, PRICING_PAGE_COPY } from "@/lib/pricing";
 
@@ -34,11 +35,8 @@ export default function PlanesExperience({
 
       <header className="relative z-10 border-b border-white/5">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6 sm:py-6">
-          <Link
-            href="/"
-            className="text-xl font-semibold tracking-tight text-[#F5F5F0] md:text-2xl"
-          >
-            {brand}
+          <Link href="/" aria-label={brand}>
+            <MetapromLogo variant="dark" height={32} priority />
           </Link>
           <nav className="flex items-center gap-4 sm:gap-6">
             <span className="text-sm font-medium tracking-wide text-[#F5F5F0]/80">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error:
@@ -35,8 +36,10 @@ export default function LoginForm() {
           "
         >
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-cyan-500" />
-            <h1 className="text-3xl font-bold tracking-tight">Metaprom AI</h1>
+            <div className="mb-5 flex justify-center">
+              <MetapromLogo variant="dark" height={40} priority />
+            </div>
+            <h1 className="sr-only">Metaprom AI</h1>
             <p className="mt-2 text-sm text-white/60">
               Inicia sesión y comienza a crear contenido premium para tu
               negocio.

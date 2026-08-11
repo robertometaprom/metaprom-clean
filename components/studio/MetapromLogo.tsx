@@ -1,22 +1,83 @@
-type MetapromLogoProps = {
-  className?: string;
-  variant?: "dark" | "light";
-};
-
-export default function MetapromLogo({
-  className = "",
-  variant = "dark",
-}: MetapromLogoProps) {
-  const textColor = variant === "dark" ? "text-neutral-900" : "text-white";
-
-  return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-cyan-400 shadow-sm">
-        <span className="text-lg font-bold text-white">M</span>
-      </div>
-      <span className={`text-lg font-bold tracking-[0.12em] ${textColor}`}>
-        METAPROM
-      </span>
-    </div>
-  );
-}
+import Image from "next/image";
+import {
+  METAPROM_BRAND_ASSETS,
+  type MetapromBrandVariant,
+} from "@/lib/brand";
+
+type MetapromLogoProps = {
+  className?: string;
+  /**
+   * Background context for the lockup:
+   * - dark → logo for dark backgrounds
+   * - light → logo for light backgrounds
+   * - symbol → mark only
+   */
+  variant?: MetapromBrandVariant;
+  /** Visible content height in CSS pixels (default 36). */
+  height?: number;
+  priority?: boolean;
+};
+
+export default function MetapromLogo({
+  className = "",
+  variant = "dark",
+  height = 36,
+  priority = false,
+}: MetapromLogoProps) {
+  const asset = METAPROM_BRAND_ASSETS[variant];
+  const needsCrop =
+    asset.contentHeightRatio != null &&
+    asset.contentWidthRatio != null &&
+    asset.contentTopRatio != null &&
+    asset.contentLeftRatio != null;
+
+  if (!needsCrop) {
+    const width = Math.round((asset.width / asset.height) * height);
+    return (
+      <Image
+        src={asset.src}
+        alt="Metaprom AI"
+        width={asset.width}
+        height={asset.height}
+        priority={priority}
+        className={`inline-block h-auto w-auto shrink-0 ${className}`}
+        style={{ height, width }}
+      />
+    );
+  }
+
+  const contentHeightRatio = asset.contentHeightRatio!;
+  const contentWidthRatio = asset.contentWidthRatio!;
+  const contentTopRatio = asset.contentTopRatio!;
+  const contentLeftRatio = asset.contentLeftRatio!;
+  const imageHeight = Math.round(height / contentHeightRatio);
+  const imageWidth = Math.round((asset.width / asset.height) * imageHeight);
+  const frameWidth = Math.round(imageWidth * contentWidthRatio);
+  const offsetTop = -Math.round(contentTopRatio * imageHeight);
+  const offsetLeft = -Math.round(contentLeftRatio * imageWidth);
+
+  return (
+    <span
+      className={`relative inline-block shrink-0 overflow-hidden ${className}`}
+      style={{ height, width: frameWidth }}
+      aria-label="Metaprom AI"
+      role="img"
+    >
+      <Image
+        src={asset.src}
+        alt="Metaprom AI"
+        width={asset.width}
+        height={asset.height}
+        priority={priority}
+        className="absolute max-w-none"
+        style={{
+          height: imageHeight,
+          width: imageWidth,
+          top: offsetTop,
+          left: offsetLeft,
+        }}
+      />
+    </span>
+  );
+}
+

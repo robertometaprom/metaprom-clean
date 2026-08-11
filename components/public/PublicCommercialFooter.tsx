@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MetapromLogo from "@/components/studio/MetapromLogo";
 
 type PublicCommercialFooterProps = {
   brand: string;
@@ -11,11 +12,8 @@ export default function PublicCommercialFooter({
 }: PublicCommercialFooterProps) {
   return (
     <footer className="mt-12 border-t border-white/5 pt-8">
-      <Link
-        href="/"
-        className="text-sm font-semibold tracking-tight text-[#F5F5F0]"
-      >
-        {brand}
+      <Link href="/" aria-label={brand}>
+        <MetapromLogo variant="dark" height={24} />
       </Link>
       <p className="mt-2 text-xs leading-relaxed text-white/35">{tagline}</p>
     </footer>

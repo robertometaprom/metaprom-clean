@@ -8,48 +8,46 @@ export const PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> =
     PRICING_PACKAGES.map((pkg) => [pkg.id, pkg.stripeEnvironmentVariable]),
   );
 
-/** Env var that holds the Stripe Test Mode Price ID for a product key. */
+/** Env var that holds the Stripe Price ID for a product key in the active mode. */
 export const STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> = {
   ...PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT,
 };
 
-export function assertStripeTestSecretKey(secretKey: string): void {
-  if (secretKey.startsWith("sk_live_")) {
+export function assertStripeSecretKey(secretKey: string): void {
+  if (!secretKey.startsWith("sk_test_") && !secretKey.startsWith("sk_live_")) {
     throw new PaymentProviderError(
-      "Live Stripe keys are blocked. Use a Test Mode secret key (sk_test_...) only.",
-    );
-  }
-
-  if (!secretKey.startsWith("sk_test_")) {
-    throw new PaymentProviderError(
-      "STRIPE_SECRET_KEY must be a Stripe Test Mode key starting with sk_test_.",
+      "STRIPE_SECRET_KEY must start with sk_test_ or sk_live_.",
     );
   }
 }
 
-export function getStripeTestSecretKey(): string {
+export function getStripeSecretKey(): string {
   const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
   if (!secretKey) {
     throw new PaymentProviderError(
-      "Stripe is not configured. Set STRIPE_SECRET_KEY (sk_test_...) and PAYMENT_PROVIDER=stripe.",
+      "Stripe is not configured. Set STRIPE_SECRET_KEY and PAYMENT_PROVIDER=stripe.",
     );
   }
 
-  assertStripeTestSecretKey(secretKey);
+  assertStripeSecretKey(secretKey);
   return secretKey;
 }
 
+export function isStripeLiveMode(): boolean {
+  return getStripeSecretKey().startsWith("sk_live_");
+}
+
 /**
- * Resolve the Stripe Test Mode Price ID for a Metaprom product.
+ * Resolve the Stripe Price ID for a Metaprom product in the active mode.
  * Does not invent IDs — requires a real price_* value from the Stripe Dashboard.
  */
-export function getStripeTestPriceId(productId: string): string {
+export function getStripePriceId(productId: string): string {
   const envName = STRIPE_PRICE_ENV_BY_PRODUCT[productId];
 
   if (!envName) {
     throw new PaymentProviderError(
-      `No Stripe Test Price mapping for product "${productId}".`,
+      `No Stripe Price mapping for product "${productId}".`,
     );
   }
 
@@ -57,7 +55,7 @@ export function getStripeTestPriceId(productId: string): string {
 
   if (!priceId) {
     throw new PaymentProviderError(
-      `Missing ${envName}. Create a one-time Price in Stripe Test Mode for this product, then set ${envName}=price_...`,
+      `Missing ${envName}. Create a one-time Price in the active Stripe mode for this product, then set ${envName}=price_...`,
     );
   }
 
@@ -75,7 +73,7 @@ export function getStripeWebhookSecret(): string {
 
   if (!webhookSecret) {
     throw new PaymentProviderError(
-      "Missing STRIPE_WEBHOOK_SECRET. Add a Test Mode webhook endpoint in Stripe and set the signing secret (whsec_...).",
+      "Missing STRIPE_WEBHOOK_SECRET. Add a webhook endpoint in the active Stripe mode and set its signing secret (whsec_...).",
     );
   }
 

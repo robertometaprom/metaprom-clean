@@ -4,7 +4,11 @@ import Stripe from "stripe";
 
 import type { PricingPackage } from "@/lib/pricing";
 
-import { getStripeTestPriceId, getStripeTestSecretKey } from "./stripe-config";
+import {
+  getStripePriceId,
+  getStripeSecretKey,
+  isStripeLiveMode,
+} from "./stripe-config";
 import { PaymentProviderError } from "./types";
 
 /** Catalog displayPrice (major MXN) → Stripe unit_amount (centavos). */
@@ -13,15 +17,15 @@ export function packageAmountMinorUnits(pkg: PricingPackage): number {
 }
 
 /**
- * Validate a catalog package's configured Stripe Test Price before Checkout.
+ * Validate a catalog package's configured Stripe Price before Checkout.
  * Never create a session when amount/currency/mode do not match the catalog.
  */
 export async function assertStripePackagePriceMatchesCatalog(
   pkg: PricingPackage,
 ): Promise<{ priceId: string; unitAmount: number }> {
-  const priceId = getStripeTestPriceId(pkg.id);
+  const priceId = getStripePriceId(pkg.id);
   const expectedAmount = packageAmountMinorUnits(pkg);
-  const stripe = new Stripe(getStripeTestSecretKey());
+  const stripe = new Stripe(getStripeSecretKey());
 
   let price: Stripe.Price;
 
@@ -29,13 +33,13 @@ export async function assertStripePackagePriceMatchesCatalog(
     price = await stripe.prices.retrieve(priceId);
   } catch {
     throw new PaymentProviderError(
-      `Stripe Price ${priceId} for ${pkg.id} could not be retrieved. Verify ${pkg.stripeEnvironmentVariable} in Test Mode.`,
+      `Stripe Price ${priceId} for ${pkg.id} could not be retrieved. Verify ${pkg.stripeEnvironmentVariable} in the active Stripe mode.`,
     );
   }
 
-  if (price.livemode) {
+  if (price.livemode !== isStripeLiveMode()) {
     throw new PaymentProviderError(
-      `Stripe Price ${priceId} is Live Mode. V1 checkout requires Test Mode prices only.`,
+      `Stripe Price ${priceId} does not belong to the active Stripe mode.`,
     );
   }
 

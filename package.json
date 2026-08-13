@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "admin:grant": "node --env-file=.env.local scripts/admin-grant-entitlement.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

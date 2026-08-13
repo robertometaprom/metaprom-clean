@@ -10,7 +10,7 @@ export const LEGACY_STUDIO_STRIPE_PRICE_ENV = "STRIPE_PRICE_ID_COMMERCIAL_VIDEO"
 
 /**
  * Package checkout path is wired. Purchasability still requires a real
- * Stripe Test Mode Price ID in the package's dedicated env var.
+ * Stripe Price ID in the package's dedicated env var for the active mode.
  */
 export const PACKAGE_CHECKOUT_ENABLED = true;
 

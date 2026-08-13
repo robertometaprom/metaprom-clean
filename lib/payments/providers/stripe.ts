@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 
 import {
-  getStripeTestPriceId,
-  getStripeTestSecretKey,
+  getStripePriceId,
+  getStripeSecretKey,
   getStripeWebhookSecret,
 } from "../stripe-config";
 import type {
@@ -18,7 +18,7 @@ import { PaymentProviderError } from "../types";
 const DEFAULT_APP_URL = "http://localhost:3000";
 
 function getStripeClient(): Stripe {
-  return new Stripe(getStripeTestSecretKey());
+  return new Stripe(getStripeSecretKey());
 }
 
 function getAppUrl(): string {
@@ -56,7 +56,12 @@ function getPaymentMethodTypes(
 function mapStripeCheckoutStatus(
   session: Stripe.Checkout.Session,
 ): PaymentSessionStatus {
-  if (session.payment_status === "paid") return "completed";
+  if (
+    session.payment_status === "paid" ||
+    (session.payment_status === "no_payment_required" && session.status === "complete")
+  ) {
+    return "completed";
+  }
   if (session.status === "expired") return "cancelled";
   if (session.payment_status === "unpaid" || session.payment_status === "no_payment_required") {
     if (session.status === "open" || session.status === "complete") {
@@ -123,12 +128,13 @@ export const stripePaymentProvider: PaymentProvider = {
     const appUrl = getAppUrl();
     const paymentMethodTypes = getPaymentMethodTypes(request);
     const isOxxo = paymentMethodTypes.includes("oxxo");
-    const priceId = getStripeTestPriceId(request.productId);
+    const priceId = getStripePriceId(request.productId);
     const successPath = (request.successPath ?? "/studio").replace(/^\//, "");
     const cancelPath = (request.cancelPath ?? "/studio").replace(/^\//, "");
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      allow_promotion_codes: true,
       customer_email: request.customerEmail,
       client_reference_id: purchaseId,
       payment_method_types: paymentMethodTypes,

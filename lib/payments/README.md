@@ -7,14 +7,14 @@ Provider-agnostic checkout for Metaprom commercial and package purchases.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PAYMENT_PROVIDER` | `mock` | Active provider: `mock`, `mercadopago` (future), `stripe` |
-| `STRIPE_SECRET_KEY` | none | **Test Mode only** (`sk_test_...`). Live keys are rejected. |
+| `STRIPE_SECRET_KEY` | none | Active Stripe mode (`sk_test_...` or `sk_live_...`). |
 | `STRIPE_WEBHOOK_SECRET` | none | Webhook signing secret (`whsec_...`) |
 | `STRIPE_PRICE_ID_COMMERCIAL_1/5/10/20` | none | V1 commercial packages (Studio HD uses `commercial_1`) |
 | `STRIPE_PRICE_ID_ASSETS_10/25/50/100` | none | V1 advertising-asset packages |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public app base URL for Checkout return URLs |
 | `SUPABASE_SERVICE_ROLE_KEY` | none | Required for unauthenticated provider webhooks |
 
-See `.env.example` for the full template. Do not invent Stripe IDs — create them in the Stripe Dashboard (Test Mode).
+See `.env.example` for the full template. Do not invent Stripe IDs — create them in the active Stripe Dashboard mode.
 
 ## Package checkout (canonical)
 
@@ -25,7 +25,7 @@ createCheckoutSession(supabase, { productKey, userId, ... })
 - Browser sends only the stable product key (e.g. `commercial_10`).
 - Server resolves package from `lib/pricing/catalog.ts`.
 - Server resolves Stripe Price ID from the package env var.
-- Server validates Stripe Price (Test Mode, one-time, MXN, exact amount) before Checkout.
+- Server validates Stripe Price (same mode as the key, one-time, MXN, exact amount) before Checkout.
 - One reusable path for Commercial packages — no per-package checkout forks.
 - Advertising Image packages (`assets_*`) are purchasable when `ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL = true` and each package has a matching Stripe Test Price.
 - Billable consume: first persistence of a new finished Imagen Publicitaria (`consume_advertising_asset_on_first_persist`, idempotent per `asset_id`).

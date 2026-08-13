@@ -114,7 +114,7 @@ export default function AuthButton({ labels }: AuthButtonProps) {
       </Link>
       <Link
         href="/studio"
-        className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-6 py-3 text-base font-medium text-black transition hover:bg-white"
+        className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white sm:px-6 sm:py-3 sm:text-base"
       >
         {labels.startFree}
       </Link>

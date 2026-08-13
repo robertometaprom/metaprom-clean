@@ -55,7 +55,7 @@ export default function DirectorStage({
     : "";
   // Talking: clear StudioShell header + breath as one unit. Working: frozen.
   const stageRowClass = isTalking
-    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-2 px-4 pb-6 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10 ${libraryDesktopShiftClass}`
+    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-1.5 px-4 pb-4 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10 ${libraryDesktopShiftClass}`
     : `relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10 ${libraryDesktopShiftClass}`;
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +110,7 @@ export default function DirectorStage({
               <img
                 src={artworkSrc}
                 alt="Director Creativo"
-                className="relative z-[1] mx-auto h-auto w-full max-h-[58vh] object-contain object-bottom drop-shadow-[0_28px_56px_rgba(0,0,0,0.55)] sm:max-h-[64vh] lg:max-h-[74vh]"
+                className="relative z-[1] mx-auto h-auto w-full max-h-[42vh] object-contain object-bottom drop-shadow-[0_28px_56px_rgba(0,0,0,0.55)] sm:max-h-[64vh] lg:max-h-[74vh]"
               />
             ) : (
               <DirectorArtworkFallback />
@@ -121,7 +121,7 @@ export default function DirectorStage({
         {/* Work / progress surface — close to Director face / upper torso */}
         <div className="relative z-[2] w-full min-w-0 flex-1 lg:-ml-6 lg:basis-[52%] lg:self-center lg:pb-10 lg:pl-0">
           <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-lg">
-            <div className="director-work-surface relative px-1 py-2 sm:px-2 sm:py-3 lg:px-0 lg:py-2">
+            <div className="director-work-surface relative px-1 py-1.5 sm:px-2 sm:py-3 lg:px-0 lg:py-2">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={mode}
@@ -146,7 +146,7 @@ export default function DirectorStage({
 function DirectorArtworkFallback() {
   return (
     <div
-      className="relative z-[1] mx-auto flex h-[min(58vh,24rem)] w-full max-w-[20rem] items-end justify-center sm:h-[min(64vh,28rem)] lg:h-[min(72vh,34rem)]"
+      className="relative z-[1] mx-auto flex h-[min(42vh,20rem)] w-full max-w-[20rem] items-end justify-center sm:h-[min(64vh,28rem)] lg:h-[min(72vh,34rem)]"
       role="img"
       aria-label="Director Creativo"
     >

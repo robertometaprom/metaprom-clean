@@ -19,4 +19,4 @@ export type DirectorStageMode = "talking" | "working";
  * this — it already flows below the header in document layout.
  */
 export const DIRECTOR_TALKING_TOP_INSET_CLASS =
-  "pt-24 lg:pt-[6.5rem]";
+  "pt-20 md:pt-24 lg:pt-[6.5rem]";

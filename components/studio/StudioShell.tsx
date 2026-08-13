@@ -94,11 +94,7 @@ export default function StudioShell({
               <MetapromLogo variant="symbol" height={34} priority />
             </span>
             <span className="hidden md:inline-flex">
-              <MetapromLogo
-                variant={variant === "welcome" ? "dark" : "light"}
-                height={46}
-                priority
-              />
+              <MetapromLogo variant="compact" height={46} priority />
             </span>
           </Link>
         </div>

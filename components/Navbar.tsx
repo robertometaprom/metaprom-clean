@@ -11,16 +11,27 @@ export default function Navbar({ labels }: NavbarProps) {
   return (
     <nav className="pointer-events-none fixed top-0 left-0 z-50 w-full px-5 pt-4 pb-3 md:px-8 md:pt-5 md:pb-4">
       <div className="pointer-events-auto mx-auto flex max-w-7xl items-center justify-between gap-3 md:gap-4">
-        <Link href="/" aria-label={labels.brand} className="inline-flex shrink-0 items-center">
-          <span className="md:hidden">
-            <MetapromLogo variant="dark" height={34} priority />
-          </span>
-          <span className="hidden md:inline-flex">
-            <MetapromLogo variant="dark" height={48} priority />
-          </span>
-        </Link>
+        <div className="min-w-0 max-w-[min(9rem,calc(100%-9.5rem))] md:max-w-none">
+          {/* Compact lockup (symbol + wordmark, no slogan) — mobile and desktop. */}
+          <Link
+            href="/"
+            aria-label={labels.brand}
+            className="inline-flex max-w-full items-center md:hidden"
+          >
+            <MetapromLogo variant="compact" height={64} priority />
+          </Link>
+          <Link
+            href="/"
+            aria-label={labels.brand}
+            className="hidden items-center md:inline-flex"
+          >
+            <MetapromLogo variant="compact" height={48} priority />
+          </Link>
+        </div>
 
-        <AuthButton labels={labels} />
+        <div className="shrink-0">
+          <AuthButton labels={labels} />
+        </div>
       </div>
     </nav>
   );

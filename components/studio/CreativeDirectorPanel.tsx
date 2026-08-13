@@ -382,14 +382,26 @@ export default function CreativeDirectorPanel({
               : `flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)] ${libraryInteractionShiftClass}`
           }
         >
-          <header className="mb-3 flex items-start justify-between gap-3">
+          <header className="mb-2 flex items-start justify-between gap-3 md:mb-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-300/90">
                 Director Creativo
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-white/70">
-                {headerSubtitle}
-              </p>
+              {/* Mobile welcome: one compact invitation. Desktop/companion copy unchanged. */}
+              {!activeCompanionMoment && !isEmbedded ? (
+                <>
+                  <p className="mt-1 text-sm leading-relaxed text-white/70 md:hidden">
+                    Cuéntame qué quieres crear o qué quieres vender.
+                  </p>
+                  <p className="mt-1 hidden text-sm leading-relaxed text-white/70 md:block">
+                    {headerSubtitle}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm leading-relaxed text-white/70">
+                  {headerSubtitle}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-1">
               {accountActions ? (
@@ -445,16 +457,29 @@ export default function CreativeDirectorPanel({
                 >
                   {message.role === "director" ? (
                     <>
-                      <div className="text-sm leading-relaxed text-white/90 sm:text-[15px]">
-                        {message.content.split("\n").map((line, index) => (
-                          <p
-                            key={`${message.id}-line-${index}`}
-                            className={index > 0 ? "mt-2" : ""}
-                          >
-                            {line}
-                          </p>
-                        ))}
-                      </div>
+                      {message.content === DIRECTOR_PRE_PRODUCTION_WELCOME ? (
+                        <div className="hidden text-sm leading-relaxed text-white/90 md:block md:text-[15px]">
+                          {message.content.split("\n").map((line, index) => (
+                            <p
+                              key={`${message.id}-line-${index}`}
+                              className={index > 0 ? "mt-2" : ""}
+                            >
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm leading-relaxed text-white/90 sm:text-[15px]">
+                          {message.content.split("\n").map((line, index) => (
+                            <p
+                              key={`${message.id}-line-${index}`}
+                              className={index > 0 ? "mt-2" : ""}
+                            >
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      )}
 
                       {message.modifications &&
                       message.modifications.length > 0 ? (
@@ -527,7 +552,7 @@ export default function CreativeDirectorPanel({
             ) : null}
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-2 space-y-2 md:mt-4 md:space-y-3">
             {error ? (
               <div className="rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
                 <p>{error}</p>
@@ -563,7 +588,7 @@ export default function CreativeDirectorPanel({
               </div>
             ) : null}
 
-            <form onSubmit={handleSend} className="space-y-3">
+            <form onSubmit={handleSend} className="space-y-2 md:space-y-3">
               {photoActions ? (
                 <div aria-label="Acciones de foto">{photoActions}</div>
               ) : null}
@@ -584,14 +609,14 @@ export default function CreativeDirectorPanel({
                 rows={3}
                 placeholder="Escribe aquí..."
                 disabled={isLoading || registrationRequired}
-                className="w-full resize-none rounded-2xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-fuchsia-300/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full resize-none rounded-2xl border border-white/15 bg-black/35 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-fuchsia-300/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/20 disabled:cursor-not-allowed disabled:opacity-60 md:py-3"
               />
               <button
                 type="submit"
                 disabled={
                   !composerValue.trim() || isLoading || registrationRequired
                 }
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-3.5 text-sm font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-3 text-sm font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40 md:py-3.5"
               >
                 Enviar
                 <span aria-hidden="true">→</span>

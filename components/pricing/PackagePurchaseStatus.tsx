@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type StatusResponse = {
-  status?: string;
-  productId?: string;
-  error?: string;
-  oxxoReference?: string;
+type PurchaseEntitlement = {
+  quantity: number;
+  entitlementKind: "commercial" | "advertising_asset";
+  packageName: string;
 };
 
-type BalancesResponse = {
-  commercialsRemaining?: number;
-  advertisingAssetsRemaining?: number;
+type StatusResponse = {
+  status?: string;
   error?: string;
+  oxxoReference?: string;
+  package?: PurchaseEntitlement | null;
+  confirmation?: (PurchaseEntitlement & { balanceAfter: number }) | null;
 };
 
 type PackagePurchaseStatusProps = {
@@ -21,14 +22,26 @@ type PackagePurchaseStatusProps = {
   paymentHint: string | null;
 };
 
+function entitlementLabel(entitlement: PurchaseEntitlement): string {
+  if (entitlement.entitlementKind === "commercial") {
+    return entitlement.quantity === 1 ? "Comercial" : "Comerciales";
+  }
+
+  return "créditos de Imágenes Publicitarias";
+}
+
 export default function PackagePurchaseStatus({
   sessionId,
   paymentHint,
 }: PackagePurchaseStatusProps) {
-  const [status, setStatus] = useState<string | null>(paymentHint);
-  const [productId, setProductId] = useState<string | null>(null);
+  // Never use payment=success as confirmation. It is only a Stripe redirect hint.
+  const [status, setStatus] = useState<string | null>(null);
+  const [purchasePackage, setPurchasePackage] =
+    useState<PurchaseEntitlement | null>(null);
+  const [confirmation, setConfirmation] = useState<
+    (PurchaseEntitlement & { balanceAfter: number }) | null
+  >(null);
   const [oxxoReference, setOxxoReference] = useState<string | null>(null);
-  const [balances, setBalances] = useState<BalancesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,28 +65,21 @@ export default function PackagePurchaseStatus({
         }
 
         setStatus(data.status ?? null);
-        setProductId(data.productId ?? null);
+        setPurchasePackage(data.package ?? null);
+        setConfirmation(data.confirmation ?? null);
         setOxxoReference(data.oxxoReference ?? null);
 
-        if (data.status === "completed") {
-          const balRes = await fetch("/api/entitlements/balances");
-          if (balRes.ok) {
-            const bal = (await balRes.json()) as BalancesResponse;
-            if (!cancelled) setBalances(bal);
-          }
-          return;
-        }
+        if (data.status === "completed" && data.confirmation) return;
 
         if (
           data.status === "awaiting_payment" ||
-          data.status === "pending"
+          data.status === "pending" ||
+          (data.status === "completed" && !data.confirmation)
         ) {
           timer = setTimeout(poll, 4000);
         }
       } catch {
-        if (!cancelled) {
-          setError("Error de red al consultar el pago.");
-        }
+        if (!cancelled) setError("Error de red al consultar el pago.");
       }
     }
 
@@ -103,50 +109,87 @@ export default function PackagePurchaseStatus({
     );
   }
 
-  if (status === "completed") {
+  if (!status) {
     return (
       <section className="max-w-xl">
-        <h1 className="text-3xl font-bold tracking-tight">Pago confirmado</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Consultando tu pago
+        </h1>
         <p className="mt-4 text-base leading-relaxed text-white/60">
-          Tu paquete{productId ? ` (${productId})` : ""} fue acreditado. Los
-          saldos no vencen. Usa una unidad al iniciar un proyecto elegible —
-          no generamos todos los items del paquete de inmediato.
+          Estamos verificando el estado directamente con Stripe.
         </p>
-        {balances ? (
-          <ul className="mt-8 space-y-2 text-sm text-white/70">
-            <li>
-              Comerciales restantes:{" "}
-              <span className="text-[#F5F5F0]">
-                {balances.commercialsRemaining ?? 0}
-              </span>
-            </li>
-            <li>
-              Imágenes publicitarias restantes:{" "}
-              <span className="text-[#F5F5F0]">
-                {balances.advertisingAssetsRemaining ?? 0}
-              </span>
-            </li>
-          </ul>
-        ) : null}
+        {error ? <p className="mt-3 text-sm text-red-300/90">{error}</p> : null}
+      </section>
+    );
+  }
+
+  if (status === "completed" && confirmation) {
+    const balanceLabel =
+      confirmation.entitlementKind === "commercial"
+        ? confirmation.balanceAfter === 1
+          ? "Comercial disponible"
+          : "Comerciales disponibles"
+        : "créditos de Imágenes Publicitarias disponibles";
+
+    return (
+      <section className="max-w-xl">
+        <p className="text-sm font-medium uppercase tracking-[0.18em] text-emerald-300">
+          Compra completada
+        </p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">
+          ¡Pago confirmado!
+        </h1>
+        <p className="mt-4 text-base leading-relaxed text-white/60">
+          Tu compra agregó{" "}
+          <strong className="font-medium text-[#F5F5F0]">
+            {confirmation.quantity} {entitlementLabel(confirmation)}
+          </strong>{" "}
+          a tu cuenta.
+        </p>
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-sm text-white/50">Saldo actual</p>
+          <p className="mt-1 text-lg font-medium text-[#F5F5F0]">
+            {confirmation.balanceAfter} {balanceLabel}
+          </p>
+        </div>
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
             href="/studio"
             className="inline-flex rounded-full bg-[#F5F5F0] px-6 py-3 text-sm font-medium text-black"
           >
-            Ir a Studio
+            Crear ahora
           </Link>
           <Link
-            href="/planes"
+            href="/creditos"
             className="inline-flex rounded-full border border-white/20 px-6 py-3 text-sm text-white/70"
           >
-            Ver planes
+            Ver mis créditos
           </Link>
         </div>
       </section>
     );
   }
 
-  if (status === "failed" || status === "cancelled" || paymentHint === "cancelled") {
+  if (status === "completed") {
+    return (
+      <section className="max-w-xl">
+        <h1 className="text-3xl font-bold tracking-tight">
+          Confirmando tu compra
+        </h1>
+        <p className="mt-4 text-base leading-relaxed text-white/60">
+          Stripe confirmó el pago. Estamos verificando el abono en tu cuenta;
+          esta página se actualizará automáticamente.
+        </p>
+        {error ? <p className="mt-3 text-sm text-red-300/90">{error}</p> : null}
+      </section>
+    );
+  }
+
+  if (
+    status === "failed" ||
+    status === "cancelled" ||
+    paymentHint === "cancelled"
+  ) {
     return (
       <section className="max-w-xl">
         <h1 className="text-3xl font-bold tracking-tight">Pago no completado</h1>
@@ -164,16 +207,19 @@ export default function PackagePurchaseStatus({
     );
   }
 
-  // awaiting_payment / pending — especially OXXO
   return (
     <section className="max-w-xl">
-      <h1 className="text-3xl font-bold tracking-tight">Pago pendiente</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Pago OXXO pendiente</h1>
       <p className="mt-4 text-base leading-relaxed text-white/60">
-        Creaste una referencia de pago (por ejemplo OXXO). El proyecto{" "}
-        <strong className="font-medium text-[#F5F5F0]/80">no está pagado</strong>{" "}
-        todavía. La producción y el saldo del paquete comienzan solo cuando
-        Stripe confirma el pago en efectivo.
+        Tu pago todavía no ha sido confirmado. Tus créditos se agregarán
+        automáticamente sólo cuando OXXO y Stripe confirmen el pago.
       </p>
+      {purchasePackage ? (
+        <p className="mt-4 text-sm text-white/50">
+          Pendientes de acreditación: {purchasePackage.quantity}{" "}
+          {entitlementLabel(purchasePackage)}.
+        </p>
+      ) : null}
       {oxxoReference ? (
         <p className="mt-6 text-sm text-white/70">
           Referencia:{" "}

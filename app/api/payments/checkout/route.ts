@@ -276,14 +276,78 @@ async function getWithTrace(req: Request, traceId: string) {
   // cookie/anon authenticated client (EXECUTE is revoked for anon/authenticated).
   // Always persist completed sessions so a prior status update without grant
   // can be recovered idempotently.
+  let admin: ReturnType<typeof createAdminClient> | null = null;
+
   if (nextStatus !== purchase.status || nextStatus === "completed") {
-    const admin = createAdminClient();
+    admin = createAdminClient();
     await persistPaymentResult(admin, provider.id, {
       sessionId: session.sessionId,
       purchaseId: String(purchase.id),
       status: nextStatus,
       providerReference: session.sessionId,
     });
+  }
+
+  const pkg = getPricingPackageById(purchase.product_id);
+  let confirmation: {
+    quantity: number;
+    entitlementKind: "commercial" | "advertising_asset";
+    packageName: string;
+    balanceAfter: number;
+  } | null = null;
+
+  // A Stripe redirect is not proof of fulfillment. Only expose success after
+  // the canonical, idempotent ledger grant exists for this purchase.
+  if (nextStatus === "completed" && pkg) {
+    admin ??= createAdminClient();
+    const [grantResult, balanceResult] = await Promise.all([
+      admin
+        .from("entitlement_ledger")
+        .select("entitlement_kind, quantity")
+        .eq("purchase_id", purchase.id)
+        .eq("entry_type", "grant")
+        .maybeSingle(),
+      admin
+        .from("entitlement_balances")
+        .select("commercials_remaining, advertising_assets_remaining")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const { data: grant, error: grantError } = grantResult;
+    const { data: balance, error: balanceError } = balanceResult;
+
+    if (grantError) {
+      throw new Error(
+        `Failed to verify entitlement grant for purchase ${purchase.id}: ${grantError.message}`,
+      );
+    }
+
+    if (balanceError) {
+      throw new Error(
+        `Failed to load entitlement balance for purchase ${purchase.id}: ${balanceError.message}`,
+      );
+    }
+
+    const expectedKind =
+      pkg.category === "commercials" ? "commercial" : "advertising_asset";
+
+    if (
+      grant &&
+      grant.entitlement_kind === expectedKind &&
+      grant.quantity === pkg.quantity &&
+      balance
+    ) {
+      confirmation = {
+        quantity: pkg.quantity,
+        entitlementKind: expectedKind,
+        packageName: pkg.name,
+        balanceAfter:
+          expectedKind === "commercial"
+            ? balance.commercials_remaining
+            : balance.advertising_assets_remaining,
+      };
+    }
   }
 
   return Response.json({
@@ -295,5 +359,16 @@ async function getWithTrace(req: Request, traceId: string) {
     status: nextStatus,
     provider: provider.id,
     oxxoReference: session.oxxoReference,
+    package: pkg
+      ? {
+          quantity: pkg.quantity,
+          entitlementKind:
+            pkg.category === "commercials"
+              ? "commercial"
+              : "advertising_asset",
+          packageName: pkg.name,
+        }
+      : null,
+    confirmation,
   });
 }

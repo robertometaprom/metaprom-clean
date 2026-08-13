@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type PackagePurchaseButtonProps = {
   productKey: string;
@@ -85,6 +86,19 @@ export default function PackagePurchaseButton({
       {error ? (
         <p className="mt-3 text-center text-xs text-red-300/90" role="alert">
           {error}
+        </p>
+      ) : null}
+      {enabled ? (
+        <p className="mt-3 text-center text-[11px] leading-4 text-white/35">
+          Al comprar aceptas los{" "}
+          <Link href="/terminos" className="underline underline-offset-2 hover:text-white">
+            Términos
+          </Link>{" "}
+          y la{" "}
+          <Link href="/pagos-reembolsos" className="underline underline-offset-2 hover:text-white">
+            política de pagos y reembolsos
+          </Link>
+          .
         </p>
       ) : null}
     </div>

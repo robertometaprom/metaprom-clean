@@ -7,6 +7,7 @@ import PricingFaq from "@/components/pricing/PricingFaq";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
 import { PRICING_FAQ, PRICING_PAGE_COPY } from "@/lib/pricing";
+import LegalLinks from "@/components/legal/LegalLinks";
 
 type PlanesExperienceProps = {
   brand: string;
@@ -147,6 +148,11 @@ export default function PlanesExperience({
           </div>
         </section>
       </main>
+      <footer className="relative z-10 border-t border-white/5">
+        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
+          <LegalLinks className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/40" />
+        </div>
+      </footer>
     </div>
   );
 }

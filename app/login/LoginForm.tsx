@@ -57,6 +57,17 @@ export default function LoginForm() {
           <p className="mt-6 text-center text-xs text-white/40">
             Usamos Google como método principal de acceso.
           </p>
+          <p className="mt-3 text-center text-xs leading-5 text-white/40">
+            Al continuar aceptas los{" "}
+            <Link href="/terminos" className="underline underline-offset-2 hover:text-white">
+              Términos
+            </Link>{" "}
+            y reconoces el{" "}
+            <Link href="/privacidad" className="underline underline-offset-2 hover:text-white">
+              Aviso de Privacidad
+            </Link>
+            .
+          </p>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/50">

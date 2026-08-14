@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { User } from "@supabase/supabase-js";
+import { isMetapromAdmin } from "@/lib/admin/authorization";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type DashboardRange = "today" | "7d" | "30d" | "all";
@@ -86,6 +88,10 @@ function sum(rows: number[]): number {
   return rows.reduce((total, value) => total + value, 0);
 }
 
+export function isClearlyAutomatedTestUser(user: Pick<User, "email">): boolean {
+  return /^welcome-[ab]-[0-9a-f-]+@example\.com$/i.test(user.email ?? "");
+}
+
 function countKinds(entries: LedgerRow[], entryType: LedgerRow["entry_type"]) {
   const relevant = entries.filter((entry) => entry.entry_type === entryType);
   return {
@@ -118,6 +124,9 @@ export async function getDashboardData(range: DashboardRange) {
   const projects = (projectsResult.data ?? []) as ProjectRow[];
   const assets = (assetsResult.data ?? []) as AssetRow[];
   const users = usersResult.data.users;
+  const clearlyTestUsers = users.filter(isClearlyAutomatedTestUser);
+  const nonTestUsers = users.filter((user) => !isClearlyAutomatedTestUser(user));
+  const nonTestUserIds = new Set(nonTestUsers.map((user) => user.id));
   const purchaseById = new Map(purchases.map((purchase) => [purchase.id, purchase]));
 
   const rangePurchases = purchases.filter((purchase) => inRange(purchase.created_at, start));
@@ -130,10 +139,13 @@ export async function getDashboardData(range: DashboardRange) {
   const rangeProjects = projects.filter((project) => inRange(project.created_at, start));
   const rangeAssets = assets.filter((asset) => inRange(asset.created_at, start));
   const projectOwners = new Map(projects.map((project) => [project.id, project.user_id]));
-  const generatorUsers = new Set(rangeAssets.map((asset) => projectOwners.get(asset.project_id)).filter(Boolean));
-  const checkoutUsers = new Set(stripePurchases.map((purchase) => purchase.user_id));
-  const buyerUsers = new Set(paidPurchases.map((purchase) => purchase.user_id));
-  const registeredUsers = users.filter((user) => inRange(user.created_at, start)).length;
+  const generatorUsers = new Set(rangeAssets.map((asset) => projectOwners.get(asset.project_id)).filter((userId): userId is string => typeof userId === "string" && nonTestUserIds.has(userId)));
+  const checkoutUsers = new Set(stripePurchases.map((purchase) => purchase.user_id).filter((userId) => nonTestUserIds.has(userId)));
+  const buyerUsers = new Set(paidPurchases.map((purchase) => purchase.user_id).filter((userId) => nonTestUserIds.has(userId)));
+  const rawAuthRecords = users.filter((user) => inRange(user.created_at, start)).length;
+  const excludedTestAuthRecords = clearlyTestUsers.filter((user) => inRange(user.created_at, start)).length;
+  const nonTestAuthRecords = nonTestUsers.filter((user) => inRange(user.created_at, start)).length;
+  const pendingIdentityClassification = nonTestUsers.filter((user) => inRange(user.created_at, start) && !isMetapromAdmin(user)).length;
 
   const statusCounts = Object.fromEntries(["completed", "awaiting_payment", "pending", "failed", "cancelled"].map((status) => [status, stripePurchases.filter((purchase) => purchase.status === status).length]));
   const methodCounts = Object.fromEntries(["card", "oxxo", "spei", "wallet", "other", "unknown"].map((method) => [method, stripePurchases.filter((purchase) => (purchase.payment_method ?? "unknown") === method).length]));
@@ -171,7 +183,10 @@ export async function getDashboardData(range: DashboardRange) {
       },
     },
     usage: {
-      registeredUsers,
+      rawAuthRecords,
+      excludedTestAuthRecords,
+      nonTestAuthRecords,
+      pendingIdentityClassification,
       projects: rangeProjects.length,
       assets: rangeAssets.length,
       imageGenerations: rangeAssets.filter((asset) => asset.image_path).length,
@@ -179,7 +194,7 @@ export async function getDashboardData(range: DashboardRange) {
       premiumCompletions: rangeAssets.filter((asset) => asset.premium_video_path).length,
     },
     funnel: {
-      users: registeredUsers,
+      users: nonTestAuthRecords,
       usersWithGeneration: generatorUsers.size,
       usersWithCheckout: checkoutUsers.size,
       confirmedBuyers: buyerUsers.size,

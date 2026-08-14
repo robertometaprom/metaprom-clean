@@ -42,7 +42,7 @@ export type CreativeDirectorPanelProps = {
   open: boolean;
   onClose: () => void;
   projectContext: ProjectContext;
-  onUseProposal: (narrative: string) => void;
+  onUseProposal: (proposal: CommercialProposal) => void;
   /** Milestone companion moment requested by Studio orchestration. */
   pendingCompanionMoment?: CompanionMoment | null;
   onCompanionMomentHandled?: (moment: CompanionMoment) => void;
@@ -331,11 +331,11 @@ export default function CreativeDirectorPanel({
   );
 
   const handleUseProposal = useCallback(
-    (narrative: string) => {
+    (proposal: CommercialProposal, narrative: string) => {
       const trimmed = narrative.trim();
       if (!trimmed) return;
       // Handoff only — parent transitions Studio phase to intent; never navigate.
-      onUseProposal(trimmed);
+      onUseProposal({ ...proposal, narrative: trimmed });
       onClose();
     },
     [onClose, onUseProposal],
@@ -505,6 +505,7 @@ export default function CreativeDirectorPanel({
                           onEditedTextChange={setEditedProposalText}
                           onUse={() =>
                             handleUseProposal(
+                              message.proposal!,
                               editingProposalId === message.id
                                 ? editedProposalText
                                 : message.proposal!.narrative,

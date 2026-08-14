@@ -8,6 +8,10 @@ import type {
   DirectorModification,
 } from "../types";
 import { CreativeDirectorError } from "../types";
+import {
+  PROTECTED_REASON_VALUES,
+  type CommercialProductionProfile,
+} from "../../commercial-production-profile";
 
 const DEFAULT_MODEL =
   process.env.OPENAI_CREATIVE_DIRECTOR_MODEL ?? "gpt-4.1";
@@ -144,7 +148,25 @@ function isCommercialProposal(value: unknown): value is CommercialProposal {
     typeof proposal.emotionalTone === "string" &&
     typeof proposal.pacing === "string" &&
     typeof proposal.callToAction === "string" &&
-    typeof proposal.narrative === "string"
+    typeof proposal.narrative === "string" &&
+    typeof proposal.visualGenerationIntent === "string" &&
+    isProductionProfile(proposal.productionProfile) &&
+    Boolean(proposal.promotionalOverlays) &&
+    typeof proposal.promotionalOverlays === "object"
+  );
+}
+
+function isProductionProfile(value: unknown): value is CommercialProductionProfile {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as Partial<CommercialProductionProfile>;
+  return (
+    (profile.fidelity_class === "protected" || profile.fidelity_class === "flexible") &&
+    typeof profile.preserve_product_identity === "boolean" &&
+    profile.veo_copy_policy === "deterministic_overlay_only" &&
+    Array.isArray(profile.protected_reasons) &&
+    profile.protected_reasons.every((reason) =>
+      PROTECTED_REASON_VALUES.includes(reason),
+    )
   );
 }
 

@@ -18,6 +18,7 @@ import type { PaymentMethod } from "@/lib/payments/types";
 import type { Mode } from "@/lib/prompts";
 import { toDestinationGenerationPayload } from "@/lib/destination-generation";
 import type { StudioDestination } from "@/lib/studio-destination";
+import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
 import {
   buildAdvertisingImagePrompt,
   resolveImageIntent,
@@ -49,6 +50,8 @@ export type AutoSaveStatus =
 export type CreateCommercialInput = {
   file: File;
   customerIntent: string;
+  videoVisualIntent?: string;
+  productionProfile?: CommercialProductionProfile | null;
   productMode: Mode;
   destination?: StudioDestination | null;
   onStep?: (step: CreationStep, message: string) => void;
@@ -112,6 +115,8 @@ export type PersistCreationInput = {
   imagePrompt: string;
   videoPrompt: string;
   customerIntent: string;
+  videoVisualIntent?: string;
+  productionProfile?: CommercialProductionProfile | null;
   mode: Mode;
   projectMetadata: StudioProjectMetadata;
   existingProjectId?: string | null;
@@ -342,7 +347,12 @@ export async function createCommercialAssets(
 
   input.onStep?.("video", "Preparando tu comercial...");
 
-  const videoPrompt = buildStudioVideoPrompt(customerIntent, "teaser", destination);
+  const videoPrompt = buildStudioVideoPrompt(
+    input.videoVisualIntent ?? customerIntent,
+    "teaser",
+    destination,
+    input.productionProfile,
+  );
   const videoForm = new FormData();
   videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));
   videoForm.append("prompt", videoPrompt);
@@ -595,6 +605,8 @@ export async function persistCreationToLibrary(
       imagePrompt: input.imagePrompt,
       videoPrompt: input.videoPrompt,
       customerIntent: input.customerIntent,
+      videoVisualIntent: input.videoVisualIntent,
+      productionProfile: input.productionProfile,
       mode: input.mode,
       projectMetadata: input.projectMetadata,
       existingProjectId: input.existingProjectId,

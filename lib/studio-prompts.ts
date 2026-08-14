@@ -1,17 +1,17 @@
-import { buildDestinationImagePromptBlock, buildDestinationVideoPromptBlock } from "./destination-generation";
+import {
+  buildDestinationImagePromptBlock,
+  buildDestinationVideoPromptBlock,
+} from "./destination-generation";
 import type { StudioDestination } from "./studio-destination";
 import type { Mode } from "./prompts";
+import {
+  buildCommercialVideoPromptCore,
+  type CommercialProductionProfile,
+} from "./commercial-production-profile";
 
 const DEFAULT_COMMERCIAL_VISION =
   "Create a compelling luxury product advertisement that makes the customer want to buy immediately.";
 
-/**
- * Builds the CREATIVE ADVERTISING image prompt for Studio commercials
- * and Advertising Image jobs routed as creative_advertising.
- *
- * Do NOT use this for platform_fidelity or professional_enhancement —
- * those route through lib/studio/image-intent.ts instead.
- */
 export function buildStudioImagePrompt(
   customerIntent: string,
   mode: Mode,
@@ -19,7 +19,6 @@ export function buildStudioImagePrompt(
 ): string {
   const vision = customerIntent.trim() || DEFAULT_COMMERCIAL_VISION;
   const destinationBlock = buildDestinationImagePromptBlock(destination);
-
   const modeHint =
     mode === "amazon" || mode === "mercado-libre"
       ? "The result should also work as a high-converting marketplace hero image."
@@ -49,43 +48,18 @@ Requirements:
 The customer should immediately think: "Wow... this looks like a professional advertisement."`;
 }
 
-/**
- * Builds the video prompt for Studio — scene-based commercial, not photo animation.
- */
+/** Shared teaser/Premium builder. Fidelity and copy policies are deterministic. */
 export function buildStudioVideoPrompt(
   customerIntent: string,
   tier: "teaser" | "premium" = "teaser",
   destination?: StudioDestination | null,
+  productionProfile?: CommercialProductionProfile | null,
 ): string {
-  const vision = customerIntent.trim();
-  const durationSeconds = tier === "premium" ? 12 : 5;
   const destinationBlock = buildDestinationVideoPromptBlock(destination);
-
-  const sceneBlock = vision
-    ? `Scene to create:\n${vision}\n\nThe product from the reference image must appear naturally in this scene — worn, held, displayed, or used as appropriate.`
-    : `Scene to create:\nA cinematic commercial showcasing the product in an aspirational real-world setting with human interaction or dynamic product use. The product from the reference image must be the hero of the scene.`;
-
-  const qualityHint =
-    tier === "premium"
-      ? "Broadcast-quality HD commercial with rich detail and smooth motion."
-      : "Social teaser quality — punchy, scroll-stopping, medium fidelity.";
-
-  return `Create a ${durationSeconds}-second professional social media / TV commercial. This is NOT photo animation.
-
-${sceneBlock}
-${destinationBlock ? `\n${destinationBlock}\n` : ""}
-Requirements:
-- ${qualityHint}
-- Real advertising quality — like a commercial produced for Instagram, TikTok, or television
-- Show believable human action, environment, and context when appropriate
-- Cinematic camera movement (tracking shots, dolly, orbit — not a static zoom on a photo)
-- Professional lighting, depth of field, and color grading
-- The product must be clearly visible and recognizable throughout
-- Create a living scene with motion, atmosphere, and story
-
-Strictly avoid:
-- Ken Burns effect on a static image
-- Simply animating or parallaxing the uploaded photo
-- Slideshow-style motion or subtle photo wobble
-- Product floating on a plain background with no scene`;
+  return buildCommercialVideoPromptCore({
+    visualIntent: customerIntent,
+    tier,
+    destinationBlock,
+    productionProfile,
+  });
 }

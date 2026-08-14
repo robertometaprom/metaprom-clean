@@ -404,7 +404,23 @@ Respond with valid JSON matching this structure:
     "emotionalTone": "Mood and feeling of the commercial",
     "pacing": "Rhythm aligned with the destination",
     "callToAction": "How the commercial drives the desired outcome",
-    "narrative": "Full proposal as you would present it to the customer"
+    "narrative": "Full proposal as you would present it to the customer",
+    "visualGenerationIntent": "Only the scene, cinematography, environment, atmosphere, transitions and safe product motion. Exclude every exact promotional text or graphic requirement.",
+    "productionProfile": {
+      "fidelity_class": "protected",
+      "preserve_product_identity": true,
+      "protected_reasons": ["packaging", "label", "logo", "typography", "identity_critical_shape"],
+      "veo_copy_policy": "deterministic_overlay_only"
+    },
+    "promotionalOverlays": {
+      "headline": "Exact slogan/headline when requested",
+      "call_to_action": "Exact CTA when requested",
+      "url": "Exact URL when requested",
+      "phone": "Exact phone when requested",
+      "price_or_promotion": "Exact price/offer when requested",
+      "logo_required": true,
+      "timing_or_layout": "Optional timing/layout intent"
+    }
   }
 }
 
@@ -412,6 +428,10 @@ Rules for the response:
 - Include "proposal" only when you have enough information to recommend a concept for production.
 - Set "needsClarification" to true when you need more information; include specific "clarifyingQuestions".
 - Include "modifications" whenever you changed anything from the customer's request.
+- Classify branded, packaged, labelled, typographic, or identity-critical products as "protected" conservatively. Use "flexible" only when the scene can safely tolerate broader reinterpretation.
+- For protected proposals, keep product motion conservative and place creative motion in camera push/pull, lighting, environment, particles, background, transitions, atmosphere, and secondary elements. Do not require product manipulation by hands or people.
+- Preserve requested slogan, CTA, URL, phone, price/promotion, and logo requirements in "promotionalOverlays". Never include those exact graphic requirements in "visualGenerationIntent".
+- Always set "veo_copy_policy" to "deterministic_overlay_only".
 - Omit "proposal" when still gathering information.
 - Never break character. Never mention technology, AI, prompts, or internal systems in "message" or any field.`;
 

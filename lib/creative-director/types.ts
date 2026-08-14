@@ -5,6 +5,11 @@
  * They intentionally exclude UI, generation, checkout, and provider internals.
  */
 
+import type {
+  CommercialProductionProfile,
+  PromotionalOverlays,
+} from "../commercial-production-profile";
+
 /** A single message in the Creative Director conversation. */
 export type ConversationMessage = {
   role: "customer" | "director";
@@ -60,6 +65,11 @@ export type CommercialProposal = {
   callToAction: string;
   /** Full proposal narrative as the Director would present it to the customer. */
   narrative: string;
+  /** Visual-generation-only intent. It must exclude exact promotional graphics. */
+  visualGenerationIntent: string;
+  productionProfile: CommercialProductionProfile;
+  /** Preserved for deterministic composition in a later phase; never sent to Veo. */
+  promotionalOverlays: PromotionalOverlays;
 };
 
 /** Transparent explanation when the Director modifies the customer's request. */

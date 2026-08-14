@@ -23,6 +23,7 @@ import {
 import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
 import { resolveVeoGenerationParams } from "@/lib/destination-generation";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
+import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -32,6 +33,8 @@ export type PersistStudioCreationInput = {
   imagePrompt: string;
   videoPrompt: string;
   customerIntent: string;
+  videoVisualIntent?: string;
+  productionProfile?: CommercialProductionProfile | null;
   mode: PersistStudioAssetInput["mode"];
   projectMetadata: StudioProjectMetadata;
   existingProjectId?: string | null;
@@ -251,9 +254,10 @@ export async function persistStudioCreation(
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
       premium_prompt: buildStudioVideoPrompt(
-        input.customerIntent,
+        input.videoVisualIntent ?? input.customerIntent,
         "premium",
         destination,
+        input.productionProfile,
       ),
       destination,
       aspect_ratio: resolveVeoGenerationParams(destination).aspectRatio,

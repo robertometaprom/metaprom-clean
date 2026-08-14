@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "admin:grant": "node --env-file=.env.local scripts/admin-grant-entitlement.mjs"
+    "admin:grant": "node --env-file=.env.local scripts/admin-grant-entitlement.mjs",
+    "test:creative-recipe": "node --experimental-strip-types --test tests/creative-recipe.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

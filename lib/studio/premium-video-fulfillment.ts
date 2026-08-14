@@ -19,9 +19,10 @@ import {
   resolveWorkflow,
 } from "@/lib/video";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
+import { isCreativeRecipeV1, type CreativeRecipeV1 } from "@/lib/creative-recipe";
 
 export type PremiumFulfillmentResult =
-  | { status: "ready"; assetId: string; alreadyReady?: boolean }
+  | { status: "ready"; assetId: string; alreadyReady?: boolean; legacyFallback?: boolean }
   | { status: "skipped"; reason: string; assetId: string }
   | { status: "failed"; reason: string; assetId: string };
 
@@ -44,8 +45,11 @@ function isMissingSchemaColumnError(
 
 async function generatePremiumVideoBuffer(
   imageBuffer: Buffer,
-  customerIntent: string,
-  destination: StudioDestination | null,
+  input: {
+    prompt: string;
+    destination: StudioDestination | null;
+    model?: string;
+  },
 ): Promise<Buffer> {
   if (!isVertexVideoConfigured()) {
     throw new Error(
@@ -56,7 +60,7 @@ async function generatePremiumVideoBuffer(
 
   const workflow = "premium" as const;
   const workflowConfig = resolveWorkflow(workflow);
-  const prompt = buildStudioVideoPrompt(customerIntent, "premium", destination);
+  const { prompt, destination } = input;
   const veoParams = resolveVeoGenerationParams(destination);
   const durationSeconds = resolvePremiumVeoDurationSeconds();
 
@@ -68,13 +72,13 @@ async function generatePremiumVideoBuffer(
     generationParameters: {
       workflow,
       tier: workflowConfig.tier,
-      vertexModel: workflowConfig.vertexModel,
+      vertexModel: input.model ?? workflowConfig.vertexModel,
       aspectRatio: veoParams.aspectRatio,
       requestedAspectRatio: veoParams.requestedAspectRatio,
       durationSeconds,
       provider: "vertex-veo",
       veoRequestPayload: {
-        model: workflowConfig.vertexModel,
+        model: input.model ?? workflowConfig.vertexModel,
         config: {
           aspectRatio: veoParams.aspectRatio,
           numberOfVideos: 1,
@@ -89,6 +93,7 @@ async function generatePremiumVideoBuffer(
     prompt,
     imageBuffer,
     aspectRatio: veoParams.aspectRatio,
+    model: input.model,
   });
 
   return generation.buffer;
@@ -106,7 +111,7 @@ export async function fulfillPremiumVideoAfterPayment(
   const { data: asset, error: assetError } = await supabase
     .from("assets")
     .select(
-      "id, project_id, image_url, image_path, ai_instructions, payment_status, premium_video_path",
+      "id, project_id, image_url, image_path, ai_instructions, payment_status, premium_video_path, creative_recipe",
     )
     .eq("id", assetId)
     .maybeSingle();
@@ -167,6 +172,7 @@ async function fulfillWithProject(
     ai_instructions?: string | null;
     payment_status?: string | null;
     premium_video_path?: string | null;
+    creative_recipe?: unknown;
   },
   project: {
     id: string | number;
@@ -189,14 +195,18 @@ async function fulfillWithProject(
   }
 
   let imageBuffer: Buffer | null = null;
+  const recipe = isCreativeRecipeV1(asset.creative_recipe)
+    ? (asset.creative_recipe as CreativeRecipeV1)
+    : null;
+  const referenceImagePath = recipe?.reference_image_path ?? asset.image_path;
 
-  if (asset.image_url?.startsWith("data:")) {
+  if (!recipe && asset.image_url?.startsWith("data:")) {
     const base64 = asset.image_url.split(",")[1];
     imageBuffer = Buffer.from(base64, "base64");
-  } else if (asset.image_path) {
+  } else if (referenceImagePath) {
     const { data, error } = await supabase.storage
       .from(LIBRARY_BUCKET)
-      .download(asset.image_path);
+      .download(referenceImagePath);
 
     if (error || !data) {
       return {
@@ -218,12 +228,17 @@ async function fulfillWithProject(
   }
 
   try {
-    const destination = parseStudioDestination(project.destination);
+    const destination = recipe?.destination ?? parseStudioDestination(project.destination);
 
     const videoBuffer = await generatePremiumVideoBuffer(
       imageBuffer,
-      asset.ai_instructions ?? "",
-      destination,
+      {
+        prompt:
+          recipe?.premium_prompt ??
+          buildStudioVideoPrompt(asset.ai_instructions ?? "", "premium", destination),
+        destination,
+        model: recipe?.generation.premium_video.model,
+      },
     );
 
     const path = buildLibraryObjectPath({
@@ -265,7 +280,7 @@ async function fulfillWithProject(
       };
     }
 
-    return { status: "ready", assetId };
+    return { status: "ready", assetId, legacyFallback: !recipe };
   } catch (error) {
     const reason =
       error instanceof Error ? error.message : "Premium video generation failed.";

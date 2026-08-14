@@ -36,6 +36,9 @@ import { downloadFromUrl } from "@/lib/library-storage";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 import { ShareCommercialActions } from "@/components/share";
+import { isCommercialUnlockEligible } from "@/lib/creative-recipe";
+import { purchaseHdCommercial } from "@/lib/studio-creation";
+import type { PaymentMethod } from "@/lib/payments/types";
 
 
 
@@ -1158,6 +1161,9 @@ function AssetDetailCard({
   const [premiumError, setPremiumError] = useState(false);
 
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlockMessage, setUnlockMessage] = useState<string | null>(null);
 
 
 
@@ -1186,6 +1192,7 @@ function AssetDetailCard({
   const hasPremium = Boolean(premiumUrl || asset.premium_video_path);
 
   const premiumLocked = !hasPremium && !premiumOwned;
+  const canUnlock = isCommercialUnlockEligible(asset);
 
   const showPremiumSection =
     hasPremium || premiumLocked || Boolean(asset.premium_video_path) || premiumOwned;
@@ -1306,6 +1313,25 @@ function AssetDetailCard({
 
     }
 
+  };
+
+  const handleUnlock = async () => {
+    setUnlocking(true);
+    setUnlockMessage(null);
+    try {
+      const result = await purchaseHdCommercial({
+        assetId: asset.id,
+        paymentMethod,
+        onStatus: setUnlockMessage,
+      });
+      setUnlockMessage(result.message);
+    } catch (error) {
+      setUnlockMessage(
+        error instanceof Error ? error.message : "No pudimos completar la compra.",
+      );
+    } finally {
+      setUnlocking(false);
+    }
   };
 
 
@@ -1625,7 +1651,7 @@ function AssetDetailCard({
 
                         ? "Tu comercial HD estará disponible pronto."
 
-                        : "Compra HD en el estudio para desbloquear."}
+                        : "Desbloquea este comercial sin volver al estudio."}
 
                     </p>
 
@@ -1646,6 +1672,37 @@ function AssetDetailCard({
 
 
       <div className="flex flex-wrap gap-2 px-3 py-3">
+        {canUnlock && (
+          <div className="w-full space-y-2 rounded-xl border border-violet-100 bg-violet-50 p-3">
+            <div className="grid grid-cols-2 gap-2">
+              {(["card", "oxxo"] as const).map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(method)}
+                  className={`cursor-pointer rounded-lg border py-2 text-xs font-semibold ${
+                    paymentMethod === method
+                      ? "border-violet-500 bg-white text-violet-800"
+                      : "border-violet-100 text-neutral-600"
+                  }`}
+                >
+                  {method === "card" ? "Tarjeta" : "OXXO"}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={unlocking}
+              onClick={() => void handleUnlock()}
+              className="w-full cursor-pointer rounded-lg bg-violet-600 py-2.5 text-xs font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {unlocking ? "Procesando..." : "Desbloquear este comercial"}
+            </button>
+            {unlockMessage && (
+              <p className="text-xs leading-relaxed text-neutral-600">{unlockMessage}</p>
+            )}
+          </div>
+        )}
 
         {publicPreviewUrl && asset.share_slug && hasTeaser && (
 

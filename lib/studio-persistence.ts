@@ -15,6 +15,14 @@ import {
   uploadLibraryObject,
 } from "@/lib/library-storage";
 import { generateShareSlug, isShareSlugUniqueViolation } from "@/lib/preview/share-slug";
+import {
+  PROMPT_BUILDER_VERSION,
+  VIDEO_PROCESSING_VERSION,
+  buildCreativeRecipeV1,
+} from "@/lib/creative-recipe";
+import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
+import { resolveVeoGenerationParams } from "@/lib/destination-generation";
+import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -29,6 +37,13 @@ export type PersistStudioCreationInput = {
   existingProjectId?: string | null;
   existingAssetId?: string | null;
   onStage?: (stage: string, details?: Record<string, unknown>) => void;
+  generationMetadata?: {
+    imageProvider: string;
+    imageModel: string;
+    videoProvider: string;
+    previewVideoModel: string;
+    premiumVideoModel: string;
+  };
 };
 
 export type PersistStudioCreationResult = {
@@ -230,12 +245,55 @@ export async function persistStudioCreation(
     const existingAsset = await fetchBibliotecaAssetById(assetId);
     existingShareSlug = existingAsset?.share_slug;
     const shareSlug = resolveShareSlug(existingShareSlug);
+    const destination = input.projectMetadata.destination ?? null;
+    const recipe = buildCreativeRecipeV1({
+      reference_image_path: enhancedUpload.path,
+      customer_intention: input.customerIntent,
+      teaser_prompt: input.videoPrompt,
+      premium_prompt: buildStudioVideoPrompt(
+        input.customerIntent,
+        "premium",
+        destination,
+      ),
+      destination,
+      aspect_ratio: resolveVeoGenerationParams(destination).aspectRatio,
+      preview_duration_seconds: 4,
+      premium_target_duration_seconds: resolvePremiumVeoDurationSeconds(),
+      workflow_id: input.projectMetadata.workflow_id ?? null,
+      generation: {
+        image: {
+          provider:
+            input.generationMetadata?.imageProvider ??
+            "openai-responses-image-generation",
+          model:
+            input.generationMetadata?.imageModel ?? "configured-at-generation",
+        },
+        preview_video: {
+          provider: input.generationMetadata?.videoProvider ?? "vertex-veo",
+          model:
+            input.generationMetadata?.previewVideoModel ??
+            "configured-at-generation",
+          workflow: "preview",
+        },
+        premium_video: {
+          provider: input.generationMetadata?.videoProvider ?? "vertex-veo",
+          model:
+            input.generationMetadata?.premiumVideoModel ??
+            "configured-at-generation",
+          workflow: "premium",
+        },
+      },
+      prompt_builder_version: PROMPT_BUILDER_VERSION,
+      video_processing_version: VIDEO_PROCESSING_VERSION,
+      preview_path: teaserUpload.path,
+    });
 
     teaserUpdates = {
       ...teaserUpdates,
       teaser_video_path: teaserUpload.path,
       share_slug: shareSlug,
       visibility: "public",
+      creative_recipe: recipe,
     };
   } else {
     // Advertising Image (no teaser): assign share_slug so REVIEW can use

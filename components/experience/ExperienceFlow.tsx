@@ -268,6 +268,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
         teaserVideoBlob: result.videoBlob,
         imagePrompt: result.imagePrompt,
         videoPrompt: result.videoPrompt,
+        generationMetadata: result.generationMetadata,
         customerIntent: intent,
         mode: product.mode,
         projectMetadata: {

@@ -12,6 +12,7 @@ export type GenerateCommercialVideoInput = {
   prompt: string;
   imageBuffer: Buffer;
   aspectRatio?: VeoAspectRatio;
+  model?: string;
 };
 
 export type GenerateCommercialVideoResult = {
@@ -36,7 +37,7 @@ export async function generateCommercialVideo(
     imageBuffer: input.imageBuffer,
     aspectRatio: input.aspectRatio,
     durationSeconds,
-    model: workflowConfig.vertexModel,
+    model: input.model ?? workflowConfig.vertexModel,
   });
 
   const { buffer, processed } = await processCommercialVideo({
@@ -49,6 +50,6 @@ export async function generateCommercialVideo(
     processed,
     workflow: input.workflow,
     tier: workflowConfig.tier,
-    vertexModel: workflowConfig.vertexModel,
+    vertexModel: input.model ?? workflowConfig.vertexModel,
   };
 }

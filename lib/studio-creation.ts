@@ -60,6 +60,13 @@ export type CreateCommercialResult = {
   videoUrl: string;
   imagePrompt: string;
   videoPrompt: string;
+  generationMetadata: {
+    imageProvider: string;
+    imageModel: string;
+    videoProvider: string;
+    previewVideoModel: string;
+    premiumVideoModel: string;
+  };
 };
 
 export type CreateAdvertisingImageInput = {
@@ -115,6 +122,7 @@ export type PersistCreationInput = {
    * When false, skip (Commercial production). When omitted, inferred from teaser.
    */
   billAdvertisingAsset?: boolean;
+  generationMetadata?: CreateCommercialResult["generationMetadata"];
 };
 
 export type PersistCreationResult = {
@@ -274,7 +282,7 @@ function logPersistCreationStage(
 
 export async function parseJsonResponse(
   response: Response,
-): Promise<{ image?: string; error?: string }> {
+): Promise<{ image?: string; error?: string; provider?: string; model?: string }> {
   const contentType = response.headers.get("content-type") ?? "";
 
   if (!contentType.includes("application/json")) {
@@ -282,7 +290,12 @@ export async function parseJsonResponse(
   }
 
   try {
-    return (await response.json()) as { image?: string; error?: string };
+    return (await response.json()) as {
+      image?: string;
+      error?: string;
+      provider?: string;
+      model?: string;
+    };
   } catch {
     return { error: "Respuesta inválida del servidor." };
   }
@@ -366,6 +379,17 @@ export async function createCommercialAssets(
     videoUrl: URL.createObjectURL(blob),
     imagePrompt,
     videoPrompt,
+    generationMetadata: {
+      imageProvider: data.provider ?? "openai-responses-image-generation",
+      imageModel: data.model ?? "configured-at-generation",
+      videoProvider:
+        videoResponse.headers.get("X-Metaprom-Provider") ?? "vertex-veo",
+      previewVideoModel:
+        videoResponse.headers.get("X-Metaprom-Model") ?? "configured-at-generation",
+      premiumVideoModel:
+        videoResponse.headers.get("X-Metaprom-Premium-Model") ??
+        "configured-at-generation",
+    },
   };
 }
 
@@ -575,6 +599,7 @@ export async function persistCreationToLibrary(
       projectMetadata: input.projectMetadata,
       existingProjectId: input.existingProjectId,
       existingAssetId: input.existingAssetId,
+      generationMetadata: input.generationMetadata,
       onStage: logPersistCreationStage,
     });
 

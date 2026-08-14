@@ -114,6 +114,8 @@ export async function POST(req: Request) {
 
     return Response.json({
       image: `data:image/png;base64,${result.imageBase64}`,
+      provider: "openai-responses-image-generation",
+      model: result.model,
     });
   } catch (error) {
     console.error(

@@ -323,6 +323,13 @@ export default function CreativeDirector({
   const savedAssetIdRef = useRef<string | null>(null);
   const imagePromptRef = useRef("");
   const videoPromptRef = useRef("");
+  const generationMetadataRef = useRef<
+    ReturnType<typeof createCommercialAssets> extends Promise<infer Result>
+      ? Result extends { generationMetadata: infer Metadata }
+        ? Metadata | null
+        : null
+      : null
+  >(null);
   const projectMetadataRef = useRef<{
     workflow_id?: string | null;
     industry?: string | null;
@@ -1143,6 +1150,7 @@ export default function CreativeDirector({
       imagePrompt: string;
       videoPrompt: string;
       billAdvertisingAsset?: boolean;
+      generationMetadata?: NonNullable<typeof generationMetadataRef.current>;
     }) => {
       const product = matchedProductRef.current;
       const customerIntent = customerIntentRef.current.trim();
@@ -1170,6 +1178,8 @@ export default function CreativeDirector({
         existingAssetId: savedAssetIdRef.current,
         // Commercial: false. Standalone Advertising Image finalize: true.
         billAdvertisingAsset,
+        generationMetadata:
+          input.generationMetadata ?? generationMetadataRef.current ?? undefined,
       });
 
       if (result.projectId) savedProjectIdRef.current = result.projectId;
@@ -1609,6 +1619,7 @@ export default function CreativeDirector({
 
       imagePromptRef.current = result.imagePrompt;
       videoPromptRef.current = result.videoPrompt;
+      generationMetadataRef.current = result.generationMetadata;
       setPremiumImage(result.premiumImage);
       teaserVideoBlobStore.current = result.videoBlob;
       videoUrlRef.current = result.videoUrl;
@@ -1622,6 +1633,7 @@ export default function CreativeDirector({
         teaserVideoBlob: result.videoBlob,
         imagePrompt: result.imagePrompt,
         videoPrompt: result.videoPrompt,
+        generationMetadata: result.generationMetadata,
         billAdvertisingAsset: false,
       });
 

@@ -116,6 +116,9 @@ export async function POST(req: Request) {
         "X-Metaprom-Workflow": workflow,
         "X-Metaprom-Tier": workflowConfig.tier,
         "X-Metaprom-Processed": generation.processed ? "true" : "false",
+        "X-Metaprom-Provider": "vertex-veo",
+        "X-Metaprom-Model": generation.vertexModel,
+        "X-Metaprom-Premium-Model": resolveWorkflow("premium").vertexModel,
       },
     });
   } catch (error) {

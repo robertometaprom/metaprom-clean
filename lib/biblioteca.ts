@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 import type { Mode } from "./prompts";
 import type { AssetPaymentStatus } from "./commercial/tiers";
 import type { StudioDestination } from "./studio-destination";
+import type { CreativeRecipeV1 } from "./creative-recipe";
 
 export class BibliotecaAuthError extends Error {
   constructor(message = "Authentication required to access Biblioteca.") {
@@ -53,6 +54,7 @@ export type BibliotecaAsset = {
   payment_status?: AssetPaymentStatus;
   created_at?: string | null;
   updated_at?: string | null;
+  creative_recipe?: CreativeRecipeV1 | null;
 };
 
 export type StudioProjectMetadata = {
@@ -69,7 +71,7 @@ export type PersistStudioAssetInput = {
 const PROJECT_SELECT =
   "id, name, user_id, workflow_id, industry, intended_destination, created_at";
 const ASSET_SELECT_CORE =
-  "id, project_id, original_name, original_url, original_path, image_url, image_path, video_url, teaser_video_url, teaser_video_path, premium_video_url, premium_video_path, image_prompt, video_prompt, mode, ai_instructions, workflow_id, industry, payment_status, created_at";
+  "id, project_id, original_name, original_url, original_path, image_url, image_path, video_url, teaser_video_url, teaser_video_path, premium_video_url, premium_video_path, image_prompt, video_prompt, mode, ai_instructions, workflow_id, industry, payment_status, creative_recipe, created_at";
 const ASSET_SHARE_FIELDS = "share_slug, visibility, updated_at";
 const ASSET_SELECT = `${ASSET_SELECT_CORE}, ${ASSET_SHARE_FIELDS}`;
 
@@ -506,6 +508,7 @@ export async function updateBibliotecaAsset(
       | "video_prompt"
       | "ai_instructions"
       | "payment_status"
+      | "creative_recipe"
     >
   >,
 ): Promise<BibliotecaAsset> {

@@ -16,10 +16,10 @@ export default function PrivacidadPage() {
     >
       <LegalSection title="1. Responsable">
         <p>
-          El servicio se presenta públicamente como Metaprom AI. La identidad jurídica completa del responsable y su domicilio de privacidad están pendientes de definición y deberán incorporarse antes de un lanzamiento público amplio. No inventamos esos datos en este aviso.
+          El responsable del tratamiento de los datos personales es Metaprom AI.
         </p>
         <p>
-          Mientras se completa esa información, puedes dirigir preguntas y solicitudes de privacidad a soporte@metaprom.com.
+          Puedes dirigir preguntas y solicitudes de privacidad a soporte@metaprom.com. El domicilio de privacidad deberá completarse cuando se constituya la entidad jurídica definitiva.
         </p>
       </LegalSection>
 

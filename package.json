@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "admin:grant": "node --env-file=.env.local scripts/admin-grant-entitlement.mjs",
-    "test:creative-recipe": "node --experimental-strip-types --test tests/creative-recipe.test.ts",
-    "test:commercial-fidelity": "node --experimental-strip-types --test tests/studio-prompts.test.ts"
+    "test:creative-recipe": "tsx --test tests/creative-recipe.test.ts",
+    "test:commercial-fidelity": "tsx --test tests/studio-prompts.test.ts",
+    "test:video-processing": "tsx --test tests/video-processing-command.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

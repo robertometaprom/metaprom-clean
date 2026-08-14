@@ -1,14 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { CommercialProductionProfile } from "../lib/commercial-production-profile";
-import { buildCommercialVideoPromptCore } from "../lib/commercial-production-profile.ts";
-
-const buildStudioVideoPrompt = (
-  visualIntent: string,
-  tier: "teaser" | "premium" = "teaser",
-  _destination: null = null,
-  productionProfile?: CommercialProductionProfile,
-) => buildCommercialVideoPromptCore({ visualIntent, tier, productionProfile });
+import {
+  buildStudioImagePrompt,
+  buildStudioVideoPrompt,
+} from "../lib/studio-prompts.ts";
 
 const protectedProfile: CommercialProductionProfile = {
   fidelity_class: "protected",
@@ -89,4 +85,35 @@ test("manual Commercial entry defaults conservatively to protected", () => {
   const prompt = buildStudioVideoPrompt("Premium product hero shot");
   assert.match(prompt, /Protected-product fidelity policy/);
   assert.match(prompt, /deterministic composition outside Veo/i);
+});
+
+test("Director promotional copy is excluded from Imagen Premium intent", () => {
+  const prompt = buildStudioImagePrompt(
+    "Convierte tus ideas en publicidad extraordinaria. Add METAPROM AI, https://metaprom.com and CTA Compra ahora.",
+    "custom",
+    null,
+    "Dark digital environment with luminous particles and camera depth around the stable symbol. CTA: Compra ahora.",
+  );
+
+  assert.match(prompt, /Dark digital environment with luminous particles/);
+  assert.doesNotMatch(prompt, /Convierte tus ideas/);
+  assert.doesNotMatch(prompt, /https:\/\/metaprom\.com/);
+  assert.doesNotMatch(prompt, /Compra ahora/);
+});
+
+test("Imagen Premium preserves physical product branding and labels", () => {
+  const prompt = buildStudioImagePrompt("Premium cinematic product scene", "custom");
+  assert.match(prompt, /branding, labels, or typography physically present/i);
+  assert.match(prompt, /Never erase, replace, rewrite, or "clean up" labels or branding/i);
+});
+
+test("manual Commercial fallback removes obvious composition copy", () => {
+  const prompt = buildStudioImagePrompt(
+    "Warm cinematic light around the product. Headline: Summer Sale. URL https://example.com. CTA: Buy now.",
+    "custom",
+  );
+  assert.match(prompt, /Warm cinematic light around the product/);
+  assert.doesNotMatch(prompt, /Summer Sale/);
+  assert.doesNotMatch(prompt, /https:\/\/example\.com/);
+  assert.doesNotMatch(prompt, /Buy now/);
 });

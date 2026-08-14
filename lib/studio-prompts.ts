@@ -6,6 +6,7 @@ import type { StudioDestination } from "./studio-destination";
 import type { Mode } from "./prompts";
 import {
   buildCommercialVideoPromptCore,
+  stripPromotionalCopyFromVeoIntent,
   type CommercialProductionProfile,
 } from "./commercial-production-profile";
 
@@ -16,8 +17,15 @@ export function buildStudioImagePrompt(
   customerIntent: string,
   mode: Mode,
   destination?: StudioDestination | null,
+  visualGenerationIntent?: string | null,
 ): string {
-  const vision = customerIntent.trim() || DEFAULT_COMMERCIAL_VISION;
+  const structuredVisualIntent = stripPromotionalCopyFromVeoIntent(
+    visualGenerationIntent ?? "",
+  );
+  const vision =
+    structuredVisualIntent ||
+    stripPromotionalCopyFromVeoIntent(customerIntent) ||
+    DEFAULT_COMMERCIAL_VISION;
   const destinationBlock = buildDestinationImagePromptBlock(destination);
   const modeHint =
     mode === "amazon" || mode === "mercado-libre"
@@ -42,7 +50,9 @@ Requirements:
 - The result must look like a professional advertisement — NOT a slightly improved version of the same photo
 - Do NOT simply crop, brighten, remove background, or place the product on a plain white background
 - Build an environment, mood, and story that sells the product
-- Preserve exact product identity (shape, colors, branding, labels, proportions)
+- Do not add promotional headlines, slogans, calls to action, URLs, prices, phone numbers, title cards, or separate brand graphics; those are composed later
+- Preserve exact product identity (shape, colors, proportions, packaging, and any branding, labels, or typography physically present on the uploaded product)
+- Never erase, replace, rewrite, or "clean up" labels or branding that are physically part of the reference product
 - ${modeHint}
 
 The customer should immediately think: "Wow... this looks like a professional advertisement."`;

@@ -59,7 +59,10 @@ import { getPricingPackageById } from "@/lib/pricing";
 import CinematicReveal from "@/components/studio/CinematicReveal";
 import CreativeDirectorPanel from "@/components/studio/CreativeDirectorPanel";
 import type { CommercialProposal } from "@/lib/creative-director/types";
-import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
+import type {
+  CommercialProductionProfile,
+  PromotionalOverlays,
+} from "@/lib/commercial-production-profile";
 import DestinationStep from "@/components/studio/DestinationStep";
 import DirectorReviewInvite from "@/components/studio/DirectorReviewInvite";
 import DirectorResultReview from "@/components/studio/DirectorResultReview";
@@ -318,6 +321,7 @@ export default function CreativeDirector({
   const customerIntentRef = useRef("");
   const videoVisualIntentRef = useRef<string | null>(null);
   const productionProfileRef = useRef<CommercialProductionProfile | null>(null);
+  const promotionalOverlaysRef = useRef<PromotionalOverlays | null>(null);
   /** Resolved Advertising Image intent for the current job (batch-shared). */
   const imageIntentRef = useRef<ImageIntent | null>(null);
   const [imageIntentQuestion, setImageIntentQuestion] = useState(
@@ -1169,7 +1173,8 @@ export default function CreativeDirector({
         imagePrompt: input.imagePrompt,
         videoPrompt: input.videoPrompt,
         customerIntent,
-        videoVisualIntent: videoVisualIntentRef.current ?? undefined,
+        visualGenerationIntent: videoVisualIntentRef.current ?? undefined,
+        promotionalOverlays: promotionalOverlaysRef.current,
         productionProfile: productionProfileRef.current,
         mode: product.mode,
         projectMetadata: {
@@ -1614,7 +1619,8 @@ export default function CreativeDirector({
       const result = await createCommercialAssets({
         file,
         customerIntent,
-        videoVisualIntent: videoVisualIntentRef.current ?? undefined,
+        visualGenerationIntent: videoVisualIntentRef.current ?? undefined,
+        promotionalOverlays: promotionalOverlaysRef.current,
         productionProfile: productionProfileRef.current,
         productMode: product.mode,
         destination: destinationRef.current,
@@ -1723,6 +1729,7 @@ export default function CreativeDirector({
       if (trimmed !== customerIntentRef.current) {
         videoVisualIntentRef.current = null;
         productionProfileRef.current = null;
+        promotionalOverlaysRef.current = null;
       }
       customerIntentRef.current = trimmed;
       projectMetadataRef.current = {
@@ -2076,6 +2083,7 @@ export default function CreativeDirector({
     customerIntentRef.current = "";
     videoVisualIntentRef.current = null;
     productionProfileRef.current = null;
+    promotionalOverlaysRef.current = null;
     imageIntentRef.current = null;
     setPrimarySourceFile(null);
     setPremiumImage(null);
@@ -2272,6 +2280,7 @@ export default function CreativeDirector({
     customerIntentRef.current = trimmed;
     videoVisualIntentRef.current = proposal.visualGenerationIntent.trim() || null;
     productionProfileRef.current = proposal.productionProfile;
+    promotionalOverlaysRef.current = proposal.promotionalOverlays;
     setError(null);
     setDirectorProposalApplied(true);
 

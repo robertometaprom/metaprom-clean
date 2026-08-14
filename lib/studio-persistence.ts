@@ -23,7 +23,10 @@ import {
 import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
 import { resolveVeoGenerationParams } from "@/lib/destination-generation";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
-import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
+import type {
+  CommercialProductionProfile,
+  PromotionalOverlays,
+} from "@/lib/commercial-production-profile";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -33,7 +36,8 @@ export type PersistStudioCreationInput = {
   imagePrompt: string;
   videoPrompt: string;
   customerIntent: string;
-  videoVisualIntent?: string;
+  visualGenerationIntent?: string;
+  promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
   mode: PersistStudioAssetInput["mode"];
   projectMetadata: StudioProjectMetadata;
@@ -254,7 +258,7 @@ export async function persistStudioCreation(
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
       premium_prompt: buildStudioVideoPrompt(
-        input.videoVisualIntent ?? input.customerIntent,
+        input.visualGenerationIntent ?? input.customerIntent,
         "premium",
         destination,
         input.productionProfile,
@@ -290,6 +294,7 @@ export async function persistStudioCreation(
       prompt_builder_version: PROMPT_BUILDER_VERSION,
       video_processing_version: VIDEO_PROCESSING_VERSION,
       preview_path: teaserUpload.path,
+      promotional_overlays: input.promotionalOverlays ?? null,
     });
 
     teaserUpdates = {

@@ -19,6 +19,7 @@ import type { Mode } from "@/lib/prompts";
 import { toDestinationGenerationPayload } from "@/lib/destination-generation";
 import type { StudioDestination } from "@/lib/studio-destination";
 import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
+import type { PromotionalOverlays } from "@/lib/commercial-production-profile";
 import {
   buildAdvertisingImagePrompt,
   resolveImageIntent,
@@ -50,7 +51,8 @@ export type AutoSaveStatus =
 export type CreateCommercialInput = {
   file: File;
   customerIntent: string;
-  videoVisualIntent?: string;
+  visualGenerationIntent?: string;
+  promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
   productMode: Mode;
   destination?: StudioDestination | null;
@@ -115,7 +117,8 @@ export type PersistCreationInput = {
   imagePrompt: string;
   videoPrompt: string;
   customerIntent: string;
-  videoVisualIntent?: string;
+  visualGenerationIntent?: string;
+  promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
   mode: Mode;
   projectMetadata: StudioProjectMetadata;
@@ -317,6 +320,7 @@ export async function createCommercialAssets(
     customerIntent,
     input.productMode,
     destination,
+    input.visualGenerationIntent,
   );
 
   input.onStep?.("image", "Preparando tu escena comercial...");
@@ -348,7 +352,7 @@ export async function createCommercialAssets(
   input.onStep?.("video", "Preparando tu comercial...");
 
   const videoPrompt = buildStudioVideoPrompt(
-    input.videoVisualIntent ?? customerIntent,
+    input.visualGenerationIntent ?? customerIntent,
     "teaser",
     destination,
     input.productionProfile,
@@ -605,7 +609,8 @@ export async function persistCreationToLibrary(
       imagePrompt: input.imagePrompt,
       videoPrompt: input.videoPrompt,
       customerIntent: input.customerIntent,
-      videoVisualIntent: input.videoVisualIntent,
+      visualGenerationIntent: input.visualGenerationIntent,
+      promotionalOverlays: input.promotionalOverlays,
       productionProfile: input.productionProfile,
       mode: input.mode,
       projectMetadata: input.projectMetadata,

@@ -1,8 +1,9 @@
 import type { StudioDestination } from "@/lib/studio-destination";
+import type { PromotionalOverlays } from "@/lib/commercial-production-profile";
 
 export const CREATIVE_RECIPE_SCHEMA_VERSION = 1 as const;
-export const PROMPT_BUILDER_VERSION = "studio-prompts-v1";
-export const VIDEO_PROCESSING_VERSION = "commercial-video-processing-v1";
+export const PROMPT_BUILDER_VERSION = "studio-prompts-v1.5";
+export const VIDEO_PROCESSING_VERSION = "commercial-video-processing-v1.5";
 
 export type CreativeRecipeV1 = {
   schema_version: 1;
@@ -24,6 +25,8 @@ export type CreativeRecipeV1 = {
   prompt_builder_version: string;
   video_processing_version: string;
   preview_path: string;
+  /** Reserved for deterministic composition. Never rendered by generative providers. */
+  promotional_overlays?: PromotionalOverlays | null;
 };
 
 export function buildCreativeRecipeV1(

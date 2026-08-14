@@ -25,6 +25,12 @@ const frozen = buildCreativeRecipeV1({
   prompt_builder_version: "studio-prompts-v1",
   video_processing_version: "commercial-video-processing-v1",
   preview_path: "user/project/asset/teaser.mp4",
+  promotional_overlays: {
+    headline: "Hazlo extraordinario",
+    call_to_action: "Conoce más",
+    url: "https://metaprom.com",
+    logo_required: true,
+  },
 });
 
 test("new commercial preview freezes a complete v1 recipe", () => {
@@ -38,6 +44,7 @@ test("recipe survives JSON persistence and fresh-session rehydration", () => {
   assert.equal(isCreativeRecipeV1(rehydrated), true);
   assert.deepEqual(rehydrated.destination, frozen.destination);
   assert.equal(rehydrated.preview_path, frozen.preview_path);
+  assert.deepEqual(rehydrated.promotional_overlays, frozen.promotional_overlays);
 });
 
 test("legacy/incomplete assets are explicitly not treated as exact recipes", () => {

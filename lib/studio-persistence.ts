@@ -274,11 +274,9 @@ export async function persistStudioCreation(
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
       premium_prompt: buildStudioVideoPrompt(
-        input.visualGenerationIntent ?? input.customerIntent,
+        input.customerIntent,
         "premium",
         destination,
-        productionProfile,
-        requiredNarrativeBeats,
       ),
       destination,
       aspect_ratio: resolveVeoGenerationParams(destination).aspectRatio,

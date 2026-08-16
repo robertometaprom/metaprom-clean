@@ -4,12 +4,6 @@ import {
 } from "./destination-generation";
 import type { StudioDestination } from "./studio-destination";
 import type { Mode } from "./prompts";
-import {
-  buildCommercialVideoPromptCore,
-  stripPromotionalCopyFromVeoIntent,
-  type CommercialProductionProfile,
-} from "./commercial-production-profile";
-import type { RequiredNarrativeBeats } from "./narrative-beats-contract";
 
 const DEFAULT_COMMERCIAL_VISION =
   "Create a compelling luxury product advertisement that makes the customer want to buy immediately.";
@@ -18,15 +12,8 @@ export function buildStudioImagePrompt(
   customerIntent: string,
   mode: Mode,
   destination?: StudioDestination | null,
-  visualGenerationIntent?: string | null,
 ): string {
-  const structuredVisualIntent = stripPromotionalCopyFromVeoIntent(
-    visualGenerationIntent ?? "",
-  );
-  const vision =
-    structuredVisualIntent ||
-    stripPromotionalCopyFromVeoIntent(customerIntent) ||
-    DEFAULT_COMMERCIAL_VISION;
+  const vision = customerIntent.trim() || DEFAULT_COMMERCIAL_VISION;
   const destinationBlock = buildDestinationImagePromptBlock(destination);
   const modeHint =
     mode === "amazon" || mode === "mercado-libre"
@@ -51,28 +38,50 @@ Requirements:
 - The result must look like a professional advertisement — NOT a slightly improved version of the same photo
 - Do NOT simply crop, brighten, remove background, or place the product on a plain white background
 - Build an environment, mood, and story that sells the product
-- Do not add promotional headlines, slogans, calls to action, URLs, prices, phone numbers, title cards, or separate brand graphics; those are composed later
-- Preserve exact product identity (shape, colors, proportions, packaging, and any branding, labels, or typography physically present on the uploaded product)
-- Never erase, replace, rewrite, or "clean up" labels or branding that are physically part of the reference product
+- Preserve exact product identity (shape, colors, branding, labels, proportions)
 - ${modeHint}
 
 The customer should immediately think: "Wow... this looks like a professional advertisement."`;
 }
 
-/** Shared teaser/Premium builder. Fidelity and copy policies are deterministic. */
+/**
+ * Builds the video prompt for Studio — scene-based commercial, not photo animation.
+ *
+ * Product fidelity is deliberately limited to identity preservation. It must not
+ * control the story, actors, environment, camera, interaction, or screen time.
+ */
 export function buildStudioVideoPrompt(
   customerIntent: string,
   tier: "teaser" | "premium" = "teaser",
   destination?: StudioDestination | null,
-  productionProfile?: CommercialProductionProfile | null,
-  requiredNarrativeBeats?: RequiredNarrativeBeats | null,
 ): string {
+  const vision = customerIntent.trim();
+  const durationSeconds = tier === "premium" ? 8 : 4;
   const destinationBlock = buildDestinationVideoPromptBlock(destination);
-  return buildCommercialVideoPromptCore({
-    visualIntent: customerIntent,
-    tier,
-    destinationBlock,
-    productionProfile,
-    requiredNarrativeBeats,
-  });
+  const sceneBlock = vision
+    ? `Scene to create:\n${vision}\n\nThe product from the reference image must appear naturally in this scene — worn, held, displayed, or used as appropriate.`
+    : `Scene to create:\nA cinematic commercial showcasing the product in an aspirational real-world setting with human interaction or dynamic product use. The product from the reference image must be the hero of the scene.`;
+  const qualityHint =
+    tier === "premium"
+      ? "Broadcast-quality HD commercial with rich detail and smooth motion."
+      : "Social teaser quality — punchy, scroll-stopping, medium fidelity.";
+
+  return `Create ${durationSeconds === 8 ? "an" : "a"} ${durationSeconds}-second professional social media / TV commercial. This is NOT photo animation.
+
+${sceneBlock}
+${destinationBlock ? `\n${destinationBlock}\n` : ""}
+Requirements:
+- ${qualityHint}
+- Real advertising quality — like a commercial produced for Instagram, TikTok, or television
+- Show believable human action, environment, and context when appropriate
+- Cinematic camera movement (tracking shots, dolly, orbit — not a static zoom on a photo)
+- Professional lighting, depth of field, and color grading
+- Preserve the product's recognizable identity while allowing natural story-driven use and interaction
+- Create a living scene with motion, atmosphere, and story
+
+Strictly avoid:
+- Ken Burns effect on a static image
+- Simply animating or parallaxing the uploaded photo
+- Slideshow-style motion or subtle photo wobble
+- Product floating on a plain background with no scene`;
 }

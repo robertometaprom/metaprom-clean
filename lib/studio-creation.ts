@@ -326,7 +326,6 @@ export async function createCommercialAssets(
     customerIntent,
     input.productMode,
     destination,
-    input.visualGenerationIntent,
   );
 
   input.onStep?.("image", "Preparando tu escena comercial...");
@@ -358,11 +357,9 @@ export async function createCommercialAssets(
   input.onStep?.("video", "Preparando tu comercial...");
 
   const videoPrompt = buildStudioVideoPrompt(
-    input.visualGenerationIntent ?? customerIntent,
+    customerIntent,
     "teaser",
     destination,
-    input.productionProfile,
-    input.requiredNarrativeBeats,
   );
   const videoForm = new FormData();
   videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));

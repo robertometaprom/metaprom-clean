@@ -63,6 +63,7 @@ import type {
   CommercialProductionProfile,
   PromotionalOverlays,
 } from "@/lib/commercial-production-profile";
+import type { OverlayStyle } from "@/lib/overlay-style-contract";
 import DestinationStep from "@/components/studio/DestinationStep";
 import DirectorReviewInvite from "@/components/studio/DirectorReviewInvite";
 import DirectorResultReview from "@/components/studio/DirectorResultReview";
@@ -322,6 +323,8 @@ export default function CreativeDirector({
   const videoVisualIntentRef = useRef<string | null>(null);
   const productionProfileRef = useRef<CommercialProductionProfile | null>(null);
   const promotionalOverlaysRef = useRef<PromotionalOverlays | null>(null);
+  const overlayStyleRef = useRef<OverlayStyle | null>(null);
+  const requiredNarrativeBeatsRef = useRef<string[] | null>(null);
   /** Resolved Advertising Image intent for the current job (batch-shared). */
   const imageIntentRef = useRef<ImageIntent | null>(null);
   const [imageIntentQuestion, setImageIntentQuestion] = useState(
@@ -1176,6 +1179,8 @@ export default function CreativeDirector({
         visualGenerationIntent: videoVisualIntentRef.current ?? undefined,
         promotionalOverlays: promotionalOverlaysRef.current,
         productionProfile: productionProfileRef.current,
+        overlayStyle: overlayStyleRef.current,
+        requiredNarrativeBeats: requiredNarrativeBeatsRef.current,
         mode: product.mode,
         projectMetadata: {
           ...projectMetadataRef.current,
@@ -1622,6 +1627,8 @@ export default function CreativeDirector({
         visualGenerationIntent: videoVisualIntentRef.current ?? undefined,
         promotionalOverlays: promotionalOverlaysRef.current,
         productionProfile: productionProfileRef.current,
+        overlayStyle: overlayStyleRef.current,
+        requiredNarrativeBeats: requiredNarrativeBeatsRef.current,
         productMode: product.mode,
         destination: destinationRef.current,
         onStep: (step, message) => {
@@ -1730,6 +1737,8 @@ export default function CreativeDirector({
         videoVisualIntentRef.current = null;
         productionProfileRef.current = null;
         promotionalOverlaysRef.current = null;
+        overlayStyleRef.current = null;
+        requiredNarrativeBeatsRef.current = null;
       }
       customerIntentRef.current = trimmed;
       projectMetadataRef.current = {
@@ -2084,6 +2093,8 @@ export default function CreativeDirector({
     videoVisualIntentRef.current = null;
     productionProfileRef.current = null;
     promotionalOverlaysRef.current = null;
+    overlayStyleRef.current = null;
+    requiredNarrativeBeatsRef.current = null;
     imageIntentRef.current = null;
     setPrimarySourceFile(null);
     setPremiumImage(null);
@@ -2281,6 +2292,8 @@ export default function CreativeDirector({
     videoVisualIntentRef.current = proposal.visualGenerationIntent.trim() || null;
     productionProfileRef.current = proposal.productionProfile;
     promotionalOverlaysRef.current = proposal.promotionalOverlays;
+    overlayStyleRef.current = proposal.overlayStyle;
+    requiredNarrativeBeatsRef.current = proposal.requiredNarrativeBeats;
     setError(null);
     setDirectorProposalApplied(true);
 

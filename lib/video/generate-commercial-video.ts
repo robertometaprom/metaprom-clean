@@ -2,6 +2,11 @@ import type { VeoAspectRatio } from "@/lib/destination-generation";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
 import { generateVertexVideo } from "@/lib/video/vertex-provider";
 import { processCommercialVideo } from "@/lib/video-processing";
+import type { PromotionalOverlays } from "@/lib/commercial-production-profile";
+import type { ExactLogoSource } from "@/lib/creative-recipe";
+import type { OverlayStyle } from "@/lib/overlay-style-contract";
+import { createHash } from "crypto";
+import { hasRequiredPromotionalOverlays } from "@/lib/promotional-overlay";
 import {
   resolveWorkflow,
   type VideoWorkflow,
@@ -13,6 +18,9 @@ export type GenerateCommercialVideoInput = {
   imageBuffer: Buffer;
   aspectRatio?: VeoAspectRatio;
   model?: string;
+  promotionalOverlays?: PromotionalOverlays | null;
+  exactLogoSource?: ExactLogoSource | null;
+  overlayStyle?: OverlayStyle | null;
 };
 
 export type GenerateCommercialVideoResult = {
@@ -21,6 +29,10 @@ export type GenerateCommercialVideoResult = {
   workflow: VideoWorkflow;
   tier: ReturnType<typeof resolveWorkflow>["tier"];
   vertexModel: string;
+  overlaysRequired: boolean;
+  overlaysApplied: boolean;
+  rawSha256: string;
+  finalSha256: string;
 };
 
 export async function generateCommercialVideo(
@@ -40,9 +52,14 @@ export async function generateCommercialVideo(
     model: input.model ?? workflowConfig.vertexModel,
   });
 
+  const overlaysRequired = hasRequiredPromotionalOverlays(input.promotionalOverlays);
   const { buffer, processed } = await processCommercialVideo({
     buffer: rawBuffer,
     tier: workflowConfig.tier,
+    promotionalOverlays: input.promotionalOverlays,
+    aspectRatio: input.aspectRatio,
+    exactLogoSource: input.exactLogoSource,
+    overlayStyle: input.overlayStyle,
   });
 
   return {
@@ -51,5 +68,9 @@ export async function generateCommercialVideo(
     workflow: input.workflow,
     tier: workflowConfig.tier,
     vertexModel: input.model ?? workflowConfig.vertexModel,
+    overlaysRequired,
+    overlaysApplied: overlaysRequired && processed,
+    rawSha256: createHash("sha256").update(rawBuffer).digest("hex"),
+    finalSha256: createHash("sha256").update(buffer).digest("hex"),
   };
 }

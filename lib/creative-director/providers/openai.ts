@@ -9,9 +9,15 @@ import type {
 } from "../types";
 import { CreativeDirectorError } from "../types";
 import {
-  PROTECTED_REASON_VALUES,
+  parseCommercialProductionProfile,
   type CommercialProductionProfile,
 } from "../../commercial-production-profile";
+import { parsePromotionalOverlays } from "../../promotional-overlay-contract";
+import { parseOverlayStyle } from "../../overlay-style-contract";
+import {
+  assertVisualIntentPreservesNarrativeBeats,
+  parseRequiredNarrativeBeats,
+} from "../../narrative-beats-contract";
 
 const DEFAULT_MODEL =
   process.env.OPENAI_CREATIVE_DIRECTOR_MODEL ?? "gpt-4.1";
@@ -150,24 +156,33 @@ function isCommercialProposal(value: unknown): value is CommercialProposal {
     typeof proposal.callToAction === "string" &&
     typeof proposal.narrative === "string" &&
     typeof proposal.visualGenerationIntent === "string" &&
+    isNarrativeContract(proposal.requiredNarrativeBeats, proposal.visualGenerationIntent) &&
     isProductionProfile(proposal.productionProfile) &&
-    Boolean(proposal.promotionalOverlays) &&
-    typeof proposal.promotionalOverlays === "object"
+    isPromotionalOverlays(proposal.promotionalOverlays) &&
+    isOverlayStyle(proposal.overlayStyle)
   );
 }
 
 function isProductionProfile(value: unknown): value is CommercialProductionProfile {
-  if (!value || typeof value !== "object") return false;
-  const profile = value as Partial<CommercialProductionProfile>;
-  return (
-    (profile.fidelity_class === "protected" || profile.fidelity_class === "flexible") &&
-    typeof profile.preserve_product_identity === "boolean" &&
-    profile.veo_copy_policy === "deterministic_overlay_only" &&
-    Array.isArray(profile.protected_reasons) &&
-    profile.protected_reasons.every((reason) =>
-      PROTECTED_REASON_VALUES.includes(reason),
-    )
-  );
+  try { parseCommercialProductionProfile(value); return true; } catch { return false; }
+}
+
+function isNarrativeContract(beats: unknown, visualIntent: unknown): boolean {
+  if (typeof visualIntent !== "string") return false;
+  try {
+    assertVisualIntentPreservesNarrativeBeats(visualIntent, parseRequiredNarrativeBeats(beats));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isOverlayStyle(value: unknown): boolean {
+  try { parseOverlayStyle(value); return true; } catch { return false; }
+}
+
+function isPromotionalOverlays(value: unknown): boolean {
+  try { return parsePromotionalOverlays(value) !== null; } catch { return false; }
 }
 
 function parseProviderResponse(raw: string): CreativeDirectorResponse {
@@ -205,10 +220,20 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
       )
     : undefined;
 
-  const proposal =
-    parsed.proposal && isCommercialProposal(parsed.proposal)
-      ? parsed.proposal
-      : undefined;
+  if (parsed.proposal && !isCommercialProposal(parsed.proposal)) {
+    throw new CreativeDirectorError(
+      "Creative Director provider returned an invalid closed commercial proposal contract.",
+    );
+  }
+  const proposal = parsed.proposal
+    ? {
+        ...parsed.proposal,
+        requiredNarrativeBeats: parseRequiredNarrativeBeats(parsed.proposal.requiredNarrativeBeats),
+        productionProfile: parseCommercialProductionProfile(parsed.proposal.productionProfile),
+        promotionalOverlays: parsePromotionalOverlays(parsed.proposal.promotionalOverlays)!,
+        overlayStyle: parseOverlayStyle(parsed.proposal.overlayStyle),
+      }
+    : undefined;
 
   return {
     message: parsed.message.trim(),
@@ -233,24 +258,32 @@ export function createOpenAICreativeDirectorProvider(
     async generate(
       request: CreativeDirectorProviderRequest,
     ): Promise<CreativeDirectorResponse> {
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: request.systemPrompt },
-          { role: "user", content: buildUserMessage(request) },
-        ],
-        response_format: { type: "json_object" },
-      });
-
-      const content = response.choices[0]?.message?.content?.trim();
-
-      if (!content) {
-        throw new CreativeDirectorError(
-          "Creative Director provider returned an empty response.",
-        );
+      let validationFailure: Error | null = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await client.chat.completions.create({
+          model,
+          messages: [
+            { role: "system", content: request.systemPrompt },
+            { role: "user", content: buildUserMessage(request) },
+            ...(validationFailure ? [{
+              role: "user" as const,
+              content: `Your previous structured proposal failed validation: ${validationFailure.message}. Return a corrected complete JSON response.`,
+            }] : []),
+          ],
+          response_format: { type: "json_object" },
+        });
+        const content = response.choices[0]?.message?.content?.trim();
+        if (!content) {
+          validationFailure = new CreativeDirectorError("Creative Director provider returned an empty response.");
+          continue;
+        }
+        try {
+          return parseProviderResponse(content);
+        } catch (error) {
+          validationFailure = error instanceof Error ? error : new Error(String(error));
+        }
       }
-
-      return parseProviderResponse(content);
+      throw validationFailure ?? new CreativeDirectorError("Creative Director proposal validation failed.");
     },
   };
 }

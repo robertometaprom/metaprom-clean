@@ -9,6 +9,8 @@ import type {
   CommercialProductionProfile,
   PromotionalOverlays,
 } from "../commercial-production-profile";
+import type { OverlayStyle } from "../overlay-style-contract";
+import type { RequiredNarrativeBeats } from "../narrative-beats-contract";
 
 /** A single message in the Creative Director conversation. */
 export type ConversationMessage = {
@@ -67,9 +69,13 @@ export type CommercialProposal = {
   narrative: string;
   /** Visual-generation-only intent. It must exclude exact promotional graphics. */
   visualGenerationIntent: string;
+  /** Ordered, observable events that must survive into every video prompt. */
+  requiredNarrativeBeats: RequiredNarrativeBeats;
   productionProfile: CommercialProductionProfile;
   /** Preserved for deterministic composition in a later phase; never sent to Veo. */
   promotionalOverlays: PromotionalOverlays;
+  /** Final resolved deterministic style and its winning precedence origin. */
+  overlayStyle: OverlayStyle;
 };
 
 /** Transparent explanation when the Director modifies the customer's request. */

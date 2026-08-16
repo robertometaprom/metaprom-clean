@@ -16,6 +16,7 @@ import {
 } from "@/lib/library-storage";
 import { generateShareSlug, isShareSlugUniqueViolation } from "@/lib/preview/share-slug";
 import {
+  CANONICAL_LOGO_SOURCE,
   PROMPT_BUILDER_VERSION,
   VIDEO_PROCESSING_VERSION,
   buildCreativeRecipeV1,
@@ -23,10 +24,14 @@ import {
 import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
 import { resolveVeoGenerationParams } from "@/lib/destination-generation";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
+import { parseRequiredNarrativeBeats, type RequiredNarrativeBeats } from "@/lib/narrative-beats-contract";
 import type {
   CommercialProductionProfile,
   PromotionalOverlays,
 } from "@/lib/commercial-production-profile";
+import { parseCommercialProductionProfile } from "@/lib/commercial-production-profile";
+import { parsePromotionalOverlays, requiresMetapromWatermark } from "@/lib/promotional-overlay-contract";
+import { parseOverlayStyle, type OverlayStyle } from "@/lib/overlay-style-contract";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -39,6 +44,8 @@ export type PersistStudioCreationInput = {
   visualGenerationIntent?: string;
   promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
+  requiredNarrativeBeats?: RequiredNarrativeBeats | null;
+  overlayStyle?: OverlayStyle | null;
   mode: PersistStudioAssetInput["mode"];
   projectMetadata: StudioProjectMetadata;
   existingProjectId?: string | null;
@@ -139,6 +146,15 @@ async function updateAssetWithShareSlugRetry(
 export async function persistStudioCreation(
   input: PersistStudioCreationInput,
 ): Promise<PersistStudioCreationResult> {
+  // Validate before creating projects, assets, or uploads. Required graphics fail closed.
+  const promotionalOverlays = parsePromotionalOverlays(input.promotionalOverlays);
+  const productionProfile = input.productionProfile == null
+    ? null
+    : parseCommercialProductionProfile(input.productionProfile);
+  const overlayStyle = input.overlayStyle == null ? null : parseOverlayStyle(input.overlayStyle);
+  const requiredNarrativeBeats = input.requiredNarrativeBeats == null
+    ? null
+    : parseRequiredNarrativeBeats(input.requiredNarrativeBeats);
   let projectId = input.existingProjectId ?? null;
   let assetId = input.existingAssetId ?? null;
 
@@ -261,7 +277,8 @@ export async function persistStudioCreation(
         input.visualGenerationIntent ?? input.customerIntent,
         "premium",
         destination,
-        input.productionProfile,
+        productionProfile,
+        requiredNarrativeBeats,
       ),
       destination,
       aspect_ratio: resolveVeoGenerationParams(destination).aspectRatio,
@@ -294,7 +311,12 @@ export async function persistStudioCreation(
       prompt_builder_version: PROMPT_BUILDER_VERSION,
       video_processing_version: VIDEO_PROCESSING_VERSION,
       preview_path: teaserUpload.path,
-      promotional_overlays: input.promotionalOverlays ?? null,
+      promotional_overlays: promotionalOverlays,
+      production_profile: productionProfile,
+      required_narrative_beats: requiredNarrativeBeats,
+      overlay_style: overlayStyle,
+      metaprom_watermark_source: requiresMetapromWatermark(promotionalOverlays)
+        ? CANONICAL_LOGO_SOURCE : null,
     });
 
     teaserUpdates = {

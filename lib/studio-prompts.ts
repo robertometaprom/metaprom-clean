@@ -9,6 +9,7 @@ import {
   stripPromotionalCopyFromVeoIntent,
   type CommercialProductionProfile,
 } from "./commercial-production-profile";
+import type { RequiredNarrativeBeats } from "./narrative-beats-contract";
 
 const DEFAULT_COMMERCIAL_VISION =
   "Create a compelling luxury product advertisement that makes the customer want to buy immediately.";
@@ -64,6 +65,7 @@ export function buildStudioVideoPrompt(
   tier: "teaser" | "premium" = "teaser",
   destination?: StudioDestination | null,
   productionProfile?: CommercialProductionProfile | null,
+  requiredNarrativeBeats?: RequiredNarrativeBeats | null,
 ): string {
   const destinationBlock = buildDestinationVideoPromptBlock(destination);
   return buildCommercialVideoPromptCore({
@@ -71,5 +73,6 @@ export function buildStudioVideoPrompt(
     tier,
     destinationBlock,
     productionProfile,
+    requiredNarrativeBeats,
   });
 }

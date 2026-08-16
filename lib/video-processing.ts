@@ -11,10 +11,24 @@ import {
   type CommercialTier,
 } from "@/lib/commercial/tiers";
 import { buildCommercialVideoFfmpegArgs } from "@/lib/video-processing-command";
+import {
+  hasRequiredPromotionalOverlays,
+  renderPromotionalOverlay,
+  type PromotionalOverlayTiming,
+} from "@/lib/promotional-overlay";
+import type { PromotionalOverlays } from "@/lib/commercial-production-profile";
+import type { VeoAspectRatio } from "@/lib/destination-generation";
+import type { ExactLogoSource } from "@/lib/creative-recipe";
+import { COMMERCIAL_FONT_IDENTITY, commercialFontFaceCss } from "@/lib/commercial-font";
+import type { OverlayStyle } from "@/lib/overlay-style-contract";
 
 type ProcessVideoInput = {
   buffer: Buffer;
   tier: CommercialTier;
+  promotionalOverlays?: PromotionalOverlays | null;
+  aspectRatio?: VeoAspectRatio;
+  exactLogoSource?: ExactLogoSource | null;
+  overlayStyle?: OverlayStyle | null;
 };
 
 type ProcessVideoResult = {
@@ -24,8 +38,8 @@ type ProcessVideoResult = {
 };
 
 export type VideoProcessingFailure = {
-  code: "ffmpeg_unavailable" | "watermark_render_failed" | "ffmpeg_failed";
-  stage: "resolve" | "watermark" | "transcode";
+  code: "ffmpeg_unavailable" | "watermark_render_failed" | "promotional_overlay_render_failed" | "ffmpeg_failed";
+  stage: "resolve" | "watermark" | "promotional_overlay" | "transcode";
   message: string;
 };
 
@@ -99,9 +113,11 @@ function runFfmpeg(ffmpegPath: string, args: string[]): Promise<void> {
 
 async function renderTeaserWatermark(path: string): Promise<void> {
   const escapedText = WATERMARK_TEXT.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const fontFace = await commercialFontFaceCss();
   const svg = `<svg width="300" height="54" xmlns="http://www.w3.org/2000/svg">
+    <style>${fontFace}</style>
     <rect width="300" height="54" rx="8" fill="rgba(0,0,0,0.45)"/>
-    <text x="150" y="36" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="rgba(255,255,255,0.85)">${escapedText}</text>
+    <text x="150" y="36" text-anchor="middle" font-family="${COMMERCIAL_FONT_IDENTITY.family}" font-size="28" font-weight="600" fill="rgba(255,255,255,0.85)">${escapedText}</text>
   </svg>`;
   await sharp(Buffer.from(svg)).png().toFile(path);
 }
@@ -140,8 +156,14 @@ export async function processCommercialVideo(
     const watermarkPath = config.applyWatermark
       ? join(tempDir, "teaser-watermark.png")
       : null;
+    const promotionalOverlayPath = hasRequiredPromotionalOverlays(
+      input.promotionalOverlays,
+    )
+      ? join(tempDir, "promotional-overlays.png")
+      : null;
 
     await writeFile(inputPath, input.buffer);
+    let promotionalOverlayTiming: PromotionalOverlayTiming | undefined;
 
     if (watermarkPath) {
       try {
@@ -162,10 +184,37 @@ export async function processCommercialVideo(
       }
     }
 
+    if (promotionalOverlayPath) {
+      try {
+        const placement = await renderPromotionalOverlay({
+          path: promotionalOverlayPath,
+          overlays: input.promotionalOverlays!,
+          aspectRatio: input.aspectRatio,
+          exactLogoSource: input.exactLogoSource,
+          overlayStyle: input.overlayStyle,
+        });
+        promotionalOverlayTiming = placement.timing;
+      } catch (error) {
+        const failure: VideoProcessingFailure = {
+          code: "promotional_overlay_render_failed",
+          stage: "promotional_overlay",
+          message: safeFailureMessage(error),
+        };
+        console.error("[commercial-video-processing] failed", {
+          ...failure,
+          inputBytes: input.buffer.length,
+          tier: input.tier,
+        });
+        return { buffer: input.buffer, processed: false, failure };
+      }
+    }
+
     const args = buildCommercialVideoFfmpegArgs({
       inputPath,
       outputPath,
       watermarkPath,
+      promotionalOverlayPath,
+      promotionalOverlayTiming,
       maxSeconds: config.maxSeconds,
       crf: config.crf,
     });

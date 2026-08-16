@@ -19,7 +19,10 @@ import {
   resolveWorkflow,
 } from "@/lib/video";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
-import { isCreativeRecipeV1, type CreativeRecipeV1 } from "@/lib/creative-recipe";
+import { parseCreativeRecipeV1, type CreativeRecipeV1 } from "@/lib/creative-recipe";
+import { assertRequiredPremiumComposition } from "@/lib/promotional-overlay";
+import { assertRequiredNarrativeBeatsInPrompt } from "@/lib/narrative-beats-contract";
+import { VIDEO_PROCESSING_VERSION, type PremiumProcessingManifest } from "@/lib/creative-recipe";
 
 export type PremiumFulfillmentResult =
   | { status: "ready"; assetId: string; alreadyReady?: boolean; legacyFallback?: boolean }
@@ -49,8 +52,17 @@ async function generatePremiumVideoBuffer(
     prompt: string;
     destination: StudioDestination | null;
     model?: string;
+    promotionalOverlays?: CreativeRecipeV1["promotional_overlays"];
+    exactLogoSource?: CreativeRecipeV1["exact_logo_source"];
+    overlayStyle?: CreativeRecipeV1["overlay_style"];
   },
-): Promise<Buffer> {
+): Promise<{ buffer: Buffer; manifest: Omit<PremiumProcessingManifest["final_artifact"], "path"> & {
+  processing_version: string;
+  overlays_required: boolean;
+  overlays_applied: boolean;
+  processed: boolean;
+  raw_sha256: string;
+} }> {
   if (!isVertexVideoConfigured()) {
     throw new Error(
       "Vertex video is not configured. Set GOOGLE_CLOUD_PROJECT, VERTEX_OUTPUT_GCS_URI, " +
@@ -94,9 +106,25 @@ async function generatePremiumVideoBuffer(
     imageBuffer,
     aspectRatio: veoParams.aspectRatio,
     model: input.model,
+    promotionalOverlays: input.promotionalOverlays,
+    exactLogoSource: input.exactLogoSource,
+    overlayStyle: input.overlayStyle,
   });
 
-  return generation.buffer;
+  assertRequiredPremiumComposition(input.promotionalOverlays, generation.processed);
+
+  return {
+    buffer: generation.buffer,
+    manifest: {
+      processing_version: VIDEO_PROCESSING_VERSION,
+      overlays_required: generation.overlaysRequired,
+      overlays_applied: generation.overlaysApplied,
+      processed: generation.processed,
+      raw_sha256: generation.rawSha256,
+      kind: generation.overlaysRequired ? "composed_premium" : "transcoded_premium",
+      sha256: generation.finalSha256,
+    },
+  };
 }
 
 /**
@@ -195,9 +223,14 @@ async function fulfillWithProject(
   }
 
   let imageBuffer: Buffer | null = null;
-  const recipe = isCreativeRecipeV1(asset.creative_recipe)
-    ? (asset.creative_recipe as CreativeRecipeV1)
-    : null;
+  const recipe = parseCreativeRecipeV1(asset.creative_recipe);
+  if (asset.creative_recipe && !recipe) {
+    return {
+      status: "failed",
+      reason: "Creative recipe is invalid; Premium fulfillment can be retried after repair.",
+      assetId,
+    };
+  }
   const referenceImagePath = recipe?.reference_image_path ?? asset.image_path;
 
   if (!recipe && asset.image_url?.startsWith("data:")) {
@@ -229,8 +262,11 @@ async function fulfillWithProject(
 
   try {
     const destination = recipe?.destination ?? parseStudioDestination(project.destination);
+    if (recipe) {
+      assertRequiredNarrativeBeatsInPrompt(recipe.premium_prompt, recipe.required_narrative_beats);
+    }
 
-    const videoBuffer = await generatePremiumVideoBuffer(
+    const generated = await generatePremiumVideoBuffer(
       imageBuffer,
       {
         prompt:
@@ -238,6 +274,9 @@ async function fulfillWithProject(
           buildStudioVideoPrompt(asset.ai_instructions ?? "", "premium", destination),
         destination,
         model: recipe?.generation.premium_video.model,
+        promotionalOverlays: recipe?.promotional_overlays,
+        exactLogoSource: recipe?.metaprom_watermark_source ?? recipe?.exact_logo_source,
+        overlayStyle: recipe?.overlay_style,
       },
     );
 
@@ -251,7 +290,7 @@ async function fulfillWithProject(
 
     const { error: uploadError } = await supabase.storage
       .from(LIBRARY_BUCKET)
-      .upload(path, videoBuffer, {
+      .upload(path, generated.buffer, {
         upsert: true,
         contentType: "video/mp4",
       });
@@ -264,11 +303,23 @@ async function fulfillWithProject(
       };
     }
 
+    const updatedRecipe = recipe ? {
+      ...recipe,
+      premium_processing_manifest: {
+        processing_version: generated.manifest.processing_version,
+        overlays_required: generated.manifest.overlays_required,
+        overlays_applied: generated.manifest.overlays_applied,
+        processed: generated.manifest.processed,
+        raw_artifact: { kind: "veo_raw" as const, stored: false as const, sha256: generated.manifest.raw_sha256 },
+        final_artifact: { kind: generated.manifest.kind, path, sha256: generated.manifest.sha256 },
+      },
+    } : null;
     const { error: updateError } = await supabase
       .from("assets")
       .update({
         premium_video_path: path,
         payment_status: "paid",
+        ...(updatedRecipe ? { creative_recipe: updatedRecipe } : {}),
       })
       .eq("id", assetId);
 

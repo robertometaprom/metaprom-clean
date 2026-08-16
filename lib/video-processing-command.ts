@@ -2,6 +2,8 @@ export type CommercialVideoCommandInput = {
   inputPath: string;
   outputPath: string;
   watermarkPath?: string | null;
+  promotionalOverlayPath?: string | null;
+  promotionalOverlayTiming?: "full" | "intro" | "outro";
   maxSeconds: number;
   crf: number;
 };
@@ -15,16 +17,43 @@ export function buildCommercialVideoFfmpegArgs(
 ): string[] {
   const args = ["-y", "-i", input.inputPath];
 
-  if (input.watermarkPath) {
-    args.push("-i", input.watermarkPath);
-  }
+  const overlayPaths = [input.watermarkPath, input.promotionalOverlayPath].filter(
+    (path): path is string => Boolean(path),
+  );
+  for (const overlayPath of overlayPaths) args.push("-i", overlayPath);
 
   args.push("-t", String(input.maxSeconds));
 
-  if (input.watermarkPath) {
+  if (overlayPaths.length) {
+    const filterSteps: string[] = [];
+    let currentVideo = "0:v";
+    let inputIndex = 1;
+
+    if (input.watermarkPath) {
+      const output = input.promotionalOverlayPath ? "watermarked" : "v";
+      filterSteps.push(
+        `[${currentVideo}][${inputIndex}:v]overlay=W-w-24:H-h-24:format=auto[${output}]`,
+      );
+      currentVideo = output;
+      inputIndex += 1;
+    }
+
+    if (input.promotionalOverlayPath) {
+      const enable =
+        input.promotionalOverlayTiming === "intro"
+          ? ":enable='between(t,0,4)'"
+          : input.promotionalOverlayTiming === "outro"
+            ? `:enable='gte(t,${Math.max(0, input.maxSeconds - 4)})'`
+            : "";
+      filterSteps.push(
+        `[${inputIndex}:v][${currentVideo}]scale2ref=w=main_w:h=main_h[promotion][base]`,
+        `[base][promotion]overlay=0:0:format=auto${enable}[v]`,
+      );
+    }
+
     args.push(
       "-filter_complex",
-      "[0:v][1:v]overlay=W-w-24:H-h-24:format=auto[v]",
+      filterSteps.join(";"),
       "-map",
       "[v]",
       "-map",

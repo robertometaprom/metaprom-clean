@@ -5,6 +5,22 @@ import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
 } from "../lib/studio-prompts.ts";
+import { CREATIVE_DIRECTOR_SYSTEM_PROMPT } from "../lib/creative-director/prompt.ts";
+
+test("Director exposes only closed overlay style tokens and explicit precedence", () => {
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /explicit customer styling instruction > structured protected brand identity when actually available > your creative decision/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /clean \| bold \| refined \| cinematic/);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /light \| dark \| warm \| cool/);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /Never output arbitrary font names, HEX values, coordinates, effects/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /never claim a protected brand palette/i);
+});
+
+test("Director separates protected asset fidelity from narrative protagonist", () => {
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /not automatically the narrative protagonist/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /1-4 concrete observable requiredNarrativeBeats/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /actual 8-second generation duration/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /People may hold or use it when the narrative requires it/i);
+});
 
 const protectedProfile: CommercialProductionProfile = {
   fidelity_class: "protected",
@@ -32,12 +48,24 @@ test("protected prompt contains deterministic product-fidelity restrictions", ()
   assert.match(prompt, /Keep the product visually stable and recognizable/i);
 });
 
-test("protected prompt prohibits orbit, deformation, and human manipulation", () => {
-  const prompt = buildStudioVideoPrompt("Dramatic studio scene", "teaser", null, protectedProfile);
+test("protected product coexists with human/use-story beats without forcing visibility throughout", () => {
+  const beats = ["A person uploads a photo on a phone", "The protected product appears in the finished professional ad"];
+  const prompt = buildStudioVideoPrompt(`Dramatic studio scene. ${beats.join(". ")}.`, "teaser", null, protectedProfile, beats);
   assert.match(prompt, /Avoid aggressive product rotation or orbit, deformation, morphing/i);
-  assert.match(prompt, /Do not require hands or people to manipulate/i);
-  assert.doesNotMatch(prompt, /Show believable human action/i);
-  assert.doesNotMatch(prompt, /tracking shots, dolly, orbit/i);
+  assert.match(prompt, /People may hold or use the protected product when an essential narrative beat requires it/i);
+  assert.match(prompt, /only needs to appear when narratively appropriate/i);
+  assert.doesNotMatch(prompt, /Do not require hands or people/i);
+  assert.doesNotMatch(prompt, /visible and recognizable throughout/i);
+  for (const beat of beats) assert.match(prompt, new RegExp(`- ${beat}`));
+});
+
+test("Premium duration and mandatory beat enumeration match the actual 8-second config", () => {
+  const beats = ["A person captures a photo", "The photo visibly becomes a professional advertisement"];
+  const prompt = buildStudioVideoPrompt(beats.join(". "), "premium", null, protectedProfile, beats);
+  assert.match(prompt, /Create an 8-second professional/);
+  assert.doesNotMatch(prompt, /12-second/);
+  assert.match(prompt, /Mandatory observable narrative beats/);
+  assert.ok(prompt.indexOf(beats[0]) < prompt.indexOf(beats[1]));
 });
 
 test("promotional copy is removed from Veo scene intent", () => {

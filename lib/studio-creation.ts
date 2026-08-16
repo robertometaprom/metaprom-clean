@@ -20,6 +20,8 @@ import { toDestinationGenerationPayload } from "@/lib/destination-generation";
 import type { StudioDestination } from "@/lib/studio-destination";
 import type { CommercialProductionProfile } from "@/lib/commercial-production-profile";
 import type { PromotionalOverlays } from "@/lib/commercial-production-profile";
+import type { OverlayStyle } from "@/lib/overlay-style-contract";
+import type { RequiredNarrativeBeats } from "@/lib/narrative-beats-contract";
 import {
   buildAdvertisingImagePrompt,
   resolveImageIntent,
@@ -54,6 +56,8 @@ export type CreateCommercialInput = {
   visualGenerationIntent?: string;
   promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
+  overlayStyle?: OverlayStyle | null;
+  requiredNarrativeBeats?: RequiredNarrativeBeats | null;
   productMode: Mode;
   destination?: StudioDestination | null;
   onStep?: (step: CreationStep, message: string) => void;
@@ -120,6 +124,8 @@ export type PersistCreationInput = {
   visualGenerationIntent?: string;
   promotionalOverlays?: PromotionalOverlays | null;
   productionProfile?: CommercialProductionProfile | null;
+  overlayStyle?: OverlayStyle | null;
+  requiredNarrativeBeats?: RequiredNarrativeBeats | null;
   mode: Mode;
   projectMetadata: StudioProjectMetadata;
   existingProjectId?: string | null;
@@ -356,6 +362,7 @@ export async function createCommercialAssets(
     "teaser",
     destination,
     input.productionProfile,
+    input.requiredNarrativeBeats,
   );
   const videoForm = new FormData();
   videoForm.append("image", dataUrlToFile(data.image, "commercial.jpg"));
@@ -612,6 +619,8 @@ export async function persistCreationToLibrary(
       visualGenerationIntent: input.visualGenerationIntent,
       promotionalOverlays: input.promotionalOverlays,
       productionProfile: input.productionProfile,
+      overlayStyle: input.overlayStyle,
+      requiredNarrativeBeats: input.requiredNarrativeBeats,
       mode: input.mode,
       projectMetadata: input.projectMetadata,
       existingProjectId: input.existingProjectId,

@@ -4,6 +4,12 @@ import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
 } from "../lib/studio-prompts.ts";
+import { CREATIVE_DIRECTOR_SYSTEM_PROMPT } from "../lib/creative-director/prompt.ts";
+
+const CORTA_CHIDO_VISUAL_SCENE =
+  "Un hombre corta fácilmente una caja o material con el cutter. Cámara alterna a una mujer sonriendo mientras también utiliza el cutter. Ambos modelos miran a cámara.";
+const CORTA_CHIDO_SINGLE_SPEAKER =
+  'Only the woman speaks. She says the exact phrase once: "Corta Chido es muy confiable". The man and every other visible person remain silent. No other speech, dialogue, chanting, murmuring, vocal reactions, improvised words, or vocalizations. Normal non-vocal music, ambience, and sound effects remain allowed.';
 
 test("protected stapler office request survives into the final Veo scene prompt", () => {
   const directorNarrative =
@@ -68,4 +74,43 @@ test("Imagen Premium receives the complete Director narrative", () => {
 test("empty intent keeps the known-good human interaction fallback", () => {
   const prompt = buildStudioVideoPrompt("", "teaser");
   assert.match(prompt, /real-world setting with human interaction or dynamic product use/i);
+});
+
+test("explicit Corta Chido spoken copy remains exact in final teaser and Premium Veo prompts", () => {
+  const intent = `${CORTA_CHIDO_VISUAL_SCENE} ${CORTA_CHIDO_SINGLE_SPEAKER}`;
+
+  for (const tier of ["teaser", "premium"] as const) {
+    const prompt = buildStudioVideoPrompt(intent, tier);
+    assert.ok(prompt.includes('"Corta Chido es muy confiable"'));
+    assert.doesNotMatch(prompt, /Corta Chido es super Confiable/i);
+    assert.equal(prompt.match(/Corta Chido es muy confiable/g)?.length, 1);
+    assert.match(prompt, /Only the woman speaks/i);
+    assert.match(prompt, /man and every other visible person remain silent/i);
+    assert.match(prompt, /No other speech, dialogue, chanting, murmuring, vocal reactions, improvised words, or vocalizations/i);
+    assert.match(prompt, /non-vocal music, ambience, and sound effects remain allowed/i);
+  }
+});
+
+test("spoken-copy safety changes only dialogue instruction, not the approved visual scene/story", () => {
+  const visualOnlyPrompt = buildStudioVideoPrompt(CORTA_CHIDO_VISUAL_SCENE, "premium");
+  const audioSafePrompt = buildStudioVideoPrompt(
+    `${CORTA_CHIDO_VISUAL_SCENE} ${CORTA_CHIDO_SINGLE_SPEAKER}`,
+    "premium",
+  );
+
+  assert.equal(
+    audioSafePrompt.replace(` ${CORTA_CHIDO_SINGLE_SPEAKER}`, ""),
+    visualOnlyPrompt,
+  );
+});
+
+test("Director contract defaults explicit spoken copy to one speaker and forbids unrequested unison", () => {
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /Assign the exact phrase to one narratively appropriate speaker by default/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /simultaneous speech, chorus, unison, or conversation are allowed only when the customer explicitly requests/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /every other visible person remains silent/i);
+});
+
+test("Director contract keeps explicitly requested two-person dialogue allowed", () => {
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /Do not apply the single-speaker default when the customer explicitly requests dialogue or multiple voices/i);
+  assert.match(CREATIVE_DIRECTOR_SYSTEM_PROMPT, /preserve that requested structure and every supplied spoken phrase exactly/i);
 });

@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "server-only": ["./shims/server-only.ts"],
+      "@/lib/video/generate-commercial-video": ["./shims/generate-commercial-video-mock.ts"],
+      "@/lib/video/vertex-provider": ["./shims/vertex-provider-forbidden.ts"],
+      "@/*": ["../*"]
+    }
+  }
+}

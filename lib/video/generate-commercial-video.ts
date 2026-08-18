@@ -8,6 +8,10 @@ import type { OverlayStyle } from "@/lib/overlay-style-contract";
 import { createHash } from "crypto";
 import { hasRequiredPromotionalOverlays } from "@/lib/promotional-overlay";
 import {
+  observeVeoVisualGeneration,
+  resolveObservedVeoDurationSeconds,
+} from "@/lib/video/generation-events";
+import {
   resolveWorkflow,
   type VideoWorkflow,
 } from "@/lib/video/workflows";
@@ -43,14 +47,26 @@ export async function generateCommercialVideo(
     input.workflow === "premium"
       ? resolvePremiumVeoDurationSeconds()
       : undefined;
+  const vertexModel = input.model ?? workflowConfig.vertexModel;
 
-  const rawBuffer = await generateVertexVideo({
-    prompt: input.prompt,
-    imageBuffer: input.imageBuffer,
-    aspectRatio: input.aspectRatio,
-    durationSeconds,
-    model: input.model ?? workflowConfig.vertexModel,
-  });
+  const rawBuffer = await observeVeoVisualGeneration(
+    {
+      workflow: input.workflow,
+      tier: workflowConfig.tier,
+      model: vertexModel,
+      durationSeconds: resolveObservedVeoDurationSeconds({
+        requestedDurationSeconds: durationSeconds,
+      }),
+    },
+    () =>
+      generateVertexVideo({
+        prompt: input.prompt,
+        imageBuffer: input.imageBuffer,
+        aspectRatio: input.aspectRatio,
+        durationSeconds,
+        model: vertexModel,
+      }),
+  );
 
   const overlaysRequired = hasRequiredPromotionalOverlays(input.promotionalOverlays);
   const { buffer, processed } = await processCommercialVideo({
@@ -67,7 +83,7 @@ export async function generateCommercialVideo(
     processed,
     workflow: input.workflow,
     tier: workflowConfig.tier,
-    vertexModel: input.model ?? workflowConfig.vertexModel,
+    vertexModel,
     overlaysRequired,
     overlaysApplied: overlaysRequired && processed,
     rawSha256: createHash("sha256").update(rawBuffer).digest("hex"),

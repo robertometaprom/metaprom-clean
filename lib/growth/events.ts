@@ -6,6 +6,8 @@ export type GrowthEventType =
   | "share"
   | "share_whatsapp"
   | "share_copy"
+  | "share_created"
+  | "share_opened"
   | "cta_click"
   | "registration"
   | "conversion"
@@ -24,7 +26,7 @@ export type GrowthEvent = {
   metadata?: GrowthEventMetadata;
 };
 
-/** Maps client event shape to `growth_events` insert row (PR6). */
+/** Maps client event shape to `growth_events` insert row. */
 export function toGrowthEventInsert(event: GrowthEvent): GrowthEventInsert {
   return {
     share_slug: event.shareSlug,
@@ -38,12 +40,26 @@ export function toGrowthEventInsert(event: GrowthEvent): GrowthEventInsert {
 }
 
 /**
- * RC1.3.5 PR1b — persistence wired in PR6 via service role.
- * Schema: `public.growth_events` (see supabase/migrations/20260717120000_growth_engine_foundation.sql).
+ * Persist Share P1 events (`share_created`, `share_opened`) via the
+ * existing `growth_events` table. Failures never block sharing UX.
  */
 export async function trackGrowthEvent(event: GrowthEvent): Promise<void> {
-  void toGrowthEventInsert(event);
-  // no-op until analytics PR
+  const row = toGrowthEventInsert(event);
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    await fetch("/api/growth/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(row),
+      keepalive: true,
+    });
+  } catch {
+    // Share UX must not depend on analytics.
+  }
 }
 
 export type WatchCompletionEvent = {

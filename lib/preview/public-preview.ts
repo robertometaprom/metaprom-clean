@@ -1,9 +1,12 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createSignedLibraryUrlServer, PUBLIC_PREVIEW_STREAM_TTL_SECONDS } from "@/lib/library-storage-server";
+import {
+  createSignedLibraryUrlServer,
+  PUBLIC_PREVIEW_STREAM_TTL_SECONDS,
+} from "@/lib/library-storage-server";
 import { buildPublicPreviewMetadata } from "@/lib/preview/public-preview-metadata";
-import { buildPublicPreviewStreamPath } from "@/lib/preview/share-url";
+import { sanitizePublicPreview } from "@/lib/preview/sanitize-public-preview";
 import { isValidShareSlug } from "@/lib/preview/share-slug";
 import {
   isPubliclyAccessiblePreview,
@@ -15,15 +18,12 @@ import {
 } from "@/lib/preview/types";
 
 const RESOLVED_COMMERCIAL_SELECT =
-  "share_slug, teaser_video_path, image_path, original_path, ai_instructions, industry, visibility, created_at, updated_at";
-
-const PUBLIC_PREVIEW_SIGNED_URL_TTL_SECONDS = 60 * 15;
+  "share_slug, teaser_video_path, image_path, ai_instructions, industry, visibility, created_at, updated_at";
 
 type ResolvedCommercialRow = {
   share_slug: string;
   teaser_video_path: string | null;
   image_path: string | null;
-  original_path: string | null;
   ai_instructions: string | null;
   industry: string | null;
   visibility: PreviewVisibility;
@@ -56,31 +56,13 @@ function mapResolvedCommercialRow(
     kind,
     teaserVideoPath: row.teaser_video_path,
     posterImagePath: row.image_path,
-    originalPhotoPath: row.original_path,
+    originalPhotoPath: null,
     customerIntent: row.ai_instructions,
     industry: row.industry,
     visibility: row.visibility,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-async function createSignedPreviewAssetUrl(
-  path: string | null,
-): Promise<string | null> {
-  if (!path) {
-    return null;
-  }
-
-  try {
-    return await createSignedLibraryUrlServer(
-      path,
-      PUBLIC_PREVIEW_SIGNED_URL_TTL_SECONDS,
-    );
-  } catch (error) {
-    console.error("createSignedPreviewAssetUrl failed", { path, error });
-    return null;
-  }
 }
 
 /**
@@ -96,6 +78,7 @@ export async function resolvePublicCommercial(
 /**
  * Look up a preview asset by its immutable public slug.
  * Supports Commercial (teaser) and Advertising Image (enhanced image only).
+ * Never selects Premium HD, original photos, or owner identity.
  */
 export async function getPreviewBySlug(
   slug: string,
@@ -144,32 +127,18 @@ export async function getPublicPreview(
     kind: resolved.kind,
   });
 
-  const isAdvertisingImage = resolved.kind === "advertising_image";
-
-  const [posterUrl, originalPhotoUrl] = await Promise.all([
-    createSignedPreviewAssetUrl(resolved.posterImagePath),
-    // Advertising Image public share must never expose the protected source photo.
-    isAdvertisingImage
-      ? Promise.resolve(null)
-      : createSignedPreviewAssetUrl(resolved.originalPhotoPath),
-  ]);
-
-  return {
+  return sanitizePublicPreview({
     shareSlug: resolved.shareSlug,
     kind: resolved.kind,
     publicUrl: metadata.publicUrl,
     title: metadata.title,
     description: metadata.description,
-    posterUrl,
-    originalPhotoUrl,
-    streamPath: isAdvertisingImage
-      ? null
-      : buildPublicPreviewStreamPath(resolved.shareSlug),
+    hasPoster: Boolean(resolved.posterImagePath),
     industry: resolved.industry,
     visibility: resolved.visibility,
     createdAt: resolved.createdAt,
     updatedAt: resolved.updatedAt,
-  };
+  });
 }
 
 /**
@@ -206,6 +175,7 @@ export async function resolvePublicPreviewPage(
 /**
  * Create a short-lived signed URL for controlled teaser streaming.
  * Advertising Image previews have no teaser stream.
+ * Never signs Premium HD.
  */
 export async function createPublicPreviewStreamUrl(
   slug: string,
@@ -222,6 +192,29 @@ export async function createPublicPreviewStreamUrl(
 
   return createSignedLibraryUrlServer(
     resolved.teaserVideoPath,
+    PUBLIC_PREVIEW_STREAM_TTL_SECONDS,
+  );
+}
+
+/**
+ * Create a short-lived signed URL for the public advertising/poster image.
+ * Never signs the original private customer photo.
+ */
+export async function createPublicPreviewImageUrl(
+  slug: string,
+): Promise<string | null> {
+  const resolved = await resolvePublicCommercial(slug);
+
+  if (
+    !resolved ||
+    !resolved.posterImagePath ||
+    !isPubliclyAccessiblePreview(resolved.visibility)
+  ) {
+    return null;
+  }
+
+  return createSignedLibraryUrlServer(
+    resolved.posterImagePath,
     PUBLIC_PREVIEW_STREAM_TTL_SECONDS,
   );
 }

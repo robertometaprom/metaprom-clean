@@ -9,6 +9,7 @@ import {
   getShareProvider,
   type ShareProviderId,
 } from "@/lib/share/providers";
+import { buildSmsShareUrl } from "@/lib/share/sms-message";
 import {
   buildWhatsAppShareMessage,
   buildWhatsAppShareUrl,
@@ -40,6 +41,15 @@ function isMobileShareContext(): boolean {
   }
 
   return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function openShareDestination(url: string) {
+  if (url.startsWith("sms:")) {
+    window.location.href = url;
+    return;
+  }
+
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 async function copyTextToClipboard(text: string): Promise<boolean> {
@@ -88,21 +98,14 @@ export function useShareCommercial({
     [assetType],
   );
 
-  const trackShare = useCallback(
+  const trackShareCreated = useCallback(
     async (
-      action: ShareCommercialAction | "desktop_qr_shown" | "desktop_qr_handoff",
+      action: ShareCommercialAction | "desktop_qr_handoff",
       surface?: ShareGrowthSurface,
     ) => {
-      const eventType =
-        action === "copy_link"
-          ? "share_copy"
-          : action === "whatsapp"
-            ? "share_whatsapp"
-            : "share";
-
       await trackGrowthEvent({
         shareSlug,
-        eventType,
+        eventType: "share_created",
         metadata: {
           channel: action,
           ...assetTypeMetadata,
@@ -114,36 +117,40 @@ export function useShareCommercial({
   );
 
   const trackWhatsAppCta = useCallback(
-    async (device: "mobile" | "desktop") => {
-      await trackGrowthEvent({
-        shareSlug,
-        eventType: "share_whatsapp",
-        metadata: {
-          channel: "whatsapp",
-          surface: "review_cta",
-          device,
-          ...assetTypeMetadata,
-        },
-      });
+    async (_device: "mobile" | "desktop") => {
+      // Desktop QR open is not a completed share.
     },
-    [assetTypeMetadata, shareSlug],
+    [],
   );
 
   const trackDesktopQrShown = useCallback(async () => {
-    await trackShare("desktop_qr_shown", "desktop_qr");
-  }, [trackShare]);
+    // Opening the QR panel is not a completed share.
+  }, []);
 
   const shareWhatsApp = useCallback(
     async (surface: ShareGrowthSurface = "menu") => {
-      await trackShare("whatsapp", surface);
+      await trackShareCreated("whatsapp", surface);
       const url = buildWhatsAppShareUrl({
         publicPreviewUrl,
         locale,
         assetType,
       });
-      window.open(url, "_blank", "noopener,noreferrer");
+      openShareDestination(url);
     },
-    [assetType, locale, publicPreviewUrl, trackShare],
+    [assetType, locale, publicPreviewUrl, trackShareCreated],
+  );
+
+  const shareSms = useCallback(
+    async (surface: ShareGrowthSurface = "menu") => {
+      await trackShareCreated("sms", surface);
+      openShareDestination(
+        buildSmsShareUrl({
+          publicPreviewUrl,
+          assetType,
+        }),
+      );
+    },
+    [assetType, publicPreviewUrl, trackShareCreated],
   );
 
   const copyLink = useCallback(
@@ -152,17 +159,21 @@ export function useShareCommercial({
       setCopyState(copied ? "success" : "error");
 
       if (copied) {
-        await trackShare("copy_link", surface);
+        await trackShareCreated("copy_link", surface);
       }
 
       window.setTimeout(() => setCopyState("idle"), 2000);
       return copied;
     },
-    [publicPreviewUrl, trackShare],
+    [publicPreviewUrl, trackShareCreated],
   );
 
   const shareNative = useCallback(async () => {
     if (!canUseNativeShare()) {
+      if (locale === "en") {
+        await shareSms("review_cta");
+        return "sms" as const;
+      }
       await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
@@ -179,17 +190,29 @@ export function useShareCommercial({
         text: message.split("\n")[0],
         url: publicPreviewUrl,
       });
-      await trackShare("native", "review_cta");
+      await trackShareCreated("native", "review_cta");
       return "native" as const;
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return null;
       }
 
+      if (locale === "en") {
+        await shareSms("review_cta");
+        return "sms" as const;
+      }
+
       await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
-  }, [assetType, locale, publicPreviewUrl, shareWhatsApp, trackShare]);
+  }, [
+    assetType,
+    locale,
+    publicPreviewUrl,
+    shareSms,
+    shareWhatsApp,
+    trackShareCreated,
+  ]);
 
   const sharePrimary = useCallback(async () => {
     if (isMobileShareContext() && canUseNativeShare()) {
@@ -197,12 +220,16 @@ export function useShareCommercial({
     }
 
     if (isMobileShareContext()) {
+      if (locale === "en") {
+        await shareSms("review_cta");
+        return "sms" as const;
+      }
       await shareWhatsApp("review_cta");
       return "whatsapp" as const;
     }
 
     return null;
-  }, [shareNative, shareWhatsApp]);
+  }, [locale, shareNative, shareSms, shareWhatsApp]);
 
   const openProvider = useCallback(
     async (providerId: ShareProviderId) => {
@@ -216,22 +243,16 @@ export function useShareCommercial({
         return;
       }
 
-      if (provider.growthEventType) {
-        await trackGrowthEvent({
-          shareSlug,
-          eventType: provider.growthEventType,
-          metadata: { channel: providerId, ...assetTypeMetadata },
-        });
-      }
-
-      const url = provider.buildActionUrl({
-        publicPreviewUrl,
-        locale,
-        assetType,
-      });
-      window.open(url, "_blank", "noopener,noreferrer");
+      await trackShareCreated(providerId);
+      openShareDestination(
+        provider.buildActionUrl({
+          publicPreviewUrl,
+          locale,
+          assetType,
+        }),
+      );
     },
-    [assetType, assetTypeMetadata, copyLink, locale, publicPreviewUrl, shareSlug],
+    [assetType, copyLink, locale, publicPreviewUrl, trackShareCreated],
   );
 
   return {
@@ -243,6 +264,7 @@ export function useShareCommercial({
     sharePrimary,
     shareNative,
     shareWhatsApp,
+    shareSms,
     copyLink,
     openProvider,
     trackWhatsAppCta,

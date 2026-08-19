@@ -54,9 +54,9 @@ export default function WhatsAppHandoffClient({
 
       await trackGrowthEvent({
         shareSlug,
-        eventType: "share",
+        eventType: "share_created",
         metadata: {
-          channel: "desktop_qr_handoff",
+          channel: "whatsapp",
           surface: "handoff",
           asset_type: assetType,
         },

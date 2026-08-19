@@ -1704,7 +1704,7 @@ function AssetDetailCard({
           </div>
         )}
 
-        {publicPreviewUrl && asset.share_slug && hasTeaser && (
+        {publicPreviewUrl && asset.share_slug && (hasTeaser || hasEnhanced) && (
 
           <ShareCommercialActions
 
@@ -1713,6 +1713,8 @@ function AssetDetailCard({
             shareSlug={asset.share_slug}
 
             variant="compact"
+
+            assetType={hasTeaser ? "commercial" : "advertising_image"}
 
           />
 

@@ -1,10 +1,12 @@
 import type { Locale } from "@/lib/i18n";
 import type { PublicPreviewKind } from "@/lib/preview/types";
+import { buildSmsShareUrl } from "@/lib/share/sms-message";
 import { buildWhatsAppShareUrl } from "@/lib/share/whatsapp-message";
 
 export type ShareProviderId =
   | "whatsapp"
   | "copy_link"
+  | "sms"
   | "facebook"
   | "linkedin"
   | "x"
@@ -20,14 +22,12 @@ export type ShareProvider = {
   id: ShareProviderId;
   enabled: boolean;
   buildActionUrl?: (context: ShareProviderContext) => string;
-  growthEventType?: "share_whatsapp" | "share_copy" | "share";
 };
 
 export const SHARE_PROVIDERS: ShareProvider[] = [
   {
     id: "whatsapp",
     enabled: true,
-    growthEventType: "share_whatsapp",
     buildActionUrl: (context) =>
       buildWhatsAppShareUrl({
         publicPreviewUrl: context.publicPreviewUrl,
@@ -38,7 +38,15 @@ export const SHARE_PROVIDERS: ShareProvider[] = [
   {
     id: "copy_link",
     enabled: true,
-    growthEventType: "share_copy",
+  },
+  {
+    id: "sms",
+    enabled: true,
+    buildActionUrl: (context) =>
+      buildSmsShareUrl({
+        publicPreviewUrl: context.publicPreviewUrl,
+        assetType: context.assetType,
+      }),
   },
   {
     id: "facebook",
@@ -76,8 +84,18 @@ export const SHARE_PROVIDERS: ShareProvider[] = [
   },
 ];
 
-export function getEnabledShareProviders(): ShareProvider[] {
-  return SHARE_PROVIDERS.filter((provider) => provider.enabled);
+export function getEnabledShareProviders(locale: Locale = "es"): ShareProvider[] {
+  return SHARE_PROVIDERS.filter((provider) => {
+    if (!provider.enabled) {
+      return false;
+    }
+
+    if (provider.id === "sms") {
+      return locale === "en";
+    }
+
+    return true;
+  });
 }
 
 export function getShareProvider(id: ShareProviderId): ShareProvider | undefined {

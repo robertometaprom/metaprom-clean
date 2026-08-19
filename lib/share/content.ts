@@ -11,6 +11,7 @@ export type ShareCommercialContent = {
   whatsappQrInstruction: string;
   whatsappQrHint: string;
   whatsappOpenOnDesktop: string;
+  sms: string;
   facebook: string;
   linkedin: string;
   x: string;
@@ -31,6 +32,7 @@ const CONTENT: Record<Locale, ShareCommercialContent> = {
     whatsappQrInstruction: "ESCANEA Y COMPÁRTELO",
     whatsappQrHint: "Apunta tu celular al QR",
     whatsappOpenOnDesktop: "Abrir WhatsApp en esta PC",
+    sms: "SMS",
     facebook: "Facebook",
     linkedin: "LinkedIn",
     x: "X",
@@ -49,6 +51,7 @@ const CONTENT: Record<Locale, ShareCommercialContent> = {
     whatsappQrInstruction: "SCAN AND SHARE IT",
     whatsappQrHint: "Point your phone at the QR",
     whatsappOpenOnDesktop: "Open WhatsApp on this PC",
+    sms: "SMS",
     facebook: "Facebook",
     linkedin: "LinkedIn",
     x: "X",

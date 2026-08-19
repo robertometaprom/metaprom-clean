@@ -9,8 +9,9 @@ export type PublicPreview = {
   publicUrl: string;
   title: string;
   description: string;
+  /** Metaprom-relative image path (`/api/public/{slug}/image`), never a storage URL. */
   posterUrl: string | null;
-  /** Commercial-only. Always null for advertising_image (never expose source photo). */
+  /** Always null on public share — original customer photos are never exposed. */
   originalPhotoUrl: string | null;
   /** Commercial teaser stream path. Null for advertising_image. */
   streamPath: string | null;
@@ -34,6 +35,7 @@ export type ResolvedPublicCommercial = {
   kind: PublicPreviewKind;
   teaserVideoPath: string | null;
   posterImagePath: string | null;
+  /** Always null for public resolution — original photos stay private. */
   originalPhotoPath: string | null;
   customerIntent: string | null;
   industry: string | null;

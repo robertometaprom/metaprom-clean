@@ -25,6 +25,8 @@ function providerLabel(
       return content.whatsapp;
     case "copy_link":
       return content.copyLink;
+    case "sms":
+      return content.sms;
     case "facebook":
       return content.facebook;
     case "linkedin":
@@ -47,14 +49,14 @@ export default function ShareCommercialMenu({
   onClose,
   anchorRef,
 }: ShareCommercialMenuProps) {
-  const { content, copyState, openProvider } = useShareCommercial({
+  const { content, copyState, openProvider, locale: resolvedLocale } = useShareCommercial({
     publicPreviewUrl,
     shareSlug,
     locale,
     assetType,
   });
   const menuRef = useRef<HTMLDivElement>(null);
-  const providers = getEnabledShareProviders();
+  const providers = getEnabledShareProviders(resolvedLocale);
 
   const handleProviderClick = useCallback(
     async (providerId: ShareProviderId) => {

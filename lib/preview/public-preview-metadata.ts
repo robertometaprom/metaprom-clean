@@ -1,4 +1,5 @@
 import {
+  buildPublicPreviewImagePath,
   buildPublicPreviewStreamPath,
   buildPublicPreviewUrl,
 } from "@/lib/preview/share-url";
@@ -91,6 +92,6 @@ export function buildPublicPreviewMetadata(
       kind === "advertising_image"
         ? null
         : buildPublicPreviewStreamPath(shareSlug),
-    openGraphImagePath: `/p/${shareSlug}/opengraph-image`,
+    openGraphImagePath: buildPublicPreviewImagePath(shareSlug),
   };
 }

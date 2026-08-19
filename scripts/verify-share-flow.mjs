@@ -82,6 +82,23 @@ async function main() {
 
   const apiRes = await fetch(`${appUrl}/api/public/${slug}`);
   checklist["public API returns preview"] = apiRes.status === 200;
+  let previewJson = null;
+  try {
+    previewJson = await apiRes.json();
+  } catch {
+    previewJson = null;
+  }
+  checklist["public API originalPhotoUrl is null"] =
+    previewJson?.originalPhotoUrl == null;
+  checklist["public API has no premium fields"] =
+    previewJson != null &&
+    previewJson.premium_video_path == null &&
+    previewJson.premiumVideoPath == null &&
+    previewJson.user_id == null &&
+    previewJson.email == null;
+  checklist["poster uses Metaprom image path"] =
+    !previewJson?.posterUrl ||
+    String(previewJson.posterUrl).startsWith(`/api/public/${slug}/image`);
 
   const streamRedirect = await fetch(`${appUrl}/api/public/${slug}/stream`, {
     redirect: "manual",
@@ -109,6 +126,9 @@ async function main() {
     html,
   );
   checklist["CTA links to /studio"] = html.includes('href="/studio"');
+  checklist["page does not render original private photo"] = !/Foto original|Original photo/i.test(
+    html,
+  );
   const visibleDownload = [...html.matchAll(/>([^<]{0,60}(?:download|descargar)[^<]{0,60})</gi)]
     .map((match) => match[1].trim())
     .filter((text) => !text.toLowerCase().includes("nodownload"));

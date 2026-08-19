@@ -3,7 +3,7 @@ import type { PublicCommercialContent } from "@/lib/public-commercial/content";
 import PublicCommercialCta from "@/components/public/PublicCommercialCta";
 import PublicCommercialFooter from "@/components/public/PublicCommercialFooter";
 import PublicCommercialVideo from "@/components/public/PublicCommercialVideo";
-import PublicOriginalPhoto from "@/components/public/PublicOriginalPhoto";
+import ShareOpenedBeacon from "@/components/public/ShareOpenedBeacon";
 
 type PublicCommercialPageProps = {
   preview: PublicPreview;
@@ -18,6 +18,10 @@ export default function PublicCommercialPage({
 
   return (
     <main className="min-h-screen bg-black text-[#F5F5F0]">
+      <ShareOpenedBeacon
+        shareSlug={preview.shareSlug}
+        assetType={preview.kind}
+      />
       <div className="mx-auto w-full max-w-lg px-4 py-6 md:max-w-2xl md:py-10">
         <section
           aria-label={
@@ -27,7 +31,7 @@ export default function PublicCommercialPage({
           {isAdvertisingImage ? (
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40">
               {preview.posterUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- public signed preview
+                // eslint-disable-next-line @next/next/no-img-element -- public image proxy
                 <img
                   src={preview.posterUrl}
                   alt={preview.title}
@@ -63,35 +67,20 @@ export default function PublicCommercialPage({
           <PublicCommercialCta label={labels.ctaLabel} href={labels.ctaHref} />
         </section>
 
-        {!isAdvertisingImage ? (
-          <div className="mt-10 space-y-8">
-            <PublicOriginalPhoto
-              src={preview.originalPhotoUrl}
-              alt={labels.originalPhotoLabel}
-              label={labels.originalPhotoLabel}
-            />
-
-            <section aria-label={labels.commercialLabel}>
-              <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
-                {labels.commercialLabel}
-              </h2>
-              <p className="text-sm leading-relaxed text-white/60">
-                {preview.title}
-              </p>
-            </section>
-          </div>
-        ) : (
-          <div className="mt-10">
-            <section aria-label={labels.imageLabel}>
-              <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
-                {labels.imageLabel}
-              </h2>
-              <p className="text-sm leading-relaxed text-white/60">
-                {preview.title}
-              </p>
-            </section>
-          </div>
-        )}
+        <div className="mt-10">
+          <section
+            aria-label={
+              isAdvertisingImage ? labels.imageLabel : labels.commercialLabel
+            }
+          >
+            <h2 className="mb-3 text-xs uppercase tracking-[0.2em] text-white/40">
+              {isAdvertisingImage ? labels.imageLabel : labels.commercialLabel}
+            </h2>
+            <p className="text-sm leading-relaxed text-white/60">
+              {preview.title}
+            </p>
+          </section>
+        </div>
 
         <PublicCommercialFooter
           brand={labels.footerBrand}

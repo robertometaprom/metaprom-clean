@@ -38,38 +38,25 @@ if (!projectRef || !accessToken) {
   process.exit(1);
 }
 
-async function runSql(label, sql) {
-  console.log(`\n=== Applying: ${label} ===`);
-  const res = await fetch(
-    `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query: sql }),
+const file = "supabase/migrations/20260819013000_share_launch_events.sql";
+const sql = readFileSync(join(process.cwd(), file), "utf8");
+
+const res = await fetch(
+  `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({ query: sql }),
+  },
+);
 
-  const text = await res.text();
-  if (!res.ok) {
-    console.error("FAILED", res.status, text);
-    process.exit(1);
-  }
-
-  console.log("OK", text.slice(0, 200));
+const text = await res.text();
+if (!res.ok) {
+  console.error("FAILED", res.status);
+  process.exit(1);
 }
 
-const migrationFiles = [
-  "supabase/migrations/20260716193000_assets_share_slug.sql",
-  "supabase/migrations/20260717120000_growth_engine_foundation.sql",
-  "supabase/migrations/20260819013000_share_launch_events.sql",
-];
-
-for (const file of migrationFiles) {
-  const sql = readFileSync(join(process.cwd(), file), "utf8");
-  await runSql(file, sql);
-}
-
-console.log("\nAll share migrations applied.");
+console.log("OK applied", file);

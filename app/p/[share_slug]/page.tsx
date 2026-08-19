@@ -6,6 +6,7 @@ import PublicPreviewUnavailable from "@/components/public/states/PublicPreviewUn
 import { getLocale } from "@/lib/i18n";
 import { getPublicCommercialContent } from "@/lib/public-commercial/content";
 import { resolvePublicPreviewPage } from "@/lib/preview/public-preview";
+import { buildPublicPreviewImageUrl } from "@/lib/preview/share-url";
 
 type PageProps = {
   params: Promise<{ share_slug: string }>;
@@ -32,9 +33,37 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const ogImageUrl = result.preview.posterUrl
+    ? buildPublicPreviewImageUrl(result.preview.shareSlug)
+    : undefined;
+
   return {
     title: result.preview.title,
     description: result.preview.description,
+    alternates: { canonical: result.preview.publicUrl },
+    openGraph: {
+      title: result.preview.title,
+      description: result.preview.description,
+      url: result.preview.publicUrl,
+      siteName: "Metaprom",
+      type: "website",
+      ...(ogImageUrl
+        ? {
+            images: [
+              {
+                url: ogImageUrl,
+                alt: result.preview.title,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: ogImageUrl ? "summary_large_image" : "summary",
+      title: result.preview.title,
+      description: result.preview.description,
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
+    },
   };
 }
 

@@ -92,6 +92,7 @@
   "pricing": {
     "headline": "Transparent pricing.",
     "note": "Buy exactly what you need. One image. One commercial. No subscription required.",
+    "cta": "View plans and pricing",
     "products": {
       "premium-image": {
         "name": "Premium Image",

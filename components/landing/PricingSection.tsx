@@ -38,9 +38,6 @@ export default function PricingSection({
               <p className="mt-4 flex-1 text-base leading-relaxed text-white/55">
                 {product.description}
               </p>
-              <p className="mt-10 text-3xl font-bold tracking-tight text-[#F5F5F0]">
-                {product.priceFormatted}
-              </p>
             </article>
           ))}
         </div>

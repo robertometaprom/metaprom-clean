@@ -102,13 +102,6 @@ function ShowcaseCard({
           </div>
         </div>
       </div>
-
-      <div className="flex items-baseline justify-between px-6 py-6 md:px-10 md:py-8">
-        <MediaLabel>{labels.price}</MediaLabel>
-        <p className="text-xl font-bold tracking-tight text-[#F5F5F0] md:text-2xl">
-          {item.priceFormatted}
-        </p>
-      </div>
     </article>
   );
 }

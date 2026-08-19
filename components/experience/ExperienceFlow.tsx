@@ -493,14 +493,6 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                     {content.cinema.secondaryCta}
                   </SecondaryButton>
                 </div>
-                <div className="mt-16 border-t border-white/10 pt-10 md:mt-20">
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/45">
-                    {content.priceConfidence.label}
-                  </p>
-                  <p className="mt-4 text-4xl font-bold tracking-tight md:text-5xl">
-                    {content.priceConfidence.priceFormatted}
-                  </p>
-                </div>
               </FadeUp>
             </div>
           </motion.section>

@@ -48,8 +48,8 @@ export default async function Home() {
           headline={content.pricing.headline}
           note={content.pricing.note}
           products={content.pricing.products}
-          ctaHref={content.cinema.primaryCtaHref}
-          ctaLabel={content.cinema.primaryCta}
+          ctaHref={content.pricing.ctaHref}
+          ctaLabel={content.pricing.cta}
         />
 
         <Footer labels={content.footer} brand={content.nav.brand} />

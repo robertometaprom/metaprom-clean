@@ -92,6 +92,7 @@
   "pricing": {
     "headline": "Precios transparentes.",
     "note": "Compra exactamente lo que necesitas. Una imagen. Un comercial. Sin suscripción.",
+    "cta": "Ver planes y precios",
     "products": {
       "premium-image": {
         "name": "Imagen premium",

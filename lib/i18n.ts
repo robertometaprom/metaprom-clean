@@ -56,6 +56,7 @@ export type Messages = {
   pricing: {
     headline: string;
     note: string;
+    cta: string;
     products: Record<
       string,
       {
@@ -78,8 +79,6 @@ export type ResolvedShowcaseItem = {
   beforeImage: string;
   premiumImage: string;
   commercialVideo: string;
-  priceMxn: number;
-  priceFormatted: string;
 };
 
 export type ResolvedStep = {
@@ -102,8 +101,6 @@ export type ResolvedPricingProduct = {
   id: string;
   name: string;
   description: string;
-  priceMxn: number;
-  priceFormatted: string;
 };
 
 export type LandingContent = {
@@ -113,9 +110,7 @@ export type LandingContent = {
     primaryCtaHref: string;
     secondaryCtaHref: string;
   };
-  priceConfidence: Messages["priceConfidence"] & {
-    priceFormatted: string;
-  };
+  priceConfidence: Messages["priceConfidence"];
   reveal: Messages["reveal"];
   showcaseSection: Messages["showcaseSection"];
   showcaseLabels: Messages["showcaseLabels"];
@@ -129,6 +124,8 @@ export type LandingContent = {
   pricing: {
     headline: string;
     note: string;
+    cta: string;
+    ctaHref: string;
     products: ResolvedPricingProduct[];
   };
   footer: Messages["footer"];

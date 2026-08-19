@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSignedLibraryUrlServer } from "@/lib/library-storage-server";
+import { shouldCloseProductionSurfaces } from "@/lib/security/closed-production-surfaces";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -22,6 +23,13 @@ function resolveMediaPath(
 }
 
 export async function GET(request: Request) {
+  if (shouldCloseProductionSurfaces()) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   const url = new URL(request.url);
   const projectId = url.searchParams.get("projectId");
   const assetId = url.searchParams.get("assetId");

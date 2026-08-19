@@ -16,7 +16,8 @@
     "test:generation-events": "tsx --tsconfig tests/tsconfig.generation-events.json --test tests/generation-events.test.ts",
     "test:video-repair": "tsx --tsconfig tests/tsconfig.video-repair.json --test tests/video-repair.test.ts",
     "test:video-public-auth": "tsx --tsconfig tests/tsconfig.video-public-auth.json --test tests/video-public-auth.test.ts",
-    "test:share-launch": "tsx --test tests/share-launch.test.ts"
+    "test:share-launch": "tsx --test tests/share-launch.test.ts",
+    "test:closed-production-surfaces": "tsx --test tests/closed-production-surfaces.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

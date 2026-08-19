@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fetchBibliotecaProjects } from '@/lib/biblioteca';
+import { shouldCloseProductionSurfaces } from '@/lib/security/closed-production-surfaces';
 
 export async function GET() {
+  if (shouldCloseProductionSurfaces()) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
+  }
+
   const diagnostics = {
     timestamp: new Date().toISOString(),
     environment: {

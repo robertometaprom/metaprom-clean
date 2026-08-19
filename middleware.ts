@@ -1,8 +1,16 @@
 import { detectLocale } from "@/lib/i18n";
+import { isClosedPublicProductionPath } from "@/lib/security/closed-production-surfaces";
 import { updateSession } from "@/lib/supabase/middleware";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  if (isClosedPublicProductionPath(request.nextUrl.pathname)) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   const response = await updateSession(request);
   const localeCookie = request.cookies.get("locale")?.value;
 

@@ -6,9 +6,10 @@ import {
 } from "@/lib/destination-generation";
 import {
   generateCommercialVideo,
-  getVertexVideoStatus,
+  isPublicTeaserWorkflow,
   isVertexVideoConfigured,
   normalizeImageForVeo,
+  PUBLIC_VIDEO_PREMIUM_FORBIDDEN,
   resolveVideoWorkflowFromRequest,
   resolveWorkflow,
 } from "@/lib/video";
@@ -28,11 +29,27 @@ function jsonError(message: string, status: number) {
 }
 
 export async function GET() {
-  return Response.json(getVertexVideoStatus());
+  return Response.json({
+    ready: isVertexVideoConfigured(),
+  });
 }
 
 export async function POST(req: Request) {
   try {
+    const formData = await req.formData();
+    const uploadedFile = formData.get("image") as File | null;
+    const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
+    const rawTier = (formData.get("tier") as string | null)?.trim() ?? "teaser";
+    const rawWorkflow = (formData.get("workflow") as string | null)?.trim() ?? null;
+    const requestedWorkflow = resolveVideoWorkflowFromRequest({
+      workflow: rawWorkflow,
+      tier: rawTier,
+    });
+
+    if (!isPublicTeaserWorkflow(requestedWorkflow)) {
+      return jsonError(PUBLIC_VIDEO_PREMIUM_FORBIDDEN, 403);
+    }
+
     if (!isVertexVideoConfigured()) {
       return jsonError(
         "No pudimos crear tu comercial en este momento. Intenta de nuevo en unos minutos.",
@@ -40,15 +57,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const formData = await req.formData();
-    const uploadedFile = formData.get("image") as File | null;
-    const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
-    const rawTier = (formData.get("tier") as string | null)?.trim() ?? "teaser";
-    const rawWorkflow = (formData.get("workflow") as string | null)?.trim() ?? null;
-    const workflow = resolveVideoWorkflowFromRequest({
-      workflow: rawWorkflow,
-      tier: rawTier,
-    });
+    const workflow = "preview" as const;
     const workflowConfig = resolveWorkflow(workflow);
     const destination = parseStudioDestinationFromFormData(formData);
     const veoParams = resolveVeoGenerationParams(destination);

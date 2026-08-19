@@ -75,3 +75,20 @@ export function resolveVideoWorkflowFromRequest(input: {
 
   return "preview";
 }
+
+export const PUBLIC_VIDEO_PREMIUM_FORBIDDEN =
+  "Premium video requires authentication and payment.";
+
+/**
+ * Public `/api/video` may only run the anonymous teaser/preview workflow.
+ * Paid Premium/enterprise generation belongs on the existing fulfillment path.
+ */
+export function isPublicTeaserWorkflow(workflow: VideoWorkflow): boolean {
+  const config = resolveWorkflow(workflow);
+  return (
+    workflow === "preview" &&
+    config.tier === "teaser" &&
+    !config.requiresAuth &&
+    !config.requiresPayment
+  );
+}

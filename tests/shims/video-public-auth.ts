@@ -1,9 +1,13 @@
 export {
+  generateCommercialVideo,
+  generateCommercialVideoCalls,
+  resetGenerateCommercialVideoCalls,
+} from "./video-generation-spy";
+export {
   getVertexVideoStatus,
   isVertexVideoConfigured,
   normalizeImageForVeo,
-} from "./vertex-provider";
-export { generateCommercialVideo } from "./generate-commercial-video";
+} from "./vertex-provider-public-auth";
 export {
   isPublicTeaserWorkflow,
   isVideoWorkflow,
@@ -11,6 +15,4 @@ export {
   resolveVideoWorkflowFromLegacyTier,
   resolveVideoWorkflowFromRequest,
   resolveWorkflow,
-  type VideoWorkflow,
-  type WorkflowConfig,
-} from "./workflows";
+} from "../../lib/video/workflows";

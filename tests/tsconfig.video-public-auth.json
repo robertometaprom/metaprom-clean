@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "server-only": ["./shims/server-only.ts"],
+      "@/lib/video": ["./shims/video-public-auth.ts"],
+      "@/lib/video/generate-commercial-video": ["./shims/video-generation-spy.ts"],
+      "@/lib/video/vertex-provider": ["./shims/vertex-provider-public-auth.ts"],
+      "@/*": ["../*"]
+    }
+  }
+}

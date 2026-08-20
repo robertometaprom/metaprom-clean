@@ -71,11 +71,18 @@ export default function CinemaStage({
               videoRefs.current[index] = element;
             }}
             src={item.commercialVideo}
+            poster={item.commercialPoster}
             autoPlay={index === 0}
             muted
             loop={videos.length === 1}
             playsInline
-            preload={index <= 1 ? "auto" : "metadata"}
+            preload={
+              index === activeIndex
+                ? "auto"
+                : index === (activeIndex + 1) % videos.length
+                  ? "metadata"
+                  : "none"
+            }
             fullBleed
             className="absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out"
             style={{

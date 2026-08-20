@@ -175,6 +175,7 @@ export type ResolvedShowcaseItem = {
   beforeImage: string;
   premiumImage: string;
   commercialVideo: string;
+  commercialPoster: string;
 };
 
 export type ResolvedStep = {
@@ -189,6 +190,7 @@ export type ResolvedTestimonial = {
   beforeImage: string;
   premiumImage: string;
   commercialVideo: string;
+  commercialPoster: string;
   businessName: string;
   city: string;
   quote: string;

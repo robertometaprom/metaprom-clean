@@ -93,10 +93,12 @@ function ShowcaseCard({
             <CommercialVideo
               ref={videoRef}
               src={item.commercialVideo}
+              poster={item.commercialPoster}
               muted
               loop
               playsInline
-              preload="none"
+              preload="metadata"
+              lazyLoad
               className="aspect-[3/4] h-full w-full object-cover"
             />
           </div>

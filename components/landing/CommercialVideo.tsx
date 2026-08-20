@@ -15,12 +15,23 @@ type CommercialVideoProps = Omit<
   "children"
 > & {
   src: string;
+  poster?: string;
   fullBleed?: boolean;
+  lazyLoad?: boolean;
 };
 
 const CommercialVideo = forwardRef<HTMLVideoElement, CommercialVideoProps>(
   function CommercialVideo(
-    { src, className = "", fullBleed = false, onError, ...videoProps },
+    {
+      src,
+      poster,
+      className = "",
+      fullBleed = false,
+      lazyLoad = false,
+      preload,
+      onError,
+      ...videoProps
+    },
     forwardedRef,
   ) {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,19 +40,25 @@ const CommercialVideo = forwardRef<HTMLVideoElement, CommercialVideoProps>(
     useImperativeHandle(forwardedRef, () => videoRef.current as HTMLVideoElement);
 
     useEffect(() => {
-      const probe = document.createElement("video");
-      const handleError = () => setFailed(true);
+      if (!lazyLoad) return;
+      const video = videoRef.current;
+      if (!video) return;
 
-      probe.addEventListener("error", handleError);
-      probe.src = src;
-      probe.load();
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) return;
+          video.preload =
+            preload === "auto" || preload === "none" || preload === ""
+              ? preload
+              : "metadata";
+          observer.disconnect();
+        },
+        { rootMargin: "240px", threshold: 0.01 },
+      );
 
-      return () => {
-        probe.removeEventListener("error", handleError);
-        probe.removeAttribute("src");
-        probe.load();
-      };
-    }, [src]);
+      observer.observe(video);
+      return () => observer.disconnect();
+    }, [lazyLoad, preload]);
 
     if (failed) {
       return (
@@ -52,6 +69,8 @@ const CommercialVideo = forwardRef<HTMLVideoElement, CommercialVideoProps>(
     return (
       <video
         ref={videoRef}
+        poster={poster}
+        preload={lazyLoad ? "none" : preload}
         className={className}
         onError={(event) => {
           setFailed(true);

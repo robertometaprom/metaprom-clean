@@ -4,7 +4,7 @@
  * Run: npm run test:gtm5
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,10 @@ const GTM5_LANDING_FILES = [
   "components/landing/ImageUseCases.tsx",
   "components/landing/RealEstateUseCase.tsx",
   "components/landing/VideoUseCases.tsx",
+  "components/landing/CommercialVideo.tsx",
+  "components/landing/CinemaStage.tsx",
+  "lib/platform-marks.ts",
+  "lib/showcases.ts",
   "components/landing/AiVsMetaprom.tsx",
   "components/landing/LandingFaq.tsx",
 ];
@@ -227,12 +231,22 @@ test("GTM #5 image and video use cases surface the required channels as text lab
 
   const imageSection = readRepo("components/landing/ImageUseCases.tsx");
   const videoSection = readRepo("components/landing/VideoUseCases.tsx");
-  assert.doesNotMatch(imageSection, /<(?:img|Image)\b/);
-  assert.doesNotMatch(videoSection, /<(?:img|Image)\b/);
-  assert.doesNotMatch(imageSection, /\/logos\//);
-  assert.doesNotMatch(videoSection, /\/logos\//);
+  const marks = readRepo("lib/platform-marks.ts");
+  const shopifySvg = readRepo("public/logos/platforms/shopify.svg");
+
+  assert.match(imageSection, /IMAGE_CHANNEL_MARKS/);
+  assert.match(marks, /\/logos\/platforms\/shopify\.svg/);
+  assert.match(marks, /https:\/\/www\.shopify\.com/);
+  assert.doesNotMatch(marks, /\bamazon\s*:/);
+  assert.doesNotMatch(marks, /\bmercadolibre\s*:/);
   assert.doesNotMatch(imageSection, /amazon-white/);
+  assert.doesNotMatch(imageSection, /simpleicons|svgrepo/i);
+  assert.doesNotMatch(shopifySvg, /SVG Repo|svgrepo|simpleicons/i);
+  assert.match(shopifySvg, /#95bf46|#95BF47|#95bf47|#95BF46/i);
+  assert.doesNotMatch(videoSection, /<(?:img|Image|video)\b/);
+  assert.doesNotMatch(videoSection, /\/logos\//);
   assert.doesNotMatch(videoSection, /simpleicons|svgrepo/i);
+  assert.doesNotMatch(videoSection, /M8 5\.14v13\.72L19 12/);
 });
 
 test("GTM #5 Real Estate copy is presentation, not a fictional property", () => {
@@ -380,4 +394,27 @@ test("GTM #5 preserves Studio/Planes paths, locale chrome, and closed GTM #1 sur
   assert.equal(isClosedProductionSurfacePath("/studio"), false);
   assert.equal(isClosedProductionSurfacePath("/planes"), false);
   assert.equal(shouldCloseProductionSurfaces("production"), true);
+});
+
+test("GTM #5.1 landing videos ship lightweight posters and do not probe-download", () => {
+  const video = readRepo("components/landing/CommercialVideo.tsx");
+  assert.match(video, /poster/);
+  assert.match(video, /lazyLoad/);
+  assert.doesNotMatch(video, /document\.createElement\("video"\)/);
+
+  const cinema = readRepo("components/landing/CinemaStage.tsx");
+  assert.match(cinema, /commercialPoster/);
+  assert.match(cinema, /preload=\{/);
+  assert.match(readRepo("components/landing/TheReveal.tsx"), /commercialPoster/);
+  assert.match(readRepo("components/landing/ShowcaseGrid.tsx"), /lazyLoad/);
+  assert.match(readRepo("components/landing/Testimonials.tsx"), /commercialPoster/);
+
+  const esContent = buildLandingContent("es", es);
+  assert.equal(esContent.showcase.length, 4);
+  for (const item of esContent.showcase) {
+    assert.match(item.commercialPoster, /\/poster\.webp$/);
+    const bytes = statSync(join(ROOT, "public", item.commercialPoster.replace(/^\//, ""))).size;
+    assert.ok(bytes > 8_000, item.id);
+    assert.ok(bytes < 100_000, item.id);
+  }
 });

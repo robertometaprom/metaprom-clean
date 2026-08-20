@@ -114,10 +114,12 @@ function TestimonialCard({
           <CommercialVideo
             ref={videoRef}
             src={item.commercialVideo}
+            poster={item.commercialPoster}
             muted
             loop
             playsInline
-            preload="none"
+            preload="metadata"
+            lazyLoad
             className="aspect-[4/5] h-full w-full object-cover"
           />
         </div>

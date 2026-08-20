@@ -24,6 +24,7 @@ export function buildLandingContent(
         beforeImage: entry.beforeImage,
         premiumImage: entry.premiumImage,
         commercialVideo: entry.video,
+        commercialPoster: entry.poster,
       };
     },
   );
@@ -55,6 +56,7 @@ export function buildLandingContent(
       beforeImage: media.beforeImage,
       premiumImage: media.premiumImage,
       commercialVideo: media.commercialVideo,
+      commercialPoster: media.commercialPoster,
       businessName: copy.businessName,
       city: copy.city,
       quote: copy.quote,

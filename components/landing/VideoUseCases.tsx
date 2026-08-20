@@ -28,20 +28,8 @@ export default function VideoUseCases({ copy }: VideoUseCasesProps) {
             {GTM5_VIDEO_PLATFORM_IDS.map((id) => (
               <li
                 key={id}
-                className="flex min-h-28 min-w-0 flex-col justify-end rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-40 md:px-6 md:py-6"
+                className="flex min-h-28 min-w-0 flex-col justify-center rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-40 md:px-6 md:py-6"
               >
-                <span
-                  aria-hidden
-                  className="mb-6 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-white/50"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="h-3.5 w-3.5"
-                  >
-                    <path d="M8 5.14v13.72L19 12 8 5.14z" />
-                  </svg>
-                </span>
                 <p className="text-lg font-semibold tracking-tight text-[#F5F5F0] md:text-2xl">
                   {copy.platforms[id]}
                 </p>

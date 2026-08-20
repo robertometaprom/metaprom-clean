@@ -83,6 +83,7 @@ export default function TheReveal({ item, labels }: TheRevealProps) {
           <CommercialVideo
             ref={videoRef}
             src={item.commercialVideo}
+            poster={item.commercialPoster}
             muted
             loop
             playsInline

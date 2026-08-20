@@ -3,6 +3,7 @@ import {
   GTM5_IMAGE_CHANNEL_IDS,
 } from "@/lib/gtm5";
 import type { LandingContent } from "@/lib/i18n";
+import { IMAGE_CHANNEL_MARKS } from "@/lib/platform-marks";
 
 type ImageUseCasesProps = {
   copy: LandingContent["imageUseCases"];
@@ -13,6 +14,7 @@ export default function ImageUseCases({ copy }: ImageUseCasesProps) {
   const featured = GTM5_FEATURED_IMAGE_CHANNEL_IDS.map((id) => ({
     id,
     name: copy.channels[id],
+    mark: IMAGE_CHANNEL_MARKS[id],
   }));
   const rest = GTM5_IMAGE_CHANNEL_IDS.filter((id) => !featuredIds.has(id)).map(
     (id) => ({
@@ -44,9 +46,26 @@ export default function ImageUseCases({ copy }: ImageUseCasesProps) {
               key={channel.id}
               className="flex min-h-32 min-w-0 items-end rounded-sm border border-white/10 bg-white/[0.03] px-5 py-5 md:min-h-40 md:px-6 md:py-6"
             >
-              <p className="text-2xl font-semibold tracking-tight text-[#F5F5F0] md:text-3xl">
-                {channel.name}
-              </p>
+              {channel.mark?.href ? (
+                <a
+                  href={channel.mark.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 max-w-full flex-col justify-end"
+                >
+                  <img
+                    src={channel.mark.src}
+                    alt={channel.name}
+                    width={channel.mark.width}
+                    height={channel.mark.height}
+                    className="h-8 w-auto max-w-full md:h-10"
+                  />
+                </a>
+              ) : (
+                <p className="text-2xl font-semibold tracking-tight text-[#F5F5F0] md:text-3xl">
+                  {channel.name}
+                </p>
+              )}
             </li>
           ))}
         </ul>

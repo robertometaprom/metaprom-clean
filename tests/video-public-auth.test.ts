@@ -6,12 +6,16 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { beforeEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { GET, POST } from "../app/api/video/route.ts";
 import { fulfillPremiumVideoAfterPayment } from "../lib/studio/premium-video-fulfillment.ts";
+import {
+  createMemoryCostControlStore,
+  installCostControlStoreForTests,
+} from "../lib/security/cost-control.ts";
 import {
   isPublicTeaserWorkflow,
   PUBLIC_VIDEO_PREMIUM_FORBIDDEN,
@@ -201,6 +205,11 @@ function paidAsset(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   resetGenerateCommercialVideoCalls();
+  installCostControlStoreForTests(createMemoryCostControlStore());
+});
+
+afterEach(() => {
+  installCostControlStoreForTests(null);
 });
 
 test("client tier=premium and workflow=premium/enterprise resolve to paid workflows", () => {

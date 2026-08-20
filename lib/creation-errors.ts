@@ -1,3 +1,9 @@
+import {
+  COST_CONTROL_UNAVAILABLE_MESSAGE,
+  GENERATION_IN_PROGRESS_MESSAGE,
+  RATE_LIMITED_GENERATION_MESSAGE,
+} from "@/lib/security/cost-control-messages";
+
 const CUSTOMER_ERROR_FALLBACK =
   "Algo salió mal. Intenta de nuevo con otra foto.";
 
@@ -42,6 +48,13 @@ const EXACT_ERROR_MAP: Record<string, string> = {
   "Asset not found.": "No encontramos tu comercial. Intenta crear uno nuevo.",
   "Premium video requires completed payment.":
     "Confirma tu pago para producir el comercial HD.",
+  [RATE_LIMITED_GENERATION_MESSAGE]: RATE_LIMITED_GENERATION_MESSAGE,
+  [GENERATION_IN_PROGRESS_MESSAGE]: GENERATION_IN_PROGRESS_MESSAGE,
+  [COST_CONTROL_UNAVAILABLE_MESSAGE]: COST_CONTROL_UNAVAILABLE_MESSAGE,
+  "Prompt is too long.":
+    "El texto es demasiado largo. Acorta la descripción e intenta de nuevo.",
+  "Image exceeds the maximum allowed size.":
+    "La foto es demasiado grande. Usa una imagen más ligera.",
 };
 
 function stripProviderSafetyPrefix(message: string): string {
@@ -150,6 +163,10 @@ export function mapCreationError(message?: string): string | undefined {
       return buildSafetyRejectionMessage("policy");
     }
     return exact;
+  }
+
+  if (message.startsWith("Request body exceeds")) {
+    return "El archivo es demasiado grande. Usa una foto más ligera.";
   }
 
   const safetyRejection = detectSafetyRejection(message);

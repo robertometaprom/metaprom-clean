@@ -2,6 +2,16 @@ import { mapCreationError } from "@/lib/creation-errors";
 import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  COST_CONTROL_UNAVAILABLE_MESSAGE,
+  GENERATION_IN_PROGRESS_MESSAGE,
+  RATE_LIMITED_GENERATION_MESSAGE,
+} from "@/lib/security/cost-control-messages";
+import {
+  costControlUnavailableResponse,
+  generationInProgressResponse,
+  rateLimitedGenerationResponse,
+} from "@/lib/security/cost-control";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -52,6 +62,8 @@ export async function POST(req: Request) {
     assetId,
     {
       requireUserId: user.id,
+      applyUserRateLimit: true,
+      rateLimitRequest: req,
     },
   );
 
@@ -60,6 +72,18 @@ export async function POST(req: Request) {
   }
 
   if (result.status === "failed") {
+    if (result.reason === RATE_LIMITED_GENERATION_MESSAGE) {
+      return rateLimitedGenerationResponse(result.retryAfterMs ?? 60_000);
+    }
+
+    if (result.reason === GENERATION_IN_PROGRESS_MESSAGE) {
+      return generationInProgressResponse(result.retryAfterMs ?? 60_000);
+    }
+
+    if (result.reason === COST_CONTROL_UNAVAILABLE_MESSAGE) {
+      return costControlUnavailableResponse();
+    }
+
     if (result.reason === "Asset not found." || result.reason === "Project not found.") {
       return jsonError("Asset not found.", 404);
     }

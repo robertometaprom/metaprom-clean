@@ -10,6 +10,23 @@ import {
 } from "@/lib/entitlements/assert-advertising-generation";
 import { generateEnhancedImage } from "@/lib/enhancement";
 import type { Mode } from "@/lib/prompts";
+import {
+  ENHANCEMENT_ADVERTISING_RATE_LIMIT,
+  ENHANCEMENT_PREVIEW_RATE_LIMIT,
+  MAX_GENERATION_FORM_BYTES,
+  MAX_GENERATION_PROMPT_CHARS,
+  MAX_ORIGINAL_FILE_BYTES,
+} from "@/lib/security/limits";
+import {
+  enforcePaidProviderCostControl,
+  getOptionalUserId,
+} from "@/lib/security/cost-control";
+import {
+  assertContentLengthWithin,
+  assertFileWithinLimit,
+  assertPromptLength,
+  BodyTooLargeError,
+} from "@/lib/security/validation";
 
 export const maxDuration = 300;
 
@@ -24,7 +41,18 @@ const supportedImageTypes = new Set([
 
 export async function POST(req: Request) {
   try {
+    try {
+      assertContentLengthWithin(req, MAX_GENERATION_FORM_BYTES);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Request body is too large.";
+      const status = error instanceof BodyTooLargeError ? 413 : 400;
+      return Response.json({ error: message }, { status });
+    }
+
     const formData = await req.formData();
+
+    let advertisingUserId: string | null = null;
 
     // Advertising Image only — Commercial enhancement path stays unchanged.
     if (isAdvertisingImagePurpose(formData)) {
@@ -39,6 +67,7 @@ export async function POST(req: Request) {
           { status: gate.status },
         );
       }
+      advertisingUserId = gate.userId;
     }
 
     const uploadedFile = formData.get("image") as File;
@@ -58,8 +87,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
-
     const rawMode = (formData.get("mode") as string | null) ?? "amazon";
     const mode = (rawMode as Mode) ?? "amazon";
     const aiInstructions = (formData.get("aiInstructions") as string) ?? "";
@@ -71,6 +98,31 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+
+    try {
+      assertFileWithinLimit(uploadedFile, MAX_ORIGINAL_FILE_BYTES);
+      assertPromptLength(aiInstructions, MAX_GENERATION_PROMPT_CHARS);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Invalid request.";
+      const status = /too long|too large|exceeds/i.test(message) ? 413 : 400;
+      return Response.json({ error: message }, { status });
+    }
+
+    const userId = advertisingUserId ?? (await getOptionalUserId());
+    const rateLimited = await enforcePaidProviderCostControl({
+      request: req,
+      userId,
+      endpointClass: advertisingUserId
+        ? "enhancement-advertising"
+        : "enhancement-preview",
+      limit: advertisingUserId
+        ? ENHANCEMENT_ADVERTISING_RATE_LIMIT
+        : ENHANCEMENT_PREVIEW_RATE_LIMIT,
+    });
+    if (rateLimited) return rateLimited;
+
+    const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 
     let normalizedBuffer: Buffer;
     try {

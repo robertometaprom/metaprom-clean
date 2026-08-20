@@ -1,5 +1,14 @@
 import "server-only";
 
+/**
+ * Request IP helpers.
+ *
+ * Process-memory counters in this file are NOT durable across Vercel
+ * instances. Generation/cost limits live in `lib/security/cost-control.ts`
+ * and `provider_cost_windows` (Supabase). Do not use `checkRateLimit` for
+ * paid-provider protection.
+ */
+
 import { RATE_LIMIT_WINDOW_MS } from "@/lib/security/limits";
 
 type RateLimitBucket = {

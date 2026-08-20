@@ -30,19 +30,40 @@ export function assertValidResumeToken(
   return trimmed;
 }
 
+export function assertContentLengthWithin(
+  request: Request,
+  maxBytes: number,
+): void {
+  const contentLength = request.headers.get("content-length");
+
+  if (!contentLength) return;
+
+  const length = Number.parseInt(contentLength, 10);
+
+  if (Number.isFinite(length) && length > maxBytes) {
+    throw new BodyTooLargeError(maxBytes);
+  }
+}
+
+export function assertPromptLength(prompt: string, maxChars: number): string {
+  if (prompt.length > maxChars) {
+    throw new Error("Prompt is too long.");
+  }
+
+  return prompt;
+}
+
+export function assertFileWithinLimit(file: File, maxBytes: number): void {
+  if (file.size > maxBytes) {
+    throw new Error("Image exceeds the maximum allowed size.");
+  }
+}
+
 export async function readJsonBodyWithLimit(
   request: Request,
   maxBytes: number,
 ): Promise<unknown> {
-  const contentLength = request.headers.get("content-length");
-
-  if (contentLength) {
-    const length = Number.parseInt(contentLength, 10);
-
-    if (Number.isFinite(length) && length > maxBytes) {
-      throw new BodyTooLargeError(maxBytes);
-    }
-  }
+  assertContentLengthWithin(request, maxBytes);
 
   const raw = await request.text();
 

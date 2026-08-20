@@ -11,12 +11,10 @@ import {
 } from "@/lib/security/anonymous-director";
 import {
   ANON_DIRECTOR_RATE_LIMIT,
+  AUTH_DIRECTOR_RATE_LIMIT,
   MAX_JSON_BODY_BYTES,
 } from "@/lib/security/limits";
-import {
-  buildRateLimitKey,
-  checkRateLimit,
-} from "@/lib/security/rate-limit";
+import { enforceSoftCostControl } from "@/lib/security/cost-control";
 import {
   assertCustomerMessageLength,
   BodyTooLargeError,
@@ -82,20 +80,6 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   const isAuthenticated = Boolean(user);
 
-  if (!isAuthenticated) {
-    const rateLimit = checkRateLimit(
-      buildRateLimitKey("creative-director", req),
-      ANON_DIRECTOR_RATE_LIMIT,
-    );
-
-    if (!rateLimit.allowed) {
-      return jsonError(
-        "Has alcanzado el límite de conversación anónima por ahora. Crea una cuenta gratuita para continuar.",
-        429,
-      );
-    }
-  }
-
   let body: unknown;
 
   try {
@@ -124,6 +108,15 @@ export async function POST(req: Request) {
       requiresRegistration: preGuard.requiresRegistration,
     });
   }
+
+  const rateLimited = await enforceSoftCostControl({
+    request: req,
+    userId: user?.id ?? null,
+    endpointClass: "director",
+    limit: isAuthenticated ? AUTH_DIRECTOR_RATE_LIMIT : ANON_DIRECTOR_RATE_LIMIT,
+    kind: isAuthenticated ? "director-auth" : "director-anon",
+  });
+  if (rateLimited) return rateLimited;
 
   try {
     const response = await createCreativeProposal(parsed.input, {

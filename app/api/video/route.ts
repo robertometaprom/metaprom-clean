@@ -5,6 +5,22 @@ import {
   resolveVeoGenerationParams,
 } from "@/lib/destination-generation";
 import {
+  MAX_GENERATION_FORM_BYTES,
+  MAX_GENERATION_PROMPT_CHARS,
+  MAX_ORIGINAL_FILE_BYTES,
+  VIDEO_TEASER_RATE_LIMIT,
+} from "@/lib/security/limits";
+import {
+  enforcePaidProviderCostControl,
+  getOptionalUserId,
+} from "@/lib/security/cost-control";
+import {
+  assertContentLengthWithin,
+  assertFileWithinLimit,
+  assertPromptLength,
+  BodyTooLargeError,
+} from "@/lib/security/validation";
+import {
   generateCommercialVideo,
   isPublicTeaserWorkflow,
   isVertexVideoConfigured,
@@ -36,6 +52,15 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    try {
+      assertContentLengthWithin(req, MAX_GENERATION_FORM_BYTES);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Request body is too large.";
+      const status = error instanceof BodyTooLargeError ? 413 : 400;
+      return jsonError(message, status);
+    }
+
     const formData = await req.formData();
     const uploadedFile = formData.get("image") as File | null;
     const prompt = (formData.get("prompt") as string | null)?.trim() ?? "";
@@ -50,24 +75,22 @@ export async function POST(req: Request) {
       return jsonError(PUBLIC_VIDEO_PREMIUM_FORBIDDEN, 403);
     }
 
-    if (!isVertexVideoConfigured()) {
-      return jsonError(
-        "No pudimos crear tu comercial en este momento. Intenta de nuevo en unos minutos.",
-        500,
-      );
-    }
-
-    const workflow = "preview" as const;
-    const workflowConfig = resolveWorkflow(workflow);
-    const destination = parseStudioDestinationFromFormData(formData);
-    const veoParams = resolveVeoGenerationParams(destination);
-
     if (!uploadedFile) {
       return jsonError("No image uploaded.", 400);
     }
 
     if (!prompt) {
       return jsonError("Prompt is required.", 400);
+    }
+
+    try {
+      assertFileWithinLimit(uploadedFile, MAX_ORIGINAL_FILE_BYTES);
+      assertPromptLength(prompt, MAX_GENERATION_PROMPT_CHARS);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Invalid request.";
+      const status = /too long|too large|exceeds/i.test(message) ? 413 : 400;
+      return jsonError(message, status);
     }
 
     const mimeType = uploadedFile.type;
@@ -77,6 +100,27 @@ export async function POST(req: Request) {
         415,
       );
     }
+
+    if (!isVertexVideoConfigured()) {
+      return jsonError(
+        "No pudimos crear tu comercial en este momento. Intenta de nuevo en unos minutos.",
+        500,
+      );
+    }
+
+    const userId = await getOptionalUserId();
+    const rateLimited = await enforcePaidProviderCostControl({
+      request: req,
+      userId,
+      endpointClass: "video-teaser",
+      limit: VIDEO_TEASER_RATE_LIMIT,
+    });
+    if (rateLimited) return rateLimited;
+
+    const workflow = "preview" as const;
+    const workflowConfig = resolveWorkflow(workflow);
+    const destination = parseStudioDestinationFromFormData(formData);
+    const veoParams = resolveVeoGenerationParams(destination);
 
     const uploadBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 

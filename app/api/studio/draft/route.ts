@@ -19,10 +19,7 @@ import {
   isValidResumeToken,
   sanitizeConversationHistory,
 } from "@/lib/security/validation";
-import {
-  buildRateLimitKey,
-  checkRateLimit,
-} from "@/lib/security/rate-limit";
+import { enforceSoftCostControl } from "@/lib/security/cost-control";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -31,21 +28,17 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function enforceRateLimit(
+async function enforceDraftRateLimit(
   request: Request,
-  scope: string,
+  endpointClass: "draft-read" | "draft-save",
   limit: number,
-): NextResponse | null {
-  const result = checkRateLimit(buildRateLimitKey(scope, request), limit);
-
-  if (!result.allowed) {
-    return jsonError(
-      "Demasiadas solicitudes. Espera un momento e intenta de nuevo.",
-      429,
-    );
-  }
-
-  return null;
+): Promise<Response | null> {
+  return enforceSoftCostControl({
+    request,
+    endpointClass,
+    limit,
+    kind: "draft",
+  });
 }
 
 function parsePayload(value: FormDataEntryValue | null): StudioDraftPayload {
@@ -89,9 +82,9 @@ function validateDraftFile(
 }
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit(
+  const rateLimited = await enforceDraftRateLimit(
     request,
-    "studio-draft-read",
+    "draft-read",
     ANON_DRAFT_READ_RATE_LIMIT,
   );
 
@@ -123,9 +116,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(
+  const rateLimited = await enforceDraftRateLimit(
     request,
-    "studio-draft-save",
+    "draft-save",
     ANON_DRAFT_SAVE_RATE_LIMIT,
   );
 

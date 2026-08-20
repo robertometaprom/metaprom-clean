@@ -243,6 +243,14 @@ function throwRuntimeResponseError(
   response: Response,
   body: RuntimeTraceBody,
 ): never {
+  if (response.status === 429 && typeof body.error === "string") {
+    throw new Error(body.error);
+  }
+
+  if (response.status === 409 && typeof body.error === "string") {
+    throw new Error(body.error);
+  }
+
   throw new Error(
     `[${traceId}] ${stage} failed (${response.status} ${response.statusText}): ${JSON.stringify(
       body,
@@ -347,6 +355,10 @@ export async function createCommercialAssets(
   });
 
   const data = await parseJsonResponse(response);
+
+  if (response.status === 429 && data.error) {
+    throw new Error(mapCreationError(data.error) || data.error);
+  }
 
   if (!response.ok || !data.image) {
     throw new Error(

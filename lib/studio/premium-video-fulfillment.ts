@@ -27,11 +27,29 @@ import {
 import { assertRequiredPremiumComposition } from "@/lib/promotional-overlay";
 import { assertRequiredNarrativeBeatsInPrompt } from "@/lib/narrative-beats-contract";
 import { VIDEO_PROCESSING_VERSION, type PremiumProcessingManifest } from "@/lib/creative-recipe";
+import {
+  claimPremiumGenerationLock,
+  consumeCostControlWindow,
+  releasePremiumGenerationLock,
+} from "@/lib/security/cost-control";
+import {
+  COST_CONTROL_UNAVAILABLE_MESSAGE,
+  GENERATION_IN_PROGRESS_MESSAGE,
+  RATE_LIMITED_GENERATION_MESSAGE,
+} from "@/lib/security/cost-control-messages";
+import { PREMIUM_VIDEO_RATE_LIMIT } from "@/lib/security/limits";
 
 export type PremiumFulfillmentResult =
   | { status: "ready"; assetId: string; alreadyReady?: boolean; legacyFallback?: boolean }
   | { status: "skipped"; reason: string; assetId: string }
-  | { status: "failed"; reason: string; assetId: string };
+  | { status: "failed"; reason: string; assetId: string; retryAfterMs?: number };
+
+type PremiumFulfillmentOptions = {
+  requireUserId: string;
+  paidPurchaseId?: string | number | null;
+  applyUserRateLimit?: boolean;
+  rateLimitRequest?: Request;
+};
 
 function isMissingSchemaColumnError(
   error: { code?: string; message?: string } | null | undefined,
@@ -141,7 +159,7 @@ async function generatePremiumVideoBuffer(
 export async function fulfillPremiumVideoAfterPayment(
   supabase: SupabaseClient,
   assetId: string,
-  options: { requireUserId: string; paidPurchaseId?: string | number | null },
+  options: PremiumFulfillmentOptions,
 ): Promise<PremiumFulfillmentResult> {
   const { data: asset, error: assetError } = await supabase
     .from("assets")
@@ -214,7 +232,7 @@ async function fulfillWithProject(
     user_id: string;
     destination?: unknown;
   },
-  options: { requireUserId: string; paidPurchaseId?: string | number | null },
+  options: PremiumFulfillmentOptions,
 ): Promise<PremiumFulfillmentResult> {
   const assetId = String(asset.id);
 
@@ -248,6 +266,27 @@ async function fulfillWithProject(
       reason: authorization.reason,
       assetId,
     };
+  }
+
+  if (options.applyUserRateLimit && options.rateLimitRequest) {
+    const rateLimit = await consumeCostControlWindow({
+      request: options.rateLimitRequest,
+      userId: options.requireUserId,
+      endpointClass: "premium-video",
+      limit: PREMIUM_VIDEO_RATE_LIMIT,
+      policy: "fail-closed",
+    });
+
+    if (!rateLimit.allowed) {
+      return {
+        status: "failed",
+        reason: rateLimit.storageFailure
+          ? COST_CONTROL_UNAVAILABLE_MESSAGE
+          : RATE_LIMITED_GENERATION_MESSAGE,
+        assetId,
+        retryAfterMs: rateLimit.retryAfterMs,
+      };
+    }
   }
 
   let imageBuffer: Buffer | null = null;
@@ -288,7 +327,29 @@ async function fulfillWithProject(
     };
   }
 
+  const lock = await claimPremiumGenerationLock(assetId);
+  if (!lock.claimed) {
+    return {
+      status: "failed",
+      reason: lock.storageFailure
+        ? COST_CONTROL_UNAVAILABLE_MESSAGE
+        : GENERATION_IN_PROGRESS_MESSAGE,
+      assetId,
+      retryAfterMs: lock.retryAfterMs,
+    };
+  }
+
   try {
+    const { data: latestAsset } = await supabase
+      .from("assets")
+      .select("premium_video_path")
+      .eq("id", assetId)
+      .maybeSingle();
+
+    if (latestAsset?.premium_video_path) {
+      return { status: "ready", assetId, alreadyReady: true };
+    }
+
     const destination = recipe?.destination ?? parseStudioDestination(project.destination);
     if (recipe) {
       assertRequiredNarrativeBeatsInPrompt(recipe.premium_prompt, recipe.required_narrative_beats);
@@ -365,5 +426,7 @@ async function fulfillWithProject(
       error instanceof Error ? error.message : "Premium video generation failed.";
     console.error("[premium-fulfillment]", assetId, reason);
     return { status: "failed", reason, assetId };
+  } finally {
+    await releasePremiumGenerationLock(assetId);
   }
 }

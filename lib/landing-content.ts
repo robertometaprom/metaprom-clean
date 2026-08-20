@@ -1,12 +1,13 @@
 import type { LandingContent, Locale, Messages } from "@/lib/i18n";
+import { GTM5_FLOW_STEP_IDS } from "@/lib/gtm5";
 import { SHOWCASE_ENTRIES, SHOWCASE_FEATURED_ID } from "@/lib/showcases";
 import {
   TESTIMONIAL_ENTRIES,
   testimonialOwnerPhoto,
 } from "@/lib/testimonials";
 
-const STEP_IDS = ["photo", "transform", "download", "publish"] as const;
 const PLANES_HREF = "/planes";
+const REAL_ESTATE_SHOWCASE_ID = "living-room";
 
 export function buildLandingContent(
   locale: Locale,
@@ -33,6 +34,8 @@ export function buildLandingContent(
 
   const featured =
     showcaseById[SHOWCASE_FEATURED_ID] ?? showcase[0];
+  const realEstateVisual =
+    showcaseById[REAL_ESTATE_SHOWCASE_ID] ?? featured;
 
   const pricingProducts = Object.entries(messages.pricing.products).map(
     ([id, copy]) => ({
@@ -58,9 +61,10 @@ export function buildLandingContent(
     };
   });
 
-  const steps = STEP_IDS.map((id) => ({
+  const steps = GTM5_FLOW_STEP_IDS.map((id) => ({
     id,
-    label: messages.steps.items[id].label,
+    title: messages.steps.items[id].title,
+    body: messages.steps.items[id].body,
   }));
 
   return {
@@ -77,7 +81,23 @@ export function buildLandingContent(
     showcaseLabels: messages.showcaseLabels,
     featured,
     showcase,
-    steps,
+    whatIs: messages.whatIs,
+    productFlow: {
+      aria: messages.steps.aria,
+      supporting: messages.steps.supporting,
+      steps,
+    },
+    imageUseCases: messages.imageUseCases,
+    realEstate: {
+      ...messages.realEstate,
+      visual: {
+        beforeImage: realEstateVisual.beforeImage,
+        premiumImage: realEstateVisual.premiumImage,
+      },
+    },
+    videoUseCases: messages.videoUseCases,
+    aiVs: messages.aiVs,
+    faq: messages.faq,
     testimonials: {
       headline: messages.testimonials.headline,
       items: testimonials,

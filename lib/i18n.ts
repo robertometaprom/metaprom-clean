@@ -83,8 +83,60 @@ export type Messages = {
       description: string;
     }
   >;
+  whatIs: {
+    headline: string;
+    lead: string;
+    offer: string;
+    noSkills: string;
+    director: string;
+    sloganGenerate: string;
+    sloganProduce: string;
+  };
   steps: {
-    items: Record<string, { label: string }>;
+    aria: string;
+    supporting: string;
+    items: Record<string, { title: string; body: string }>;
+  };
+  imageUseCases: {
+    headline: string;
+    copy: string;
+    supportingYou: string;
+    supportingDirector: string;
+    publishNote: string;
+    channels: Record<string, string>;
+  };
+  realEstate: {
+    headlineBetter: string;
+    headlineSame: string;
+    intro: string;
+    copy: string;
+    supportingImprove: string;
+    supportingInvent: string;
+    beforeAlt: string;
+    afterAlt: string;
+  };
+  videoUseCases: {
+    headline: string;
+    copy: string;
+    publishNote: string;
+    platforms: Record<string, string>;
+  };
+  aiVs: {
+    generate: string;
+    produce: string;
+    body: string;
+    process: string;
+    closeLearn: string;
+    closeCreate: string;
+    beats: string[];
+  };
+  faq: {
+    title: string;
+    items: Array<{
+      id: string;
+      question: string;
+      answer: string;
+    }>;
   };
   testimonials: {
     headline: string;
@@ -127,7 +179,8 @@ export type ResolvedShowcaseItem = {
 
 export type ResolvedStep = {
   id: string;
-  label: string;
+  title: string;
+  body: string;
 };
 
 export type ResolvedTestimonial = {
@@ -160,7 +213,22 @@ export type LandingContent = {
   showcaseLabels: Messages["showcaseLabels"];
   featured: ResolvedShowcaseItem;
   showcase: ResolvedShowcaseItem[];
-  steps: ResolvedStep[];
+  whatIs: Messages["whatIs"];
+  productFlow: {
+    aria: string;
+    supporting: string;
+    steps: ResolvedStep[];
+  };
+  imageUseCases: Messages["imageUseCases"];
+  realEstate: Messages["realEstate"] & {
+    visual: {
+      beforeImage: string;
+      premiumImage: string;
+    };
+  };
+  videoUseCases: Messages["videoUseCases"];
+  aiVs: Messages["aiVs"];
+  faq: Messages["faq"];
   testimonials: {
     headline: string;
     items: ResolvedTestimonial[];

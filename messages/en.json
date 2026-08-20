@@ -89,21 +89,125 @@
       "description": "Family enjoying home"
     }
   },
+  "whatIs": {
+    "headline": "What is Metaprom AI?",
+    "lead": "Metaprom AI turns photos of your product, property, service, or business into advertising content ready to use.",
+    "offer": "Create Premium images for marketplaces, online stores, Real Estate, social media, and printed advertising; or turn your ideas into professional commercials for the platforms where your audience is.",
+    "noSkills": "You don't need to learn design, video editing, or artificial intelligence.",
+    "director": "Show Director what you have and tell it what you want to achieve.",
+    "sloganGenerate": "AI generates.",
+    "sloganProduce": "Metaprom AI produces."
+  },
   "steps": {
+    "aria": "How Metaprom AI works",
+    "supporting": "One photo can be the beginning of an entire campaign.",
     "items": {
       "photo": {
-        "label": "Take a photo"
+        "title": "PHOTO",
+        "body": "Upload a photo of what you want to promote."
       },
-      "transform": {
-        "label": "We transform it"
+      "direction": {
+        "title": "DIRECTION",
+        "body": "Tell Director what you want to achieve. Say it naturally."
       },
-      "download": {
-        "label": "Download"
+      "premium": {
+        "title": "PREMIUM",
+        "body": "Turn your material into professional advertising images."
       },
-      "publish": {
-        "label": "Publish"
+      "commercial": {
+        "title": "COMMERCIAL",
+        "body": "Take your concept further with a professional commercial ready to share."
       }
     }
+  },
+  "imageUseCases": {
+    "headline": "Images for where you actually sell",
+    "copy": "Turn the photos you already have into Premium images for your products, properties, services, and promotions.",
+    "supportingYou": "You bring what you have.",
+    "supportingDirector": "Director helps turn it into what you need.",
+    "publishNote": "Metaprom AI creates the content. You decide where to publish it.",
+    "channels": {
+      "amazon": "Amazon",
+      "mercadolibre": "Mercado Libre",
+      "shopify": "Shopify",
+      "realEstate": "Real Estate",
+      "menus": "Menus",
+      "flyers": "Flyers",
+      "banners": "Banners",
+      "catalogs": "Catalogs",
+      "social": "Social media",
+      "digital": "Digital advertising"
+    }
+  },
+  "realEstate": {
+    "headlineBetter": "BETTER PRESENTATION.",
+    "headlineSame": "SAME PROPERTY.",
+    "intro": "A property doesn't need to become something it isn't in order to look better.",
+    "copy": "Metaprom AI can help improve its visual presentation, reduce distractions, and prepare more attractive advertising images while preserving the property's essential characteristics.",
+    "supportingImprove": "We improve the presentation.",
+    "supportingInvent": "We don't invent the property.",
+    "beforeAlt": "Property photo before presentation improvements",
+    "afterAlt": "The same property with a clearer advertising presentation"
+  },
+  "videoUseCases": {
+    "headline": "Commercials for where your audience is",
+    "copy": "Turn your products, properties, services, and ideas into professional commercials ready to share.",
+    "publishNote": "Metaprom AI creates the content. You decide where to publish it.",
+    "platforms": {
+      "tiktok": "TikTok",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "youtube": "YouTube"
+    }
+  },
+  "aiVs": {
+    "generate": "AI generates.",
+    "produce": "Metaprom AI produces.",
+    "body": "Artificial intelligence can generate an extraordinary image or video, but a generation is not the same thing as a finished advertising product.",
+    "process": "Metaprom AI uses artificial intelligence as part of the process and adds direction, preparation, review, and production to turn your idea into advertising content you can use.",
+    "closeLearn": "You don't come to Metaprom AI to learn AI.",
+    "closeCreate": "You come to create advertising.",
+    "beats": ["Direction", "Preparation", "Review", "Production"]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "id": "need-ai",
+        "question": "Do I need to know how to use AI?",
+        "answer": "No. Director is designed so you can explain what you want in your own words. You know your business; Metaprom AI helps with the production."
+      },
+      {
+        "id": "what-can-create",
+        "question": "What can I create with Metaprom AI?",
+        "answer": "Premium images, advertising content, and commercials for products, properties, services, and businesses. You can create content for marketplaces, online stores, Real Estate, social media, printed materials, and other advertising uses."
+      },
+      {
+        "id": "just-generation",
+        "question": "Does Metaprom AI simply generate an AI image or video?",
+        "answer": "No. AI generation is one part of the process. Metaprom AI is designed to help you define, review, and produce usable advertising content."
+      },
+      {
+        "id": "generation-not-right",
+        "question": "What happens if a generation doesn't come out right?",
+        "answer": "A generation is not necessarily the finished product. Depending on the product purchased and the stage of the project, Metaprom AI allows the result to be reviewed and worked on before reaching the final material."
+      },
+      {
+        "id": "real-estate",
+        "question": "Can Metaprom AI help with Real Estate?",
+        "answer": "Yes. Metaprom AI can help improve the visual presentation of property photos and prepare advertising content while seeking to preserve the property's essential characteristics."
+      },
+      {
+        "id": "platforms",
+        "question": "Can I create content for Amazon, Mercado Libre, Shopify, TikTok, Instagram, Facebook, or YouTube?",
+        "answer": "Yes. Metaprom AI can create content for different channels and formats. You decide where to publish it and are responsible for complying with each platform's policies and requirements."
+      },
+      {
+        "id": "premium-commercial",
+        "question": "What am I buying when I purchase a Premium Commercial?",
+        "answer": "You are purchasing the production of a finished advertising product within the scope of the service, not simply an opportunity to run an AI generation."
+      }
+    ]
   },
   "testimonials": {
     "headline": "Real business owners.",

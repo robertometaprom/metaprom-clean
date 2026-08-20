@@ -1,10 +1,16 @@
 import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
+import AiVsMetaprom from "@/components/landing/AiVsMetaprom";
 import CinemaStage from "@/components/landing/CinemaStage";
 import Footer from "@/components/landing/Footer";
+import ImageUseCases from "@/components/landing/ImageUseCases";
+import LandingFaq from "@/components/landing/LandingFaq";
 import PricingSection from "@/components/landing/PricingSection";
+import RealEstateUseCase from "@/components/landing/RealEstateUseCase";
 import SimpleSteps from "@/components/landing/SimpleSteps";
 import TheReveal from "@/components/landing/TheReveal";
+import VideoUseCases from "@/components/landing/VideoUseCases";
+import WhatIsMetaprom from "@/components/landing/WhatIsMetaprom";
 import { getLandingContent } from "@/lib/i18n";
 
 const ShowcaseGrid = dynamic(
@@ -29,6 +35,8 @@ export default async function Home() {
           videos={content.showcase}
         />
 
+        <WhatIsMetaprom copy={content.whatIs} />
+
         <TheReveal item={content.featured} labels={content.reveal} />
 
         <ShowcaseGrid
@@ -37,12 +45,22 @@ export default async function Home() {
           items={content.showcase}
         />
 
-        <SimpleSteps steps={content.steps} />
+        <SimpleSteps productFlow={content.productFlow} />
+
+        <ImageUseCases copy={content.imageUseCases} />
+
+        <RealEstateUseCase copy={content.realEstate} />
+
+        <VideoUseCases copy={content.videoUseCases} />
+
+        <AiVsMetaprom copy={content.aiVs} />
 
         <Testimonials
           headline={content.testimonials.headline}
           items={content.testimonials.items}
         />
+
+        <LandingFaq copy={content.faq} />
 
         <PricingSection
           headline={content.pricing.headline}

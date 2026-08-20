@@ -89,21 +89,125 @@
       "description": "Familia disfrutando el hogar"
     }
   },
+  "whatIs": {
+    "headline": "¿Qué es Metaprom AI?",
+    "lead": "Metaprom AI convierte las fotos de tu producto, propiedad, servicio o negocio en material publicitario listo para usar.",
+    "offer": "Crea imágenes Premium para marketplaces, tiendas en línea, Real Estate, redes sociales y materiales impresos; o transforma tus ideas en comerciales profesionales para las plataformas donde está tu audiencia.",
+    "noSkills": "No necesitas aprender diseño, edición de video ni inteligencia artificial.",
+    "director": "Muéstrale a Director lo que tienes y dile qué quieres lograr.",
+    "sloganGenerate": "La IA genera.",
+    "sloganProduce": "Metaprom AI produce."
+  },
   "steps": {
+    "aria": "Cómo funciona Metaprom AI",
+    "supporting": "Una foto puede ser el principio de toda una campaña.",
     "items": {
       "photo": {
-        "label": "Toma una foto"
+        "title": "FOTO",
+        "body": "Sube una foto de lo que quieres promocionar."
       },
-      "transform": {
-        "label": "La transformamos"
+      "direction": {
+        "title": "INSTRUCCIÓN",
+        "body": "Dile a Director qué quieres lograr. Escríbelo como lo dirías normalmente."
       },
-      "download": {
-        "label": "Descarga"
+      "premium": {
+        "title": "PREMIUM",
+        "body": "Convierte tu material en imágenes publicitarias profesionales."
       },
-      "publish": {
-        "label": "Publica"
+      "commercial": {
+        "title": "COMERCIAL",
+        "body": "Lleva tu concepto más lejos con un comercial profesional listo para compartir."
       }
     }
+  },
+  "imageUseCases": {
+    "headline": "Imágenes para donde realmente vendes",
+    "copy": "Convierte las fotos que ya tienes en imágenes Premium para tus productos, propiedades, servicios y promociones.",
+    "supportingYou": "Tú subes lo que tienes.",
+    "supportingDirector": "Director te ayuda a convertirlo en lo que necesitas.",
+    "publishNote": "Metaprom AI crea el contenido. Tú decides dónde publicarlo.",
+    "channels": {
+      "amazon": "Amazon",
+      "mercadolibre": "Mercado Libre",
+      "shopify": "Shopify",
+      "realEstate": "Real Estate",
+      "menus": "Menús",
+      "flyers": "Flyers",
+      "banners": "Lonas",
+      "catalogs": "Catálogos",
+      "social": "Redes sociales",
+      "digital": "Publicidad digital"
+    }
+  },
+  "realEstate": {
+    "headlineBetter": "MEJOR PRESENTACIÓN.",
+    "headlineSame": "MISMA PROPIEDAD.",
+    "intro": "Una propiedad no necesita convertirse en algo que no es para verse mejor.",
+    "copy": "Metaprom AI puede ayudarte a mejorar su presentación visual, reducir distracciones y preparar imágenes publicitarias más atractivas conservando las características esenciales de la propiedad.",
+    "supportingImprove": "Mejoramos la presentación.",
+    "supportingInvent": "No inventamos la propiedad.",
+    "beforeAlt": "Fotografía de una propiedad antes de mejorar su presentación",
+    "afterAlt": "La misma propiedad con una presentación publicitaria más clara"
+  },
+  "videoUseCases": {
+    "headline": "Comerciales para donde está tu audiencia",
+    "copy": "Convierte tus productos, propiedades, servicios e ideas en comerciales profesionales listos para compartir.",
+    "publishNote": "Metaprom AI crea el contenido. Tú decides dónde publicarlo.",
+    "platforms": {
+      "tiktok": "TikTok",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "youtube": "YouTube"
+    }
+  },
+  "aiVs": {
+    "generate": "La IA genera.",
+    "produce": "Metaprom AI produce.",
+    "body": "La inteligencia artificial puede generar una imagen o un video extraordinario, pero una generación no es lo mismo que un producto publicitario terminado.",
+    "process": "Metaprom AI utiliza inteligencia artificial como parte del proceso y añade dirección, preparación, revisión y producción para llevar tu idea hacia material publicitario que puedas usar.",
+    "closeLearn": "No vienes a Metaprom AI a aprender IA.",
+    "closeCreate": "Vienes a hacer publicidad.",
+    "beats": ["Dirección", "Preparación", "Revisión", "Producción"]
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "items": [
+      {
+        "id": "need-ai",
+        "question": "¿Necesito saber usar inteligencia artificial?",
+        "answer": "No. Director está diseñado para que puedas explicar lo que quieres con tus propias palabras. Tú conoces tu negocio; Metaprom AI te ayuda con la producción."
+      },
+      {
+        "id": "what-can-create",
+        "question": "¿Qué puedo crear con Metaprom AI?",
+        "answer": "Imágenes Premium, material publicitario y comerciales para productos, propiedades, servicios y negocios. Puedes crear contenido para marketplaces, tiendas en línea, Real Estate, redes sociales, materiales impresos y otros usos publicitarios."
+      },
+      {
+        "id": "just-generation",
+        "question": "¿Metaprom AI simplemente genera una imagen o un video con IA?",
+        "answer": "No. La generación con IA es una parte del proceso. Metaprom AI está diseñado para ayudarte a definir, revisar y producir material publicitario utilizable."
+      },
+      {
+        "id": "generation-not-right",
+        "question": "¿Qué pasa si una generación no queda bien?",
+        "answer": "Una generación no necesariamente es el producto terminado. Dependiendo del producto contratado y de la etapa del proyecto, Metaprom AI permite revisar y trabajar el resultado antes de llegar al material final."
+      },
+      {
+        "id": "real-estate",
+        "question": "¿Metaprom AI puede ayudarme con Real Estate?",
+        "answer": "Sí. Metaprom AI puede ayudarte a mejorar la presentación visual de fotografías de propiedades y preparar material publicitario, procurando conservar las características esenciales del inmueble."
+      },
+      {
+        "id": "platforms",
+        "question": "¿Puedo crear contenido para Amazon, Mercado Libre, Shopify, TikTok, Instagram, Facebook o YouTube?",
+        "answer": "Sí. Metaprom AI puede crear material pensado para distintos canales y formatos. Tú decides dónde publicarlo y eres responsable de cumplir las políticas y requisitos de cada plataforma."
+      },
+      {
+        "id": "premium-commercial",
+        "question": "¿Qué estoy comprando cuando contrato un Comercial Premium?",
+        "answer": "Estás contratando la producción de un producto publicitario terminado dentro del alcance del servicio, no simplemente una oportunidad de ejecutar una generación de IA."
+      }
+    ]
   },
   "testimonials": {
     "headline": "Dueños de negocios reales.",

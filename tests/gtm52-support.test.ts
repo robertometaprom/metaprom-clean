@@ -101,7 +101,7 @@ test("public Support UX never exposes internal or outbound mailboxes", () => {
   assert.match(readRepo("app/soporte/SupportForm.tsx"), /SUPPORT_HONEYPOT_FIELD/);
 });
 
-test("all seven platform marks ship as local SVG files", () => {
+test("all seven platform marks ship as local approved assets", () => {
   const marks = readRepo("lib/platform-marks.ts");
   assert.match(marks, /amazon:/);
   assert.match(marks, /mercadolibre:/);
@@ -110,10 +110,11 @@ test("all seven platform marks ship as local SVG files", () => {
   assert.match(marks, /instagram:/);
   assert.match(marks, /facebook:/);
   assert.match(marks, /youtube:/);
+  assert.match(marks, /\/logos\/platforms\/mercado-libre-final\.png/);
   assert.doesNotMatch(marks, /partner|endorsement|integrat/i);
+  assert.doesNotMatch(marks, /mercado-libre\.svg|mercado-libre-dark|logo-approval-comparison/);
   for (const file of [
     "public/logos/platforms/amazon.svg",
-    "public/logos/platforms/mercado-libre.svg",
     "public/logos/platforms/shopify.svg",
     "public/logos/platforms/tiktok.svg",
     "public/logos/platforms/instagram.svg",
@@ -122,6 +123,9 @@ test("all seven platform marks ship as local SVG files", () => {
   ]) {
     assert.ok(statSync(join(ROOT, file)).size > 200, file);
   }
+  assert.ok(
+    statSync(join(ROOT, "public/logos/platforms/mercado-libre-final.png")).size > 10_000,
+  );
 });
 
 test("GTM #5.2 FAQ states Metaprom AI bears Premium production risk", () => {

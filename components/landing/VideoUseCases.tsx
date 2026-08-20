@@ -33,13 +33,9 @@ export default function VideoUseCases({ copy }: VideoUseCasesProps) {
               return (
                 <li
                   key={id}
-                  className="flex min-h-28 min-w-0 flex-col items-center justify-center rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-40 md:px-6 md:py-6"
+                  className="flex min-h-32 min-w-0 items-center justify-center rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-44 md:px-6 md:py-7"
                 >
-                  <PlatformMark
-                    mark={mark}
-                    name={name}
-                    className="h-10 w-auto max-w-full md:h-12"
-                  />
+                  <PlatformMark mark={mark} name={name} />
                 </li>
               );
             })}

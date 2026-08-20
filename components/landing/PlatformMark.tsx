@@ -1,4 +1,7 @@
-import type { PlatformMarkAsset } from "@/lib/platform-marks";
+import {
+  PLATFORM_MARK_LAYOUT_CLASS,
+  type PlatformMarkAsset,
+} from "@/lib/platform-marks";
 
 type PlatformMarkProps = {
   mark: PlatformMarkAsset;
@@ -9,7 +12,7 @@ type PlatformMarkProps = {
 export default function PlatformMark({
   mark,
   name,
-  className = "h-8 w-auto max-w-full md:h-10",
+  className = "",
 }: PlatformMarkProps) {
   return (
     <img
@@ -17,7 +20,8 @@ export default function PlatformMark({
       alt={name}
       width={mark.width}
       height={mark.height}
-      className={className}
+      draggable={false}
+      className={`${PLATFORM_MARK_LAYOUT_CLASS[mark.layout]} ${className}`.trim()}
     />
   );
 }

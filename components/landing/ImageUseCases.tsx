@@ -45,7 +45,7 @@ export default function ImageUseCases({ copy }: ImageUseCasesProps) {
           {featured.map((channel) => (
             <li
               key={channel.id}
-              className="flex min-h-32 min-w-0 items-end rounded-sm border border-white/10 bg-white/[0.03] px-5 py-5 md:min-h-40 md:px-6 md:py-6"
+              className="flex min-h-52 min-w-0 items-center justify-center rounded-sm border border-white/10 bg-white/[0.03] px-5 py-6 md:min-h-64 md:px-7 md:py-8"
             >
               {channel.mark ? (
                 <PlatformMark mark={channel.mark} name={channel.name} />

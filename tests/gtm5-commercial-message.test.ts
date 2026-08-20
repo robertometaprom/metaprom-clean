@@ -237,22 +237,40 @@ test("GTM #5 image and video use cases surface the required channels as text lab
 
   assert.match(imageSection, /IMAGE_CHANNEL_MARKS/);
   assert.match(videoSection, /VIDEO_PLATFORM_MARKS/);
+  assert.match(imageSection, /items-center justify-center/);
+  assert.match(videoSection, /items-center justify-center/);
   assert.match(marks, /\/logos\/platforms\/amazon\.svg/);
-  assert.match(marks, /\/logos\/platforms\/mercado-libre\.svg/);
+  assert.match(marks, /\/logos\/platforms\/mercado-libre-final\.png/);
   assert.match(marks, /\/logos\/platforms\/shopify\.svg/);
   assert.match(marks, /\/logos\/platforms\/tiktok\.svg/);
   assert.match(marks, /\/logos\/platforms\/instagram\.svg/);
   assert.match(marks, /\/logos\/platforms\/facebook\.svg/);
   assert.match(marks, /\/logos\/platforms\/youtube\.svg/);
+  assert.doesNotMatch(marks, /mercado-libre\.svg|mercado-libre\.png|mercado-libre-dark|logo-approval-comparison/);
   assert.doesNotMatch(imageSection, /amazon-white/);
   assert.doesNotMatch(imageSection, /simpleicons|svgrepo/i);
   assert.doesNotMatch(videoSection, /simpleicons|svgrepo/i);
   assert.doesNotMatch(shopifySvg, /SVG Repo|svgrepo|simpleicons/i);
   assert.match(shopifySvg, /#95bf46|#95BF47|#95bf47|#95BF46/i);
   assert.doesNotMatch(videoSection, /M8 5\.14v13\.72L19 12/);
+  assert.doesNotMatch(videoSection, /h-10 w-auto max-w-full md:h-12/);
+
+  const amazonSvg = readRepo("public/logos/platforms/amazon.svg");
+  const tiktokSvg = readRepo("public/logos/platforms/tiktok.svg");
+  const instagramSvg = readRepo("public/logos/platforms/instagram.svg");
+  const facebookSvg = readRepo("public/logos/platforms/facebook.svg");
+  const youtubeSvg = readRepo("public/logos/platforms/youtube.svg");
+  assert.match(amazonSvg, /#ff6201|#FF6201/i);
+  assert.match(tiktokSvg, /viewBox="0 0 1000 291/);
+  assert.match(tiktokSvg, /#00F2EA|#00f2ea|#FF004F|#ff004f/i);
+  assert.match(instagramSvg, /radialGradient/i);
+  assert.doesNotMatch(facebookSvg, /Meta/i);
+  assert.match(facebookSvg, /viewBox="0 0 40 40"/);
+  assert.match(youtubeSvg, /viewBox="0 0 388/);
+  assert.match(youtubeSvg, /#ff0033|#FF0033/i);
+
   for (const file of [
     "public/logos/platforms/amazon.svg",
-    "public/logos/platforms/mercado-libre.svg",
     "public/logos/platforms/shopify.svg",
     "public/logos/platforms/tiktok.svg",
     "public/logos/platforms/instagram.svg",
@@ -264,6 +282,9 @@ test("GTM #5 image and video use cases surface the required channels as text lab
     assert.doesNotMatch(svg, /SVG Repo|svgrepo|simpleicons/i);
     assert.ok(statSync(join(ROOT, file)).size > 200, file);
   }
+  assert.ok(
+    statSync(join(ROOT, "public/logos/platforms/mercado-libre-final.png")).size > 10_000,
+  );
 });
 
 test("GTM #5 Real Estate copy is presentation, not a fictional property", () => {

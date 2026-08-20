@@ -59,7 +59,32 @@ async function postVideo(fields: Record<string, string> = {}) {
 function createFakeSupabase(options: {
   asset: Record<string, unknown> | null;
   project: Record<string, unknown> | null;
+  commercialConsume?: boolean;
+  paidPurchase?: {
+    id: string | number;
+    user_id: string;
+    asset_id: string;
+    product_id: string;
+    status: string;
+  } | null;
 }) {
+  function filterable(rows: Record<string, unknown>[]) {
+    const filters: Array<{ column: string; value: unknown }> = [];
+    const api = {
+      eq(column: string, value: unknown) {
+        filters.push({ column, value });
+        return api;
+      },
+      async maybeSingle() {
+        const match = rows.find((row) =>
+          filters.every((filter) => String(row[filter.column]) === String(filter.value)),
+        );
+        return { data: match ?? null, error: null };
+      },
+    };
+    return api;
+  }
+
   return {
     from(table: string) {
       if (table === "assets") {
@@ -94,9 +119,44 @@ function createFakeSupabase(options: {
                   async maybeSingle() {
                     return { data: options.project, error: null };
                   },
+                  eq() {
+                    return {
+                      async maybeSingle() {
+                        return { data: options.project, error: null };
+                      },
+                    };
+                  },
                 };
               },
             };
+          },
+        };
+      }
+
+      if (table === "entitlement_ledger") {
+        const rows = options.commercialConsume
+          ? [
+              {
+                id: 1,
+                user_id: "user-owner",
+                asset_id: "asset-1",
+                entry_type: "consume",
+                entitlement_kind: "commercial",
+              },
+            ]
+          : [];
+        return {
+          select() {
+            return filterable(rows);
+          },
+        };
+      }
+
+      if (table === "purchases") {
+        const rows = options.paidPurchase ? [options.paidPurchase] : [];
+        return {
+          select() {
+            return filterable(rows);
           },
         };
       }
@@ -133,6 +193,7 @@ function paidAsset(overrides: Record<string, unknown> = {}) {
     ai_instructions: "Cafe artesanal",
     payment_status: "paid",
     premium_video_path: null,
+    teaser_video_path: "user-owner/project-1/asset-1/teaser.mp4",
     creative_recipe: null,
     ...overrides,
   };
@@ -250,6 +311,24 @@ test("authenticated unpaid Premium fulfillment is skipped without generation", a
   assert.equal(generateCommercialVideoCalls.length, 0);
 });
 
+test("payment_status paid without commercial authorization is skipped", async () => {
+  const result = await fulfillPremiumVideoAfterPayment(
+    createFakeSupabase({
+      asset: paidAsset(),
+      project: ownerProject,
+    }),
+    "asset-1",
+    { requireUserId: "user-owner" },
+  );
+
+  assert.deepEqual(result, {
+    status: "skipped",
+    reason: "Premium video requires completed payment.",
+    assetId: "asset-1",
+  });
+  assert.equal(generateCommercialVideoCalls.length, 0);
+});
+
 test("authenticated wrong-owner Premium fulfillment is rejected without generation", async () => {
   const result = await fulfillPremiumVideoAfterPayment(
     createFakeSupabase({
@@ -268,11 +347,54 @@ test("authenticated wrong-owner Premium fulfillment is rejected without generati
   assert.equal(generateCommercialVideoCalls.length, 0);
 });
 
+test("webhook paid-purchase authorization can fulfill without a prior ledger consume", async () => {
+  const result = await fulfillPremiumVideoAfterPayment(
+    createFakeSupabase({
+      asset: paidAsset({ payment_status: "pending" }),
+      project: ownerProject,
+      paidPurchase: {
+        id: 44,
+        user_id: "user-owner",
+        asset_id: "asset-1",
+        product_id: "commercial_1",
+        status: "completed",
+      },
+    }),
+    "asset-1",
+    { requireUserId: "user-owner", paidPurchaseId: 44 },
+  );
+
+  assert.equal(result.status, "ready");
+  assert.equal(generateCommercialVideoCalls.length, 1);
+});
+
+test("advertising purchase cannot authorize Premium fulfillment", async () => {
+  const result = await fulfillPremiumVideoAfterPayment(
+    createFakeSupabase({
+      asset: paidAsset(),
+      project: ownerProject,
+      paidPurchase: {
+        id: 45,
+        user_id: "user-owner",
+        asset_id: "asset-1",
+        product_id: "assets_10",
+        status: "completed",
+      },
+    }),
+    "asset-1",
+    { requireUserId: "user-owner", paidPurchaseId: 45 },
+  );
+
+  assert.equal(result.status, "skipped");
+  assert.equal(generateCommercialVideoCalls.length, 0);
+});
+
 test("legitimate paid Premium fulfillment still generates on the existing path", async () => {
   const result = await fulfillPremiumVideoAfterPayment(
     createFakeSupabase({
       asset: paidAsset(),
       project: ownerProject,
+      commercialConsume: true,
     }),
     "asset-1",
     { requireUserId: "user-owner" },
@@ -321,6 +443,9 @@ test("webhook Premium fulfillment path remains the authoritative paid path", () 
   assert.doesNotMatch(webhook, /\/api\/video/);
   assert.match(premiumRoute, /Authentication required/);
   assert.match(premiumRoute, /requireUserId: user\.id/);
+  assert.match(webhook, /requireUserId: purchase\.user_id/);
+  assert.match(webhook, /paidPurchaseId: purchase\.id/);
+  assert.match(premiumRoute, /createAdminClient/);
   assert.match(premiumRoute, /fulfillPremiumVideoAfterPayment/);
   assert.doesNotMatch(videoRoute, /fulfillPremiumVideoAfterPayment/);
   assert.doesNotMatch(videoRoute, /getVertexVideoStatus/);

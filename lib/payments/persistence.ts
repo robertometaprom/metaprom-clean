@@ -1,11 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  consumeEntitlement,
-  grantPackageEntitlementFromPurchase,
-  resolvePackageForProductId,
-} from "@/lib/entitlements";
+import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
+import { consumeCommercialForAsset } from "@/lib/entitlements/consume-commercial";
+import type { PricingPackage } from "@/lib/pricing";
 
+import {
+  isCommercialWorkflowAsset,
+  loadOwnedAssetById,
+  resolveTrustedGrantPackage,
+  shouldFulfillPremiumForProduct,
+} from "./purchase-integrity";
 import type {
   PaymentProviderId,
   PaymentSessionStatus,
@@ -35,6 +39,41 @@ function toAssetPaymentStatus(status: PaymentSessionStatus): "none" | "pending" 
   if (status === "completed") return "paid";
   if (status === "pending" || status === "awaiting_payment") return "pending";
   return "none";
+}
+
+function boundAssetId(purchase: PurchaseRecord): string | null {
+  if (purchase.asset_id == null || purchase.asset_id === "") return null;
+  return String(purchase.asset_id);
+}
+
+function reconcilePurchaseAgainstStripeSnapshot(
+  purchase: PurchaseRecord,
+  result: PaymentWebhookResult,
+): PurchaseRecord {
+  if (result.stripeUserId && result.stripeUserId !== purchase.user_id) {
+    throw new Error(
+      `Purchase ${purchase.id} user_id does not match the Stripe Checkout Session.`,
+    );
+  }
+
+  const snapshotPresent = result.stripeAssetId != null;
+  if (snapshotPresent) {
+    const snapshotAssetId = result.stripeAssetId?.trim() || "";
+    const dbAssetId = boundAssetId(purchase) ?? "";
+    if (snapshotAssetId !== dbAssetId) {
+      console.error(
+        "[payments] Refusing bound-asset fulfillment: purchase.asset_id disagrees with Stripe session snapshot",
+        {
+          purchaseId: purchase.id,
+          purchaseAssetId: dbAssetId,
+          stripeAssetId: snapshotAssetId || null,
+        },
+      );
+    }
+    return { ...purchase, asset_id: snapshotAssetId || null };
+  }
+
+  return purchase;
 }
 
 async function assetHasCompletedPurchase(
@@ -96,12 +135,134 @@ export async function updateAssetPaymentState(
   }
 }
 
+function resolveGrantPackageOrThrow(
+  purchase: PurchaseRecord,
+  result: PaymentWebhookResult,
+  providerId: PaymentProviderId,
+): PricingPackage | null {
+  const stripePriceId = result.stripePriceId?.trim() || null;
+
+  if (providerId === "stripe" && result.status === "completed") {
+    if (!stripePriceId) {
+      throw new Error(
+        `Stripe completed session ${result.sessionId} is missing a catalog Price ID.`,
+      );
+    }
+
+    const pkg = resolveTrustedGrantPackage({
+      productId: purchase.product_id,
+      stripePriceId,
+    });
+
+    if (!pkg) {
+      throw new Error(
+        `Stripe Price ${stripePriceId} does not map to a Metaprom catalog package.`,
+      );
+    }
+
+    if (pkg.id !== purchase.product_id) {
+      console.error(
+        "[payments] purchase.product_id disagrees with charged Stripe Price; granting catalog package for Price",
+        {
+          purchaseId: purchase.id,
+          productId: purchase.product_id,
+          stripePackageId: pkg.id,
+          stripePriceId,
+        },
+      );
+    }
+
+    return pkg;
+  }
+
+  return resolveTrustedGrantPackage({
+    productId: purchase.product_id,
+    stripePriceId,
+  });
+}
+
+async function syncPurchaseProductIfNeeded(
+  supabase: SupabaseClient,
+  purchase: PurchaseRecord,
+  pkg: PricingPackage,
+): Promise<PurchaseRecord> {
+  if (purchase.product_id === pkg.id) {
+    return purchase;
+  }
+
+  const metadata = {
+    ...toRecordMetadata(purchase.metadata),
+    packageId: pkg.id,
+    packageName: pkg.name,
+    category: pkg.category,
+    quantity: pkg.quantity,
+    entitlementKind:
+      pkg.category === "commercials" ? "commercial" : "advertising_asset",
+    productIdCorrectedFrom: purchase.product_id,
+  };
+
+  const { error } = await supabase
+    .from("purchases")
+    .update({
+      product_id: pkg.id,
+      amount_mxn: pkg.displayPrice,
+      metadata,
+    })
+    .eq("id", purchase.id);
+
+  if (error) {
+    throw new Error(
+      `Failed to correct purchase ${purchase.id} product_id: ${error.message}`,
+    );
+  }
+
+  return {
+    ...purchase,
+    product_id: pkg.id,
+    metadata,
+  };
+}
+
+async function maybeUpdateBoundCommercialAsset(
+  supabase: SupabaseClient,
+  purchase: PurchaseRecord,
+  status: PaymentSessionStatus,
+): Promise<string | null> {
+  const assetId = boundAssetId(purchase);
+  if (!assetId) return null;
+  if (!shouldFulfillPremiumForProduct(purchase.product_id)) {
+    return null;
+  }
+
+  const owned = await loadOwnedAssetById(supabase, purchase.user_id, assetId);
+  if (!owned) {
+    console.error(
+      "[payments] Refusing asset payment update: purchase user does not own bound asset",
+      { purchaseId: purchase.id, assetId, userId: purchase.user_id },
+    );
+    return null;
+  }
+
+  if (!isCommercialWorkflowAsset(owned)) {
+    console.error(
+      "[payments] Refusing asset payment update: bound asset is not a Commercial preview",
+      { purchaseId: purchase.id, assetId },
+    );
+    return null;
+  }
+
+  await updateAssetPaymentState(supabase, assetId, status, {
+    purchaseId: purchase.id,
+  });
+
+  return assetId;
+}
+
 async function fulfillPackageEntitlements(
   supabase: SupabaseClient,
   purchase: PurchaseRecord,
+  pkg: PricingPackage | null,
 ): Promise<void> {
-  const pkg = resolvePackageForProductId(purchase.product_id);
-
   if (!pkg) {
     return;
   }
@@ -109,47 +270,40 @@ async function fulfillPackageEntitlements(
   const grant = await grantPackageEntitlementFromPurchase(supabase, {
     userId: purchase.user_id,
     purchaseId: purchase.id,
-    productId: purchase.product_id,
+    productId: pkg.id,
     metadata: {
       sessionFulfillment: true,
     },
   });
 
-  // Idempotent grant retries return { granted: false }; do not re-consume.
-  if (!grant?.granted) {
+  const assetId = boundAssetId(purchase);
+
+  // Consume is idempotent per asset. Retry even when grant.granted is false so
+  // a prior grant + failed consume can still authorize the bound Commercial.
+  if (!assetId || pkg.category !== "commercials" || !grant) {
     return;
   }
 
-  const metadata = toRecordMetadata(purchase.metadata);
-  const assetId =
-    purchase.asset_id == null || purchase.asset_id === ""
-      ? null
-      : String(purchase.asset_id);
+  const owned = await loadOwnedAssetById(supabase, purchase.user_id, assetId);
+  if (!owned || !isCommercialWorkflowAsset(owned)) {
+    return;
+  }
 
-  // Optional current-project consumption: one unit only, remaining balance kept.
-  if (
-    assetId &&
-    pkg.category === "commercials" &&
-    metadata.consumeCurrentProject === true
-  ) {
-    try {
-      await consumeEntitlement(supabase, {
-        userId: purchase.user_id,
-        kind: "commercial",
-        quantity: 1,
-        assetId,
-        productId: pkg.id,
-        metadata: {
-          reason: "current_project_after_package_purchase",
-          purchaseId: purchase.id,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "[payments] Failed to consume current-project commercial entitlement:",
-        error,
-      );
-    }
+  try {
+    await consumeCommercialForAsset({
+      userId: purchase.user_id,
+      assetId,
+      admin: supabase,
+      metadata: {
+        reason: "current_project_after_package_purchase",
+        purchaseId: purchase.id,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "[payments] Failed to consume current-project commercial entitlement:",
+      error,
+    );
   }
 }
 
@@ -158,7 +312,7 @@ export async function persistPaymentResult(
   providerId: PaymentProviderId,
   result: PaymentWebhookResult,
 ): Promise<PurchaseRecord | null> {
-  const purchase = await findPurchaseByProviderSession(
+  let purchase = await findPurchaseByProviderSession(
     supabase,
     providerId,
     result.sessionId,
@@ -166,10 +320,21 @@ export async function persistPaymentResult(
 
   if (!purchase) return null;
 
+  purchase = reconcilePurchaseAgainstStripeSnapshot(purchase, result);
+
+  const pkg =
+    result.status === "completed"
+      ? resolveGrantPackageOrThrow(purchase, result, providerId)
+      : null;
+
+  if (pkg) {
+    purchase = await syncPurchaseProductIfNeeded(supabase, purchase, pkg);
+  }
+
   // Never downgrade a completed (paid) purchase on webhook retries / races.
   if (purchase.status === "completed") {
     if (result.status === "completed") {
-      await fulfillPackageEntitlements(supabase, purchase);
+      await fulfillPackageEntitlements(supabase, purchase, pkg);
     }
     return purchase;
   }
@@ -211,25 +376,16 @@ export async function persistPaymentResult(
     );
   }
 
-  const assetId =
-    purchase.asset_id == null || purchase.asset_id === ""
-      ? null
-      : String(purchase.asset_id);
-
-  if (assetId) {
-    await updateAssetPaymentState(supabase, assetId, result.status, {
-      purchaseId: purchase.id,
-    });
-  }
-
   const nextPurchase: PurchaseRecord = {
     ...purchase,
     status: result.status,
     metadata: update.metadata ?? purchase.metadata,
   };
 
+  await maybeUpdateBoundCommercialAsset(supabase, nextPurchase, result.status);
+
   if (result.status === "completed") {
-    await fulfillPackageEntitlements(supabase, nextPurchase);
+    await fulfillPackageEntitlements(supabase, nextPurchase, pkg);
   }
 
   return nextPurchase;

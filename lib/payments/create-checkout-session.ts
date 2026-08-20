@@ -13,6 +13,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getPaymentProvider } from "./index";
 import { updateAssetPaymentState } from "./persistence";
+import {
+  canBindAssetToPackage,
+  isCommercialWorkflowAsset,
+  type OwnedAssetRecord,
+} from "./purchase-integrity";
 import type {
   CheckoutSession,
   PaymentMethod,
@@ -26,10 +31,11 @@ export type CreateCheckoutSessionInput = {
   userId: string;
   customerEmail?: string;
   /**
-   * Optional current project asset. When present for a commercial package,
-   * one entitlement may be consumed after payment for that project only.
+   * Optional current project asset. Bound only for commercial packages after
+   * ownership + commercial-workflow checks in the checkout route.
    */
   assetId?: string | null;
+  ownedAsset?: OwnedAssetRecord | null;
   /**
    * Preferred method hint. Package checkouts default to card + OXXO in Stripe.
    */
@@ -59,7 +65,7 @@ function isPricingPackageId(value: string): value is PricingPackageId {
  * Browser sends only the stable product key; server resolves catalog + Stripe Price.
  */
 export async function createCheckoutSession(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   input: CreateCheckoutSessionInput,
 ): Promise<CreateCheckoutSessionResult> {
   const productKey = input.productKey.trim();
@@ -91,10 +97,31 @@ export async function createCheckoutSession(
     );
   }
 
-  const assetId =
+  const requestedAssetId =
     typeof input.assetId === "string" && input.assetId.trim()
       ? input.assetId.trim()
       : null;
+
+  if (requestedAssetId && !canBindAssetToPackage(pkg)) {
+    throw new PaymentProviderError(
+      `Package "${productKey}" cannot be bound to a project asset.`,
+    );
+  }
+
+  const assetId =
+    requestedAssetId && canBindAssetToPackage(pkg) ? requestedAssetId : null;
+
+  if (assetId) {
+    if (
+      !input.ownedAsset ||
+      String(input.ownedAsset.id) !== assetId ||
+      !isCommercialWorkflowAsset(input.ownedAsset)
+    ) {
+      throw new PaymentProviderError(
+        "Commercial packages can only be bound to a Commercial preview asset.",
+      );
+    }
+  }
 
   const paymentMethod = input.paymentMethod ?? "card";
   const provider = getPaymentProvider();
@@ -153,13 +180,15 @@ export async function createCheckoutSession(
       entitlementKind:
         pkg.category === "commercials" ? "commercial" : "advertising_asset",
       checkoutKind: "package",
-      consumeCurrentProject: Boolean(assetId),
+      consumeCurrentProject: Boolean(assetId) && pkg.category === "commercials",
     },
     completed_at:
       session.status === "completed" ? new Date().toISOString() : null,
   };
 
-  const { data: purchase, error: purchaseError } = await supabase
+  const admin = createAdminClient();
+
+  const { data: purchase, error: purchaseError } = await admin
     .from("purchases")
     .insert(purchaseInsert)
     .select("id, status")
@@ -172,7 +201,7 @@ export async function createCheckoutSession(
   }
 
   if (assetId) {
-    await updateAssetPaymentState(supabase, assetId, session.status, {
+    await updateAssetPaymentState(admin, assetId, session.status, {
       purchaseId: purchase.id,
     });
   }
@@ -180,7 +209,7 @@ export async function createCheckoutSession(
   // Mock/instant card completion grants immediately; Stripe path grants via webhook.
   // Grants require service_role EXECUTE — never use the caller/auth cookie client.
   if (session.status === "completed") {
-    await grantPackageEntitlementFromPurchase(createAdminClient(), {
+    await grantPackageEntitlementFromPurchase(admin, {
       userId: input.userId,
       purchaseId: purchase.id,
       productId: pkg.id,

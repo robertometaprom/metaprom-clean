@@ -34,6 +34,10 @@ export type CheckoutSession = {
   oxxoReference?: string;
   oxxoExpiresAt?: string;
   barcodeUrl?: string;
+  /** Charged Stripe Price ID when expanded from Checkout Session line items. */
+  stripePriceId?: string | null;
+  stripeAssetId?: string | null;
+  stripeUserId?: string | null;
 };
 
 export type PaymentWebhookResult = {
@@ -41,6 +45,11 @@ export type PaymentWebhookResult = {
   purchaseId: string;
   status: PaymentSessionStatus;
   providerReference?: string;
+  /** Charged Stripe Price ID; catalog mapping determines the grant. */
+  stripePriceId?: string | null;
+  /** Server-written Checkout Session metadata; used only as a tamper check. */
+  stripeAssetId?: string | null;
+  stripeUserId?: string | null;
 };
 
 export type PaymentWebhookPayload = {

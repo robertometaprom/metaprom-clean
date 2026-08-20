@@ -20,6 +20,10 @@ import {
 } from "@/lib/video";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
 import { parseCreativeRecipeV1, type CreativeRecipeV1 } from "@/lib/creative-recipe";
+import {
+  isCommercialWorkflowAsset,
+  resolvePremiumAuthorization,
+} from "@/lib/payments/purchase-integrity";
 import { assertRequiredPremiumComposition } from "@/lib/promotional-overlay";
 import { assertRequiredNarrativeBeatsInPrompt } from "@/lib/narrative-beats-contract";
 import { VIDEO_PROCESSING_VERSION, type PremiumProcessingManifest } from "@/lib/creative-recipe";
@@ -128,18 +132,21 @@ async function generatePremiumVideoBuffer(
 }
 
 /**
- * After payment is verified (`assets.payment_status = paid`), produce and store
- * the premium HD commercial. Safe to call from authenticated API or webhook.
+ * After a trusted commercial authorization exists, produce and store the
+ * premium HD commercial. Safe to call from authenticated API or webhook.
+ *
+ * `payment_status` is not authorization. Client-writable asset columns must
+ * not be enough to start generation.
  */
 export async function fulfillPremiumVideoAfterPayment(
   supabase: SupabaseClient,
   assetId: string,
-  options?: { requireUserId?: string },
+  options: { requireUserId: string; paidPurchaseId?: string | number | null },
 ): Promise<PremiumFulfillmentResult> {
   const { data: asset, error: assetError } = await supabase
     .from("assets")
     .select(
-      "id, project_id, image_url, image_path, ai_instructions, payment_status, premium_video_path, creative_recipe",
+      "id, project_id, image_url, image_path, ai_instructions, payment_status, premium_video_path, creative_recipe, teaser_video_path, teaser_video_url, video_url",
     )
     .eq("id", assetId)
     .maybeSingle();
@@ -166,10 +173,7 @@ export async function fulfillPremiumVideoAfterPayment(
         return { status: "failed", reason: "Project not found.", assetId };
       }
 
-      if (
-        options?.requireUserId &&
-        fallback.data.user_id !== options.requireUserId
-      ) {
+      if (fallback.data.user_id !== options.requireUserId) {
         return { status: "failed", reason: "Asset not found.", assetId };
       }
 
@@ -177,17 +181,17 @@ export async function fulfillPremiumVideoAfterPayment(
         id: fallback.data.id,
         user_id: fallback.data.user_id,
         destination: null,
-      });
+      }, options);
     }
 
     return { status: "failed", reason: "Project not found.", assetId };
   }
 
-  if (options?.requireUserId && project.user_id !== options.requireUserId) {
+  if (project.user_id !== options.requireUserId) {
     return { status: "failed", reason: "Asset not found.", assetId };
   }
 
-  return fulfillWithProject(supabase, asset, project);
+  return fulfillWithProject(supabase, asset, project, options);
 }
 
 async function fulfillWithProject(
@@ -201,25 +205,49 @@ async function fulfillWithProject(
     payment_status?: string | null;
     premium_video_path?: string | null;
     creative_recipe?: unknown;
+    teaser_video_path?: string | null;
+    teaser_video_url?: string | null;
+    video_url?: string | null;
   },
   project: {
     id: string | number;
     user_id: string;
     destination?: unknown;
   },
+  options: { requireUserId: string; paidPurchaseId?: string | number | null },
 ): Promise<PremiumFulfillmentResult> {
   const assetId = String(asset.id);
 
-  if (asset.payment_status !== "paid") {
+  if (asset.premium_video_path) {
+    return { status: "ready", assetId, alreadyReady: true };
+  }
+
+  if (
+    !isCommercialWorkflowAsset({
+      teaser_video_path: asset.teaser_video_path,
+      teaser_video_url: asset.teaser_video_url,
+      video_url: asset.video_url,
+    })
+  ) {
     return {
       status: "skipped",
-      reason: "Premium video requires completed payment.",
+      reason: "Premium video requires a Commercial preview asset.",
       assetId,
     };
   }
 
-  if (asset.premium_video_path) {
-    return { status: "ready", assetId, alreadyReady: true };
+  const authorization = await resolvePremiumAuthorization(supabase, {
+    userId: options.requireUserId,
+    assetId,
+    paidPurchaseId: options.paidPurchaseId,
+  });
+
+  if (!authorization.authorized) {
+    return {
+      status: "skipped",
+      reason: authorization.reason,
+      assetId,
+    };
   }
 
   let imageBuffer: Buffer | null = null;

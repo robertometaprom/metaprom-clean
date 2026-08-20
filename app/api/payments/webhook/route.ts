@@ -1,8 +1,8 @@
 import { after } from "next/server";
 
-import { resolvePackageForProductId } from "@/lib/entitlements";
 import { getPaymentProvider } from "@/lib/payments";
 import { persistPaymentResult } from "@/lib/payments/persistence";
+import { shouldFulfillPremiumForProduct } from "@/lib/payments/purchase-integrity";
 import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -64,22 +64,24 @@ export async function POST(req: Request) {
       );
     }
 
-    const isCatalogPackage = Boolean(
-      resolvePackageForProductId(purchase.product_id),
-    );
+    const purchaseProductId = String(purchase.product_id);
     const assetId =
       purchase.asset_id == null || purchase.asset_id === ""
         ? null
         : String(purchase.asset_id);
 
     // Package purchases grant balances in persistPaymentResult.
-    // Premium video generation only for a bound current project (or legacy SKU).
-    if (assetId && (!isCatalogPackage || purchase.metadata?.consumeCurrentProject === true)) {
+    // Premium generation only for a bound Commercial (catalog or legacy SKU).
+    if (assetId && shouldFulfillPremiumForProduct(purchaseProductId)) {
       after(async () => {
         try {
           const fulfillment = await fulfillPremiumVideoAfterPayment(
             supabase,
             assetId,
+            {
+              requireUserId: purchase.user_id,
+              paidPurchaseId: purchase.id,
+            },
           );
           console.info("[payments/webhook] Premium fulfillment:", fulfillment);
         } catch (error) {

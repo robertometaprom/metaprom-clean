@@ -72,7 +72,9 @@ export async function POST(request: Request) {
     const status =
       message.includes("not owned") || message.includes("not found")
         ? 403
-        : 500;
+        : message.includes("not a Commercial preview")
+          ? 400
+          : 500;
 
     return Response.json({ error: message }, { status });
   }

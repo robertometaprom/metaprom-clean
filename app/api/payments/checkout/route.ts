@@ -5,6 +5,11 @@ import { createCheckoutSession } from "@/lib/payments/create-checkout-session";
 import { getPaymentProvider } from "@/lib/payments";
 import { PaymentProviderError } from "@/lib/payments/types";
 import { persistPaymentResult } from "@/lib/payments/persistence";
+import {
+  canBindAssetToPackage,
+  isCommercialWorkflowAsset,
+  loadOwnedAssetById,
+} from "@/lib/payments/purchase-integrity";
 import type {
   PaymentMethod,
   PaymentSessionStatus,
@@ -61,43 +66,6 @@ async function requireAuthUser(traceId: string) {
 
   logTrace(traceId, "auth ok", { userId: user.id, email: user.email });
   return { supabase, user };
-}
-
-async function verifyAssetOwnership(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  assetId: string,
-  traceId: string,
-) {
-  logTrace(traceId, "verify asset ownership start", { userId, assetId });
-  const { data: asset, error } = await supabase
-    .from("assets")
-    .select("id, project_id, payment_status")
-    .eq("id", assetId)
-    .maybeSingle();
-
-  if (error || !asset) {
-    logTrace(traceId, "asset lookup failed", { error, asset });
-    return null;
-  }
-
-  const { data: project } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", asset.project_id)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!project) {
-    logTrace(traceId, "project ownership lookup failed", {
-      projectId: asset.project_id,
-      userId,
-    });
-    return null;
-  }
-
-  logTrace(traceId, "verify asset ownership ok", { asset });
-  return asset;
 }
 
 export async function POST(req: Request) {
@@ -161,23 +129,38 @@ async function postWithTrace(req: Request, traceId: string) {
     return jsonError("productKey is required.", 400, traceId, { body });
   }
 
-  if (!getPricingPackageById(productKey)) {
+  const catalogPackage = getPricingPackageById(productKey);
+  if (!catalogPackage) {
     return jsonError("Unknown product key.", 400, traceId, { productKey });
   }
 
   // V1 package catalog — sole checkout architecture (Studio + /planes).
+  let ownedAsset = null;
   if (assetId) {
-    const asset = await verifyAssetOwnership(
-      supabase,
-      user.id,
-      assetId,
-      traceId,
-    );
-    if (!asset) {
+    if (!canBindAssetToPackage(catalogPackage)) {
+      return jsonError(
+        "Advertising Image packages cannot be bound to a project asset.",
+        400,
+        traceId,
+        { assetId, productKey },
+      );
+    }
+
+    ownedAsset = await loadOwnedAssetById(supabase, user.id, assetId);
+    if (!ownedAsset) {
       return jsonError("Asset not found.", 404, traceId, {
         assetId,
         userId: user.id,
       });
+    }
+
+    if (!isCommercialWorkflowAsset(ownedAsset)) {
+      return jsonError(
+        "Commercial packages can only unlock a Commercial preview asset.",
+        400,
+        traceId,
+        { assetId, productKey },
+      );
     }
   }
 
@@ -185,8 +168,9 @@ async function postWithTrace(req: Request, traceId: string) {
     const result = await createCheckoutSession(supabase, {
       productKey,
       userId: user.id,
-      customerEmail: body.customerEmail ?? user.email ?? undefined,
+      customerEmail: user.email ?? undefined,
       assetId,
+      ownedAsset,
       paymentMethod,
     });
 
@@ -278,17 +262,33 @@ async function getWithTrace(req: Request, traceId: string) {
   // can be recovered idempotently.
   let admin: ReturnType<typeof createAdminClient> | null = null;
 
+  let persistedProductId = purchase.product_id;
+  let persistedAssetId =
+    purchase.asset_id == null ? null : String(purchase.asset_id);
+
   if (nextStatus !== purchase.status || nextStatus === "completed") {
     admin = createAdminClient();
-    await persistPaymentResult(admin, provider.id, {
+    const persisted = await persistPaymentResult(admin, provider.id, {
       sessionId: session.sessionId,
       purchaseId: String(purchase.id),
       status: nextStatus,
       providerReference: session.sessionId,
+      stripePriceId: session.stripePriceId,
+      stripeAssetId: session.stripeAssetId,
+      stripeUserId: session.stripeUserId,
     });
+    if (persisted?.product_id) {
+      persistedProductId = persisted.product_id;
+    }
+    if (persisted) {
+      persistedAssetId =
+        persisted.asset_id == null || persisted.asset_id === ""
+          ? null
+          : String(persisted.asset_id);
+    }
   }
 
-  const pkg = getPricingPackageById(purchase.product_id);
+  const pkg = getPricingPackageById(persistedProductId);
   let confirmation: {
     quantity: number;
     entitlementKind: "commercial" | "advertising_asset";
@@ -354,8 +354,8 @@ async function getWithTrace(req: Request, traceId: string) {
     traceId,
     sessionId: session.sessionId,
     purchaseId: purchase.id,
-    assetId: purchase.asset_id == null ? null : String(purchase.asset_id),
-    productId: purchase.product_id,
+    assetId: persistedAssetId,
+    productId: persistedProductId,
     status: nextStatus,
     provider: provider.id,
     oxxoReference: session.oxxoReference,

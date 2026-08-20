@@ -5,6 +5,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { InsufficientEntitlementError } from "./consume";
+import {
+  isCommercialWorkflowAsset,
+  loadOwnedAssetById,
+} from "@/lib/payments/purchase-integrity";
 
 async function markAssetPaid(
   supabase: SupabaseClient,
@@ -42,43 +46,26 @@ function toAssetId(assetId: string | number): number {
 }
 
 /**
- * Verify the commercial asset belongs to the user.
- * Returns current payment_status for short-circuit when already paid.
+ * Verify the commercial asset belongs to the user and is a Commercial preview.
  */
 async function assertOwnedCommercialAsset(
   supabase: SupabaseClient,
   userId: string,
   assetId: number,
-): Promise<{ paymentStatus: string | null }> {
-  const { data: asset, error: assetError } = await supabase
-    .from("assets")
-    .select("id, project_id, payment_status")
-    .eq("id", assetId)
-    .maybeSingle();
+): Promise<void> {
+  const owned = await loadOwnedAssetById(supabase, userId, String(assetId));
 
-  if (assetError || !asset) {
-    throw new Error(
-      `Commercial asset ${assetId} not found for entitlement consume.`,
-    );
-  }
-
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", asset.project_id)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (projectError || !project) {
+  if (!owned) {
     throw new Error(
       `Commercial asset ${assetId} is not owned by user ${userId}.`,
     );
   }
 
-  return {
-    paymentStatus:
-      typeof asset.payment_status === "string" ? asset.payment_status : null,
-  };
+  if (!isCommercialWorkflowAsset(owned)) {
+    throw new Error(
+      `Commercial asset ${assetId} is not a Commercial preview workflow.`,
+    );
+  }
 }
 
 /**
@@ -87,8 +74,8 @@ async function assertOwnedCommercialAsset(
  *
  * - service_role RPC only
  * - one debit per asset_id (unique ledger index)
- * - ownership check before debit
- * - already-paid assets do not consume again
+ * - ownership + commercial-workflow checks before debit
+ * - already-consumed assets (ledger unique index) do not debit again
  */
 export async function consumeCommercialForAsset(
   input: {
@@ -102,20 +89,7 @@ export async function consumeCommercialForAsset(
   const assetId = toAssetId(input.assetId);
   const admin = input.admin ?? createAdminClient();
 
-  const { paymentStatus } = await assertOwnedCommercialAsset(
-    admin,
-    input.userId,
-    assetId,
-  );
-
-  // Already unlocked via Stripe or a prior prepaid spend — do not debit again.
-  if (paymentStatus === "paid") {
-    return {
-      consumed: false,
-      alreadyConsumed: true,
-      assetId,
-    };
-  }
+  await assertOwnedCommercialAsset(admin, input.userId, assetId);
 
   const { data, error } = await admin.rpc("consume_commercial_for_asset", {
     p_user_id: input.userId,

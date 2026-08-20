@@ -1,5 +1,6 @@
 import { mapCreationError } from "@/lib/creation-errors";
 import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -46,9 +47,13 @@ export async function POST(req: Request) {
     return jsonError("assetId is required.", 400);
   }
 
-  const result = await fulfillPremiumVideoAfterPayment(supabase, assetId, {
-    requireUserId: user.id,
-  });
+  const result = await fulfillPremiumVideoAfterPayment(
+    createAdminClient(),
+    assetId,
+    {
+      requireUserId: user.id,
+    },
+  );
 
   if (result.status === "skipped") {
     return jsonError(result.reason, 402);

@@ -4,6 +4,7 @@ import {
   getStripePriceId,
   getStripeSecretKey,
   getStripeWebhookSecret,
+  isStripeLiveMode,
 } from "../stripe-config";
 import type {
   CheckoutRequest,
@@ -84,6 +85,24 @@ function requirePurchaseId(session: Stripe.Checkout.Session): string {
   return purchaseId;
 }
 
+function extractStripePriceId(
+  session: Stripe.Checkout.Session,
+): string | null {
+  const priceId = session.line_items?.data?.[0]?.price?.id;
+  return typeof priceId === "string" && priceId.startsWith("price_")
+    ? priceId
+    : null;
+}
+
+async function retrieveCheckoutSessionWithPrice(
+  stripe: Stripe,
+  sessionId: string,
+): Promise<Stripe.Checkout.Session> {
+  return stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["line_items.data.price"],
+  });
+}
+
 function toCheckoutSession(session: Stripe.Checkout.Session): CheckoutSession {
   const purchaseId = requirePurchaseId(session);
 
@@ -93,6 +112,9 @@ function toCheckoutSession(session: Stripe.Checkout.Session): CheckoutSession {
     provider: "stripe",
     status: mapStripeCheckoutStatus(session),
     redirectUrl: session.url ?? undefined,
+    stripePriceId: extractStripePriceId(session),
+    stripeAssetId: session.metadata?.assetId || null,
+    stripeUserId: session.metadata?.userId || null,
   };
 }
 
@@ -108,6 +130,9 @@ function toWebhookResult(
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id ?? session.id,
+    stripePriceId: extractStripePriceId(session),
+    stripeAssetId: session.metadata?.assetId || null,
+    stripeUserId: session.metadata?.userId || null,
   };
 }
 
@@ -173,7 +198,7 @@ export const stripePaymentProvider: PaymentProvider = {
 
   async getSessionStatus(sessionId: string): Promise<CheckoutSession> {
     const stripe = getStripeClient();
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await retrieveCheckoutSessionWithPrice(stripe, sessionId);
 
     return toCheckoutSession(session);
   },
@@ -198,17 +223,29 @@ export const stripePaymentProvider: PaymentProvider = {
       webhookSecret,
     );
 
+    if (event.livemode !== isStripeLiveMode()) {
+      throw new PaymentProviderError(
+        "Stripe webhook livemode does not match STRIPE_SECRET_KEY mode.",
+      );
+    }
+
     switch (event.type) {
       case "checkout.session.completed": {
         // Card: payment_status=paid → completed.
         // OXXO voucher created: payment_status=unpaid → awaiting_payment (no grant).
-        return toWebhookResult(event.data.object as Stripe.Checkout.Session);
-      }
-      case "checkout.session.async_payment_succeeded":
-        return toWebhookResult(
-          event.data.object as Stripe.Checkout.Session,
-          "completed",
+        const session = await retrieveCheckoutSessionWithPrice(
+          stripe,
+          (event.data.object as Stripe.Checkout.Session).id,
         );
+        return toWebhookResult(session);
+      }
+      case "checkout.session.async_payment_succeeded": {
+        const session = await retrieveCheckoutSessionWithPrice(
+          stripe,
+          (event.data.object as Stripe.Checkout.Session).id,
+        );
+        return toWebhookResult(session, "completed");
+      }
       case "checkout.session.async_payment_failed":
         return toWebhookResult(
           event.data.object as Stripe.Checkout.Session,

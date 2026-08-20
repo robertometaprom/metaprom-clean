@@ -9,18 +9,14 @@ import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
 import { PRICING_FAQ, PRICING_PAGE_COPY } from "@/lib/pricing";
 import LegalLinks from "@/components/legal/LegalLinks";
+import type { Locale, Messages } from "@/lib/i18n";
 
 type PlanesExperienceProps = {
   brand: string;
   navPlanesLabel: string;
   createLabel: string;
-  locale: "en" | "es";
-  legal: {
-    aria: string;
-    terms: string;
-    privacy: string;
-    payments: string;
-  };
+  locale: Locale;
+  legal: Messages["legalNav"];
   categories: Array<{
     meta: PricingCategoryMeta;
     packages: PackageCardView[];

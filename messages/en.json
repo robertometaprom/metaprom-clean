@@ -46,7 +46,8 @@
     "aria": "Legal information",
     "terms": "Terms",
     "privacy": "Privacy",
-    "payments": "Payments and refunds"
+    "payments": "Payments and refunds",
+    "support": "Support"
   },
   "cinema": {
     "headline": "YOUR BUSINESS WILL LOOK LIKE THIS.",
@@ -256,6 +257,33 @@
   "footer": {
     "tagline": "Premium marketing for your business.",
     "copyright": "© 2026 Metaprom",
-    "planes": "View plans and pricing"
+    "planes": "View plans and pricing",
+    "support": "Support"
+  },
+  "support": {
+    "metaTitle": "Support — Metaprom AI",
+    "metaDescription": "Send a support request to Metaprom AI.",
+    "eyebrow": "Help",
+    "title": "Support",
+    "lead": "Tell us how we can help. Metaprom AI will reply to the email you provide.",
+    "name": "Name",
+    "email": "Email",
+    "category": "Category",
+    "categoryPlaceholder": "Select a category",
+    "message": "Message",
+    "send": "Send",
+    "sending": "Sending…",
+    "success": "Your message was sent. We will reply to the email you provided.",
+    "error": "We could not send your message. Please try again in a few minutes.",
+    "rateLimited": "Too many messages were sent. Please wait a moment and try again.",
+    "invalid": "Please check the fields and try again.",
+    "backHome": "Back to home",
+    "categories": {
+      "payments": "Payments and credits",
+      "account": "Account",
+      "production": "Production",
+      "technical": "Technical",
+      "other": "Other"
+    }
   }
 }

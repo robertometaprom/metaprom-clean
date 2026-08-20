@@ -43,6 +43,7 @@ const GTM5_LANDING_FILES = [
   "components/landing/CommercialVideo.tsx",
   "components/landing/CinemaStage.tsx",
   "lib/platform-marks.ts",
+  "components/landing/PlatformMark.tsx",
   "lib/showcases.ts",
   "components/landing/AiVsMetaprom.tsx",
   "components/landing/LandingFaq.tsx",
@@ -235,18 +236,34 @@ test("GTM #5 image and video use cases surface the required channels as text lab
   const shopifySvg = readRepo("public/logos/platforms/shopify.svg");
 
   assert.match(imageSection, /IMAGE_CHANNEL_MARKS/);
+  assert.match(videoSection, /VIDEO_PLATFORM_MARKS/);
+  assert.match(marks, /\/logos\/platforms\/amazon\.svg/);
+  assert.match(marks, /\/logos\/platforms\/mercado-libre\.svg/);
   assert.match(marks, /\/logos\/platforms\/shopify\.svg/);
-  assert.match(marks, /https:\/\/www\.shopify\.com/);
-  assert.doesNotMatch(marks, /\bamazon\s*:/);
-  assert.doesNotMatch(marks, /\bmercadolibre\s*:/);
+  assert.match(marks, /\/logos\/platforms\/tiktok\.svg/);
+  assert.match(marks, /\/logos\/platforms\/instagram\.svg/);
+  assert.match(marks, /\/logos\/platforms\/facebook\.svg/);
+  assert.match(marks, /\/logos\/platforms\/youtube\.svg/);
   assert.doesNotMatch(imageSection, /amazon-white/);
   assert.doesNotMatch(imageSection, /simpleicons|svgrepo/i);
+  assert.doesNotMatch(videoSection, /simpleicons|svgrepo/i);
   assert.doesNotMatch(shopifySvg, /SVG Repo|svgrepo|simpleicons/i);
   assert.match(shopifySvg, /#95bf46|#95BF47|#95bf47|#95BF46/i);
-  assert.doesNotMatch(videoSection, /<(?:img|Image|video)\b/);
-  assert.doesNotMatch(videoSection, /\/logos\//);
-  assert.doesNotMatch(videoSection, /simpleicons|svgrepo/i);
   assert.doesNotMatch(videoSection, /M8 5\.14v13\.72L19 12/);
+  for (const file of [
+    "public/logos/platforms/amazon.svg",
+    "public/logos/platforms/mercado-libre.svg",
+    "public/logos/platforms/shopify.svg",
+    "public/logos/platforms/tiktok.svg",
+    "public/logos/platforms/instagram.svg",
+    "public/logos/platforms/facebook.svg",
+    "public/logos/platforms/youtube.svg",
+  ]) {
+    const svg = readRepo(file);
+    assert.match(svg, /<svg/i);
+    assert.doesNotMatch(svg, /SVG Repo|svgrepo|simpleicons/i);
+    assert.ok(statSync(join(ROOT, file)).size > 200, file);
+  }
 });
 
 test("GTM #5 Real Estate copy is presentation, not a fictional property", () => {

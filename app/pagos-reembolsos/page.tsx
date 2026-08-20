@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalPage, { LegalSection } from "@/components/legal/LegalPage";
+import SupportFormLink from "@/components/legal/SupportFormLink";
 
 export const metadata: Metadata = {
   title: "Pagos, Créditos y Reembolsos — Metaprom AI",
@@ -40,13 +41,16 @@ export default function PagosReembolsosPage() {
 
       <LegalSection title="4. Pagos fallidos, pendientes o duplicados">
         <p>
-          Si el pago falla, expira o se cancela, no se acredita saldo. Si aparece pendiente, espera la confirmación antes de repetirlo. Si crees que pagaste dos veces o que un cargo no corresponde, escribe a soporte@metaprom.com con el correo de tu cuenta y la referencia disponible. Revisaremos el registro del proveedor y el historial de acreditación para corregir duplicidades reales.
+          Si el pago falla, expira o se cancela, no se acredita saldo. Si aparece pendiente, espera la confirmación antes de repetirlo. Si crees que pagaste dos veces o que un cargo no corresponde, usa el{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>{" "}
+          con el correo de tu cuenta y la referencia disponible. Revisaremos el registro del proveedor y el historial de acreditación para corregir duplicidades reales.
         </p>
       </LegalSection>
 
       <LegalSection title="5. Cancelaciones y reembolsos">
         <p>
-          Puedes pedir ayuda o cancelación a soporte@metaprom.com. Revisaremos de buena fe solicitudes por cargos duplicados, pagos acreditados incorrectamente, fallas atribuibles al servicio, resultados que no pudieron entregarse y otras circunstancias razonables.
+          Puedes pedir ayuda o cancelación a través del{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>. Revisaremos de buena fe solicitudes por cargos duplicados, pagos acreditados incorrectamente, fallas atribuibles al servicio, resultados que no pudieron entregarse y otras circunstancias razonables.
         </p>
         <p>
           Cuando corresponda, podremos corregir el resultado, reponer una unidad o realizar un reembolso al método de pago original. Consideraremos si el paquete o la unidad ya se utilizó, la naturaleza del problema y la evidencia disponible. No rechazaremos derechos o reembolsos que sean obligatorios conforme a la legislación de protección al consumidor aplicable.
@@ -64,7 +68,9 @@ export default function PagosReembolsosPage() {
 
       <LegalSection title="7. Soporte directo">
         <p>
-          Escríbenos a soporte@metaprom.com con el correo de tu cuenta, fecha aproximada, importe, método de pago y cualquier referencia visible. No envíes números completos de tarjeta, contraseñas ni códigos de seguridad. Buscaremos una resolución clara, directa y razonable.
+          Usa el{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>{" "}
+          con el correo de tu cuenta, fecha aproximada, importe, método de pago y cualquier referencia visible. No envíes números completos de tarjeta, contraseñas ni códigos de seguridad. Buscaremos una resolución clara, directa y razonable.
         </p>
       </LegalSection>
     </LegalPage>

@@ -52,6 +52,7 @@ export type Messages = {
     terms: string;
     privacy: string;
     payments: string;
+    support: string;
   };
   cinema: {
     headline: string;
@@ -165,6 +166,27 @@ export type Messages = {
     tagline: string;
     copyright: string;
     planes: string;
+    support: string;
+  };
+  support: {
+    metaTitle: string;
+    metaDescription: string;
+    eyebrow: string;
+    title: string;
+    lead: string;
+    name: string;
+    email: string;
+    category: string;
+    categoryPlaceholder: string;
+    message: string;
+    send: string;
+    sending: string;
+    success: string;
+    error: string;
+    rateLimited: string;
+    invalid: string;
+    backHome: string;
+    categories: Record<string, string>;
   };
 };
 

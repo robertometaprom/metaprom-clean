@@ -46,7 +46,8 @@
     "aria": "Información legal",
     "terms": "Términos",
     "privacy": "Privacidad",
-    "payments": "Pagos y reembolsos"
+    "payments": "Pagos y reembolsos",
+    "support": "Soporte"
   },
   "cinema": {
     "headline": "TU NEGOCIO SE VERÁ ASÍ.",
@@ -256,6 +257,33 @@
   "footer": {
     "tagline": "Marketing premium para tu negocio.",
     "copyright": "© 2026 Metaprom",
-    "planes": "Ver planes y precios"
+    "planes": "Ver planes y precios",
+    "support": "Soporte"
+  },
+  "support": {
+    "metaTitle": "Soporte — Metaprom AI",
+    "metaDescription": "Envía una solicitud de soporte a Metaprom AI.",
+    "eyebrow": "Ayuda",
+    "title": "Soporte",
+    "lead": "Cuéntanos cómo podemos ayudarte. Recibirás una respuesta de Metaprom AI en el correo que indiques.",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "category": "Categoría",
+    "categoryPlaceholder": "Selecciona una categoría",
+    "message": "Mensaje",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "success": "Tu mensaje se envió. Te responderemos al correo que indicaste.",
+    "error": "No pudimos enviar tu mensaje. Inténtalo de nuevo en unos minutos.",
+    "rateLimited": "Enviaste demasiados mensajes. Espera un momento e inténtalo de nuevo.",
+    "invalid": "Revisa los campos e inténtalo de nuevo.",
+    "backHome": "Volver al inicio",
+    "categories": {
+      "payments": "Pagos y créditos",
+      "account": "Cuenta",
+      "production": "Producción",
+      "technical": "Técnico",
+      "other": "Otro"
+    }
   }
 }

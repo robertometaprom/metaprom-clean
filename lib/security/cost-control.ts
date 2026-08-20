@@ -5,6 +5,7 @@ import { createHmac } from "node:crypto";
 import {
   PREMIUM_GENERATION_LOCK_TTL_MS,
   RATE_LIMIT_WINDOW_MS,
+  SUPPORT_RATE_LIMIT,
 } from "@/lib/security/limits";
 import {
   COST_CONTROL_UNAVAILABLE_CODE,
@@ -27,7 +28,8 @@ export type CostControlEndpointClass =
   | "video-teaser"
   | "enhancement-preview"
   | "enhancement-advertising"
-  | "premium-video";
+  | "premium-video"
+  | "support";
 
 export type CostControlPolicy = "fail-closed" | "fail-open";
 
@@ -321,7 +323,23 @@ export async function consumeCostControlWindow(input: {
 export async function claimPremiumGenerationLock(
   assetId: string,
 ): Promise<CostControlLockResult> {
-  const lockKey = hashCostControlLockKey("premium", assetId);
+  return claimIdempotencyLock(
+    "premium",
+    assetId,
+    PREMIUM_GENERATION_LOCK_TTL_MS,
+  );
+}
+
+export async function releasePremiumGenerationLock(assetId: string): Promise<void> {
+  await releaseIdempotencyLock("premium", assetId);
+}
+
+export async function claimIdempotencyLock(
+  scope: string,
+  id: string,
+  ttlMs: number,
+): Promise<CostControlLockResult> {
+  const lockKey = hashCostControlLockKey(scope, id);
 
   try {
     if (process.env.NODE_ENV === "production" && !getHmacSecret()) {
@@ -330,7 +348,7 @@ export async function claimPremiumGenerationLock(
 
     return await getCostControlStore().tryClaim({
       lockKey,
-      ttlMs: PREMIUM_GENERATION_LOCK_TTL_MS,
+      ttlMs,
     });
   } catch {
     logCostControlFailure("claim");
@@ -342,8 +360,11 @@ export async function claimPremiumGenerationLock(
   }
 }
 
-export async function releasePremiumGenerationLock(assetId: string): Promise<void> {
-  const lockKey = hashCostControlLockKey("premium", assetId);
+export async function releaseIdempotencyLock(
+  scope: string,
+  id: string,
+): Promise<void> {
+  const lockKey = hashCostControlLockKey(scope, id);
 
   try {
     await getCostControlStore().release(lockKey);
@@ -424,6 +445,28 @@ export function rateLimitedDraftResponse(retryAfterMs: number): Response {
   );
 }
 
+export function rateLimitedSupportResponse(retryAfterMs: number): Response {
+  return jsonStatus(
+    {
+      ok: false,
+      code: RATE_LIMITED_CODE,
+    },
+    429,
+    retryAfterMs,
+  );
+}
+
+export function supportUnavailableResponse(): Response {
+  return jsonStatus(
+    {
+      ok: false,
+      code: COST_CONTROL_UNAVAILABLE_CODE,
+    },
+    503,
+    60_000,
+  );
+}
+
 export function costControlUnavailableResponse(): Response {
   return jsonStatus(
     {
@@ -460,6 +503,21 @@ export async function enforcePaidProviderCostControl(input: {
   if (result.allowed) return null;
   if (result.storageFailure) return costControlUnavailableResponse();
   return rateLimitedGenerationResponse(result.retryAfterMs);
+}
+
+export async function enforceSupportCostControl(input: {
+  request: Request;
+}): Promise<Response | null> {
+  const result = await consumeCostControlWindow({
+    request: input.request,
+    endpointClass: "support",
+    limit: SUPPORT_RATE_LIMIT,
+    policy: "fail-closed",
+  });
+
+  if (result.allowed) return null;
+  if (result.storageFailure) return supportUnavailableResponse();
+  return rateLimitedSupportResponse(result.retryAfterMs);
 }
 
 export async function enforceSoftCostControl(input: {

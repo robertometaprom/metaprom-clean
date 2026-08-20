@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalPage, { LegalSection } from "@/components/legal/LegalPage";
+import SupportFormLink from "@/components/legal/SupportFormLink";
 
 export const metadata: Metadata = {
   title: "Términos y Condiciones — Metaprom AI",
@@ -25,7 +26,8 @@ export default function TerminosPage() {
 
       <LegalSection title="2. Cuenta y acceso">
         <p>
-          Puedes iniciar sesión mediante un proveedor de identidad, actualmente Google. Eres responsable de mantener seguro el acceso a tu cuenta y de que los datos asociados sean correctos. Avísanos en soporte@metaprom.com si detectas un acceso no autorizado.
+          Puedes iniciar sesión mediante un proveedor de identidad, actualmente Google. Eres responsable de mantener seguro el acceso a tu cuenta y de que los datos asociados sean correctos. Avísanos a través del{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink> si detectas un acceso no autorizado.
         </p>
       </LegalSection>
 
@@ -46,7 +48,8 @@ export default function TerminosPage() {
           Esta autorización no transfiere la propiedad de tu material preexistente y siempre está sujeta a los derechos de privacidad, imagen y personalidad aplicables y a los consentimientos que exija la ley. Los previews gratuitos pueden incluir la marca o marca de agua de Metaprom AI y estar sujetos a las restricciones de descarga y uso compartido disponibles en el producto.
         </p>
         <p>
-          Si tienes una inquietud legítima sobre un uso promocional, escríbenos a soporte@metaprom.com para revisarla directamente.
+          Si tienes una inquietud legítima sobre un uso promocional, usa el{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink> para revisarla directamente.
         </p>
       </LegalSection>
 
@@ -94,7 +97,8 @@ export default function TerminosPage() {
 
       <LegalSection title="10. Soporte y ley aplicable">
         <p>
-          Para dudas, correcciones, reembolsos o reclamaciones, escríbenos a soporte@metaprom.com. Buscaremos una solución directa y de buena fe.
+          Para dudas, correcciones, reembolsos o reclamaciones, usa el{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>. Buscaremos una solución directa y de buena fe.
         </p>
         <p>
           Estos términos se interpretan conforme a las leyes aplicables en México, sin impedir que una persona consumidora acuda a las autoridades o instancias competentes que le correspondan.

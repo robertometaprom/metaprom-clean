@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalPage, { LegalSection } from "@/components/legal/LegalPage";
+import SupportFormLink from "@/components/legal/SupportFormLink";
 
 export const metadata: Metadata = {
   title: "Aviso de Privacidad — Metaprom AI",
@@ -19,7 +20,8 @@ export default function PrivacidadPage() {
           El responsable del tratamiento de los datos personales es Metaprom AI.
         </p>
         <p>
-          Puedes dirigir preguntas y solicitudes de privacidad a soporte@metaprom.com. El domicilio de privacidad deberá completarse cuando se constituya la entidad jurídica definitiva.
+          Puedes dirigir preguntas y solicitudes de privacidad a través del{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>. El domicilio de privacidad deberá completarse cuando se constituya la entidad jurídica definitiva.
         </p>
       </LegalSection>
 
@@ -51,7 +53,8 @@ export default function PrivacidadPage() {
           Los previews gratuitos pueden usarse para demostrar, promover y comercializar Metaprom AI en sitios web, redes sociales, presentaciones y publicidad, conforme a la autorización prevista en los Términos. Este uso está sujeto a los derechos de privacidad, imagen y personalidad y a los consentimientos legalmente necesarios.
         </p>
         <p>
-          Puedes solicitar la revisión o limitación de un uso promocional escribiendo a soporte@metaprom.com. Evaluaremos la solicitud de buena fe y aplicaremos las restricciones legales que correspondan.
+          Puedes solicitar la revisión o limitación de un uso promocional a través del{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>. Evaluaremos la solicitud de buena fe y aplicaremos las restricciones legales que correspondan.
         </p>
       </LegalSection>
 
@@ -72,7 +75,9 @@ export default function PrivacidadPage() {
 
       <LegalSection title="7. Derechos ARCO, revocación y limitación">
         <p>
-          Puedes solicitar acceso, rectificación, cancelación u oposición al tratamiento de tus datos, revocar un consentimiento cuando proceda o pedir la limitación de su uso o divulgación. Envía tu solicitud a soporte@metaprom.com con tu nombre, el correo asociado a la cuenta, el derecho que deseas ejercer, una descripción clara de los datos y la información necesaria para acreditar tu identidad y localizar tu cuenta.
+          Puedes solicitar acceso, rectificación, cancelación u oposición al tratamiento de tus datos, revocar un consentimiento cuando proceda o pedir la limitación de su uso o divulgación. Envía tu solicitud por el{" "}
+          <SupportFormLink>formulario de Soporte</SupportFormLink>{" "}
+          con tu nombre, el correo asociado a la cuenta, el derecho que deseas ejercer, una descripción clara de los datos y la información necesaria para acreditar tu identidad y localizar tu cuenta.
         </p>
         <p>
           Responderemos dentro de los plazos y bajo las condiciones de la legislación mexicana aplicable. Podremos pedir información adicional para verificar identidad y representación. Algunas solicitudes pueden no proceder cuando exista una obligación legal de conservar información o cuando la excepción esté prevista por ley; explicaremos el motivo.

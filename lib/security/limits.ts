@@ -81,3 +81,19 @@ export const PREMIUM_GENERATION_LOCK_TTL_MS = 8 * 60 * 1000;
 
 /** Max customer turns in anonymous Director session once an image exists. */
 export const ANON_MAX_CUSTOMER_TURNS_WITH_IMAGE = 3;
+
+/** Public Support form submissions per IP per hour. */
+export const SUPPORT_RATE_LIMIT = 5;
+
+/** Ignore identical Support resubmits for this long. */
+export const SUPPORT_DUPLICATE_LOCK_TTL_MS = 10 * 60 * 1000;
+
+export const MAX_SUPPORT_NAME_LENGTH = 80;
+
+export const MIN_SUPPORT_NAME_LENGTH = 2;
+
+export const MAX_SUPPORT_MESSAGE_LENGTH = 2_000;
+
+export const MIN_SUPPORT_MESSAGE_LENGTH = 10;
+
+export const MAX_SUPPORT_JSON_BYTES = 16 * 1024;

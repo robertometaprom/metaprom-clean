@@ -1,5 +1,7 @@
 import { GTM5_VIDEO_PLATFORM_IDS } from "@/lib/gtm5";
 import type { LandingContent } from "@/lib/i18n";
+import { VIDEO_PLATFORM_MARKS } from "@/lib/platform-marks";
+import PlatformMark from "@/components/landing/PlatformMark";
 
 type VideoUseCasesProps = {
   copy: LandingContent["videoUseCases"];
@@ -25,16 +27,22 @@ export default function VideoUseCases({ copy }: VideoUseCasesProps) {
           </p>
 
           <ul className="mt-12 grid grid-cols-2 gap-3 md:mt-16 md:grid-cols-4 md:gap-5">
-            {GTM5_VIDEO_PLATFORM_IDS.map((id) => (
-              <li
-                key={id}
-                className="flex min-h-28 min-w-0 flex-col justify-center rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-40 md:px-6 md:py-6"
-              >
-                <p className="text-lg font-semibold tracking-tight text-[#F5F5F0] md:text-2xl">
-                  {copy.platforms[id]}
-                </p>
-              </li>
-            ))}
+            {GTM5_VIDEO_PLATFORM_IDS.map((id) => {
+              const mark = VIDEO_PLATFORM_MARKS[id];
+              const name = copy.platforms[id];
+              return (
+                <li
+                  key={id}
+                  className="flex min-h-28 min-w-0 flex-col items-center justify-center rounded-sm border border-white/10 bg-black/40 px-4 py-5 md:min-h-40 md:px-6 md:py-6"
+                >
+                  <PlatformMark
+                    mark={mark}
+                    name={name}
+                    className="h-10 w-auto max-w-full md:h-12"
+                  />
+                </li>
+              );
+            })}
           </ul>
 
           <p className="mt-10 text-sm text-white/40 md:text-base">

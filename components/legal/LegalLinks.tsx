@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Locale, Messages } from "@/lib/i18n";
+import { SUPPORT_PATH } from "@/lib/support/public";
 
 type LegalLinksProps = {
   className?: string;
@@ -13,12 +14,14 @@ const DEFAULT_LABELS: Record<Locale, Messages["legalNav"]> = {
     terms: "Términos",
     privacy: "Privacidad",
     payments: "Pagos y reembolsos",
+    support: "Soporte",
   },
   en: {
     aria: "Legal information",
     terms: "Terms",
     privacy: "Privacy",
     payments: "Payments and refunds",
+    support: "Support",
   },
 };
 
@@ -39,6 +42,9 @@ export default function LegalLinks({
       </Link>
       <Link href="/pagos-reembolsos" className="transition hover:text-white">
         {copy.payments}
+      </Link>
+      <Link href={SUPPORT_PATH} className="transition hover:text-white">
+        {copy.support}
       </Link>
     </nav>
   );

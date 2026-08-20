@@ -45,6 +45,8 @@ test("closed-path matcher does not touch customer or admin production routes", (
     "/biblioteca",
     "/creditos",
     "/login",
+    "/soporte",
+    "/api/support",
     "/api/locale",
     "/admin/dashboard",
     "/admin/dashboard?range=7d",

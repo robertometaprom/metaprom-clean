@@ -32,6 +32,9 @@ export default async function PlanesPage() {
     <PlanesExperience
       brand={messages.nav.brand}
       navPlanesLabel={messages.nav.planes}
+      createLabel={messages.nav.create}
+      locale={locale}
+      legal={messages.legalNav}
       categories={categories}
     />
   );

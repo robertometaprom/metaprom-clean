@@ -4,6 +4,7 @@ import PackageCard, {
   type PackageCardView,
 } from "@/components/pricing/PackageCard";
 import PricingFaq from "@/components/pricing/PricingFaq";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
 import { PRICING_FAQ, PRICING_PAGE_COPY } from "@/lib/pricing";
@@ -12,6 +13,14 @@ import LegalLinks from "@/components/legal/LegalLinks";
 type PlanesExperienceProps = {
   brand: string;
   navPlanesLabel: string;
+  createLabel: string;
+  locale: "en" | "es";
+  legal: {
+    aria: string;
+    terms: string;
+    privacy: string;
+    payments: string;
+  };
   categories: Array<{
     meta: PricingCategoryMeta;
     packages: PackageCardView[];
@@ -21,10 +30,13 @@ type PlanesExperienceProps = {
 export default function PlanesExperience({
   brand,
   navPlanesLabel,
+  createLabel,
+  locale,
+  legal,
   categories,
 }: PlanesExperienceProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-[#F5F5F0]">
+    <div className="relative min-h-screen overflow-x-hidden bg-black text-[#F5F5F0]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(245,245,240,0.08),_transparent_55%),radial-gradient(ellipse_at_bottom,_rgba(245,245,240,0.04),_transparent_50%)]"
@@ -39,15 +51,16 @@ export default function PlanesExperience({
           <Link href="/" aria-label={brand}>
             <MetapromLogo variant="dark" height={32} priority />
           </Link>
-          <nav className="flex items-center gap-4 sm:gap-6">
-            <span className="text-sm font-medium tracking-wide text-[#F5F5F0]/80">
+          <nav className="flex items-center gap-3 sm:gap-6">
+            <span className="hidden text-sm font-medium tracking-wide text-[#F5F5F0]/80 sm:inline">
               {navPlanesLabel}
             </span>
+            <LocaleSwitcher locale={locale} />
             <Link
               href="/studio"
-              className="rounded-full bg-[#F5F5F0] px-5 py-2.5 text-sm font-medium text-black transition hover:bg-white"
+              className="rounded-full bg-[#F5F5F0] px-4 py-2 text-sm font-medium text-black transition hover:bg-white sm:px-5 sm:py-2.5"
             >
-              Crear
+              {createLabel}
             </Link>
           </nav>
         </div>
@@ -150,7 +163,11 @@ export default function PlanesExperience({
       </main>
       <footer className="relative z-10 border-t border-white/5">
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
-          <LegalLinks className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/40" />
+          <LegalLinks
+            locale={locale}
+            labels={legal}
+            className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/40"
+          />
         </div>
       </footer>
     </div>

@@ -12,14 +12,14 @@ type AuthButtonProps = {
 
 export default function AuthButton({ labels }: AuthButtonProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
       setUser(currentUser);
-      setLoading(false);
+      setReady(true);
     });
 
     const {
@@ -32,12 +32,12 @@ export default function AuthButton({ labels }: AuthButtonProps) {
         if (session?.user) {
           setUser(session.user);
         }
-        setLoading(false);
+        setReady(true);
         return;
       }
 
       setUser(session?.user ?? null);
-      setLoading(false);
+      setReady(true);
     });
 
     return () => {
@@ -45,15 +45,7 @@ export default function AuthButton({ labels }: AuthButtonProps) {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-white/40">...</span>
-      </div>
-    );
-  }
-
-  if (user) {
+  if (ready && user) {
     const displayName =
       user.user_metadata?.full_name ??
       user.user_metadata?.name ??
@@ -63,7 +55,7 @@ export default function AuthButton({ labels }: AuthButtonProps) {
       user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
 
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <div className="hidden items-center gap-3 sm:flex">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -83,20 +75,20 @@ export default function AuthButton({ labels }: AuthButtonProps) {
         </div>
         <Link
           href="/studio"
-          className="text-base text-white/70 transition hover:text-white"
+          className="whitespace-nowrap text-[13px] text-white/70 transition hover:text-white sm:text-base"
         >
           {labels.dashboard}
         </Link>
         <Link
           href="/creditos"
-          className="hidden text-base text-white/70 transition hover:text-white sm:inline"
+          className="hidden whitespace-nowrap text-base text-white/70 transition hover:text-white sm:inline"
         >
-          Mis Créditos
+          {labels.credits}
         </Link>
         <Link
           href="/auth/signout"
           prefetch={false}
-          className="rounded-full border border-white/15 px-5 py-2.5 text-base text-white/70 transition hover:border-white/30 hover:text-white"
+          className="rounded-full border border-white/15 px-3 py-2 text-[13px] text-white/70 transition hover:border-white/30 hover:text-white sm:px-5 sm:py-2.5 sm:text-base"
         >
           {labels.signOut}
         </Link>
@@ -105,16 +97,18 @@ export default function AuthButton({ labels }: AuthButtonProps) {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-1.5 sm:gap-4">
       <Link
         href="/login"
-        className="hidden text-base text-white/70 transition hover:text-white sm:inline"
+        aria-label={labels.signIn}
+        className="inline-flex items-center justify-center whitespace-nowrap text-[13px] text-white/70 transition hover:text-white sm:text-base"
       >
-        {labels.signIn}
+        <span className="sm:hidden">{labels.signInShort}</span>
+        <span className="hidden sm:inline">{labels.signIn}</span>
       </Link>
       <Link
         href="/studio"
-        className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white sm:px-6 sm:py-3 sm:text-base"
+        className="inline-flex items-center justify-center rounded-full bg-[#F5F5F0] px-3 py-2 text-[13px] font-medium text-black transition hover:bg-white sm:px-6 sm:py-3 sm:text-base"
       >
         {labels.startFree}
       </Link>

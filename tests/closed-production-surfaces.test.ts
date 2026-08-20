@@ -45,6 +45,7 @@ test("closed-path matcher does not touch customer or admin production routes", (
     "/biblioteca",
     "/creditos",
     "/login",
+    "/api/locale",
     "/admin/dashboard",
     "/admin/dashboard?range=7d",
     "/api/video",
@@ -116,6 +117,7 @@ test("customer navigation does not point at closed internal surfaces", () => {
     "components/studio/StudioShell.tsx",
     "components/landing/Footer.tsx",
     "components/pricing/PlanesExperience.tsx",
+    "components/LocaleSwitcher.tsx",
     "lib/biblioteca-routing.ts",
   ];
 

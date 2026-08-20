@@ -90,5 +90,6 @@ export function buildLandingContent(
       products: pricingProducts,
     },
     footer: messages.footer,
+    legalNav: messages.legalNav,
   };
 }

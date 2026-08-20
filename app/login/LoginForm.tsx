@@ -3,47 +3,41 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
+import type { Locale, Messages } from "@/lib/i18n";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  auth_callback_error:
-    "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
+type LoginFormProps = {
+  locale: Locale;
+  nav: Messages["nav"];
+  copy: Messages["auth"];
 };
 
-export default function LoginForm() {
+export default function LoginForm({ locale, nav, copy }: LoginFormProps) {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/studio";
   const errorCode = searchParams.get("error");
-  const errorMessage = errorCode ? ERROR_MESSAGES[errorCode] : null;
+  const errorMessage =
+    errorCode === "auth_callback_error" ? copy.errorAuthCallback : null;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-[-220px] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
         <div className="absolute bottom-[-120px] right-[-120px] h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-        <div
-          className="
-            rounded-3xl
-            border
-            border-white/10
-            bg-black/40
-            p-8
-            backdrop-blur-2xl
-            shadow-[0_0_40px_rgba(168,85,247,0.08)]
-          "
-        >
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10 sm:px-6 sm:py-16">
+        <div className="mb-4 flex justify-end">
+          <LocaleSwitcher locale={locale} />
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-black/40 p-5 shadow-[0_0_40px_rgba(168,85,247,0.08)] backdrop-blur-2xl sm:p-8">
           <div className="mb-8 text-center">
             <div className="mb-5 flex justify-center">
               <MetapromLogo variant="dark" height={40} priority />
             </div>
-            <h1 className="sr-only">Metaprom AI</h1>
-            <p className="mt-2 text-sm text-white/60">
-              Inicia sesión y comienza a crear contenido premium para tu
-              negocio.
-            </p>
+            <h1 className="sr-only">{nav.brand}</h1>
+            <p className="mt-2 text-sm text-white/60">{copy.subtitle}</p>
           </div>
 
           {errorMessage && (
@@ -52,19 +46,30 @@ export default function LoginForm() {
             </div>
           )}
 
-          <GoogleSignInButton redirectTo={redirectTo} />
+          <GoogleSignInButton
+            redirectTo={redirectTo}
+            label={copy.google}
+            loadingLabel={copy.googleLoading}
+            errorLabel={copy.googleError}
+          />
 
           <p className="mt-6 text-center text-xs text-white/40">
-            Usamos Google como método principal de acceso.
+            {copy.methodNote}
           </p>
           <p className="mt-3 text-center text-xs leading-5 text-white/40">
-            Al continuar aceptas los{" "}
-            <Link href="/terminos" className="underline underline-offset-2 hover:text-white">
-              Términos
+            {copy.legalLead}{" "}
+            <Link
+              href="/terminos"
+              className="underline underline-offset-2 hover:text-white"
+            >
+              {copy.terms}
             </Link>{" "}
-            y reconoces el{" "}
-            <Link href="/privacidad" className="underline underline-offset-2 hover:text-white">
-              Aviso de Privacidad
+            {copy.legalAnd}{" "}
+            <Link
+              href="/privacidad"
+              className="underline underline-offset-2 hover:text-white"
+            >
+              {copy.privacy}
             </Link>
             .
           </p>
@@ -72,7 +77,7 @@ export default function LoginForm() {
 
         <p className="mt-8 text-center text-sm text-white/50">
           <Link href="/" className="transition hover:text-white">
-            Volver al inicio
+            {copy.backHome}
           </Link>
         </p>
       </div>

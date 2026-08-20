@@ -206,6 +206,10 @@ type CreativeDirectorProps = {
     projectId?: string;
     assetId?: string;
   }) => void;
+  chrome?: {
+    signIn: string;
+    signUp: string;
+  };
 };
 
 export default function CreativeDirector({
@@ -214,6 +218,7 @@ export default function CreativeDirector({
   libraryOpen = false,
   onOpenLibrary,
   onLibraryUpdated,
+  chrome,
 }: CreativeDirectorProps) {
   // Lazy init so ?ux4aReview=1 survives React Strict Mode remounts and does not
   // lose to the phase-cleanup effect that runs on the initial "welcome" paint.
@@ -3473,13 +3478,13 @@ export default function CreativeDirector({
                 href="/login?redirect=%2Fstudio"
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
               >
-                Iniciar sesión
+                {chrome?.signIn ?? "Iniciar sesión"}
               </Link>
               <Link
                 href="/login?redirect=%2Fstudio"
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
               >
-                Crear cuenta
+                {chrome?.signUp ?? "Crear cuenta"}
               </Link>
             </>
           ) : null

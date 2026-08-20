@@ -2,10 +2,51 @@
   "nav": {
     "brand": "Metaprom",
     "planes": "Plans",
+    "planesCta": "View plans and pricing",
     "signIn": "Sign in",
+    "signInShort": "Log in",
+    "signUp": "Create account",
     "startFree": "Create Mine",
-    "dashboard": "Dashboard",
-    "signOut": "Sign out"
+    "dashboard": "Studio",
+    "signOut": "Sign out",
+    "credits": "My credits",
+    "library": "My Library",
+    "account": "Account",
+    "closeMenu": "Close menu",
+    "create": "Create",
+    "localeLabel": "Language"
+  },
+  "auth": {
+    "subtitle": "Sign in and start creating premium content for your business.",
+    "google": "Continue with Google",
+    "googleLoading": "Redirecting...",
+    "googleError": "Could not sign in with Google.",
+    "methodNote": "Google is the primary way to sign in.",
+    "legalLead": "By continuing you accept the",
+    "terms": "Terms",
+    "legalAnd": "and acknowledge the",
+    "privacy": "Privacy Notice",
+    "backHome": "Back to home",
+    "loading": "Loading...",
+    "errorAuthCallback": "Could not complete sign-in. Please try again."
+  },
+  "credits": {
+    "title": "My credits",
+    "intro": "Check your available balances. Credits do not expire. To buy more, go to Plans and pricing.",
+    "available": "available",
+    "buyMore": "Buy more",
+    "commercials": "Commercials",
+    "images": "Advertising images",
+    "loading": "Loading balances…",
+    "loadError": "Could not load your credits.",
+    "networkError": "Network error while loading your credits.",
+    "viewPlanes": "View plans and pricing"
+  },
+  "legalNav": {
+    "aria": "Legal information",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "payments": "Payments and refunds"
   },
   "cinema": {
     "headline": "YOUR BUSINESS WILL LOOK LIKE THIS.",
@@ -111,6 +152,6 @@
   "footer": {
     "tagline": "Premium marketing for your business.",
     "copyright": "© 2026 Metaprom",
-    "planes": "Plans"
+    "planes": "View plans and pricing"
   }
 }

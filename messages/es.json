@@ -2,10 +2,51 @@
   "nav": {
     "brand": "Metaprom",
     "planes": "Planes",
+    "planesCta": "Ver planes y precios",
     "signIn": "Iniciar sesión",
+    "signInShort": "Entrar",
+    "signUp": "Crear cuenta",
     "startFree": "Crear el mío",
     "dashboard": "Estudio",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "credits": "Mis créditos",
+    "library": "Mi Biblioteca",
+    "account": "Cuenta",
+    "closeMenu": "Cerrar menú",
+    "create": "Crear",
+    "localeLabel": "Idioma"
+  },
+  "auth": {
+    "subtitle": "Inicia sesión y comienza a crear contenido premium para tu negocio.",
+    "google": "Continuar con Google",
+    "googleLoading": "Redirigiendo...",
+    "googleError": "No se pudo iniciar sesión con Google.",
+    "methodNote": "Usamos Google como método principal de acceso.",
+    "legalLead": "Al continuar aceptas los",
+    "terms": "Términos",
+    "legalAnd": "y reconoces el",
+    "privacy": "Aviso de Privacidad",
+    "backHome": "Volver al inicio",
+    "loading": "Cargando...",
+    "errorAuthCallback": "No se pudo completar el inicio de sesión. Inténtalo de nuevo."
+  },
+  "credits": {
+    "title": "Mis créditos",
+    "intro": "Consulta tus saldos disponibles. Los créditos no vencen. Para comprar más, ve a Planes y precios.",
+    "available": "disponibles",
+    "buyMore": "Comprar más",
+    "commercials": "Comerciales",
+    "images": "Imágenes publicitarias",
+    "loading": "Cargando saldos…",
+    "loadError": "No se pudieron cargar tus créditos.",
+    "networkError": "Error de red al cargar tus créditos.",
+    "viewPlanes": "Ver planes y precios"
+  },
+  "legalNav": {
+    "aria": "Información legal",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "payments": "Pagos y reembolsos"
   },
   "cinema": {
     "headline": "TU NEGOCIO SE VERÁ ASÍ.",
@@ -111,6 +152,6 @@
   "footer": {
     "tagline": "Marketing premium para tu negocio.",
     "copyright": "© 2026 Metaprom",
-    "planes": "Planes"
+    "planes": "Ver planes y precios"
   }
 }

@@ -3,24 +3,31 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
+import { createClient } from "@/lib/supabase/client";
+import type { Locale, Messages } from "@/lib/i18n";
 
 type StudioShellProps = {
   children: React.ReactNode;
   variant?: "welcome" | "flow";
   onOpenLibrary?: () => void;
   authUser?: User | null;
+  locale: Locale;
+  nav: Messages["nav"];
 };
 
-function getStudioDisplayName(user: User | null | undefined): string {
+function getStudioDisplayName(
+  user: User | null | undefined,
+  fallback: string,
+): string {
   if (!user) return "";
 
   const name =
     user.user_metadata?.full_name ??
     user.user_metadata?.name ??
     user.email?.split("@")[0] ??
-    "Usuario";
+    fallback;
 
   return name.split(" ")[0] ?? name;
 }
@@ -72,13 +79,15 @@ export default function StudioShell({
   variant = "welcome",
   onOpenLibrary,
   authUser,
+  locale,
+  nav,
 }: StudioShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const displayName = getStudioDisplayName(authUser);
+  const displayName = getStudioDisplayName(authUser, nav.account);
 
   return (
     <div
-      className={`relative min-h-screen ${
+      className={`relative min-h-screen overflow-x-hidden ${
         variant === "welcome" ? "bg-black text-white" : "bg-[#ececec] text-neutral-900"
       }`}
     >
@@ -87,7 +96,7 @@ export default function StudioShell({
         <div className="mx-auto flex max-w-6xl items-center px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 lg:px-10">
           <Link
             href="/"
-            aria-label="Metaprom AI"
+            aria-label={nav.brand}
             className="pointer-events-auto inline-flex items-center"
           >
             <span className="md:hidden">
@@ -109,7 +118,11 @@ export default function StudioShell({
               : "border-b border-neutral-200/50 bg-[#ececec]/72"
           }`}
         />
-        <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-end px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 lg:px-10">
+        <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-end gap-2 px-5 pt-4 pb-5 sm:gap-3 sm:px-6 sm:pt-5 sm:pb-6 lg:px-10">
+          <LocaleSwitcher
+            locale={locale}
+            variant={variant === "welcome" ? "dark" : "light"}
+          />
           <div className="relative">
             <button
               type="button"
@@ -120,7 +133,7 @@ export default function StudioShell({
                   : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-300"
               }`}
             >
-              <span>{displayName || "Cuenta"}</span>
+              <span>{displayName || nav.account}</span>
               <svg
                 className={`h-4 w-4 transition ${menuOpen ? "rotate-180" : ""}`}
                 fill="none"
@@ -137,7 +150,7 @@ export default function StudioShell({
                     : "bg-neutral-200 text-neutral-600"
                 }`}
               >
-                {(displayName || "U").charAt(0).toUpperCase()}
+                {(displayName || nav.account).charAt(0).toUpperCase()}
               </span>
             </button>
 
@@ -146,7 +159,7 @@ export default function StudioShell({
                 <button
                   type="button"
                   className="fixed inset-0 z-40"
-                  aria-label="Cerrar menú"
+                  aria-label={nav.closeMenu}
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 z-50 mt-2 min-w-[180px] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
@@ -160,21 +173,21 @@ export default function StudioShell({
                           onOpenLibrary?.();
                         }}
                       >
-                        Mi Biblioteca
+                        {nav.library}
                       </button>
                       <Link
                         href="/creditos"
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Mis Créditos
+                        {nav.credits}
                       </Link>
                       <Link
                         href="/planes"
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Planes y Precios
+                        {nav.planesCta}
                       </Link>
                       <Link
                         href="/auth/signout"
@@ -182,7 +195,7 @@ export default function StudioShell({
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Salir
+                        {nav.signOut}
                       </Link>
                     </>
                   ) : (
@@ -192,21 +205,21 @@ export default function StudioShell({
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Iniciar sesión
+                        {nav.signIn}
                       </Link>
                       <Link
                         href="/login?redirect=%2Fstudio"
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Crear cuenta
+                        {nav.signUp}
                       </Link>
                       <Link
                         href="/planes"
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
-                        Planes y Precios
+                        {nav.planesCta}
                       </Link>
                     </>
                   )}

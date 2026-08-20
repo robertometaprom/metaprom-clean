@@ -7,12 +7,16 @@ type GoogleSignInButtonProps = {
   redirectTo?: string;
   className?: string;
   label?: string;
+  loadingLabel?: string;
+  errorLabel?: string;
 };
 
 export default function GoogleSignInButton({
   redirectTo = "/studio",
   className = "",
   label = "Continuar con Google",
+  loadingLabel = "Redirigiendo...",
+  errorLabel = "No se pudo iniciar sesión con Google.",
 }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +43,7 @@ export default function GoogleSignInButton({
       }
     } catch (signInError) {
       console.error(signInError);
-      setError("No se pudo iniciar sesión con Google.");
+      setError(errorLabel);
       setLoading(false);
     }
   };
@@ -74,7 +78,7 @@ export default function GoogleSignInButton({
         "
       >
         <GoogleIcon />
-        {loading ? "Redirigiendo..." : label}
+        {loading ? loadingLabel : label}
       </button>
       {error && (
         <p className="mt-3 text-center text-sm text-red-400">{error}</p>

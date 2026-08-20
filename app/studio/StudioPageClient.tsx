@@ -11,13 +11,18 @@ import {
   readBibliotecaFocusFromLocation,
   type BibliotecaFocus,
 } from "@/lib/biblioteca-routing";
+import type { Locale, Messages } from "@/lib/i18n";
 
 type StudioPageClientProps = {
   paymentProviderDisplay: PaymentProviderDisplayMetadata;
+  locale: Locale;
+  nav: Messages["nav"];
 };
 
 export default function StudioPageClient({
   paymentProviderDisplay,
+  locale,
+  nav,
 }: StudioPageClientProps) {
   const { user: authUser, ready: authReady } = useStudioAuth();
   const [isWelcome, setIsWelcome] = useState(true);
@@ -69,6 +74,8 @@ export default function StudioPageClient({
       variant={isWelcome ? "welcome" : "flow"}
       onOpenLibrary={() => handleOpenLibrary()}
       authUser={authUser}
+      locale={locale}
+      nav={nav}
     >
       <CreativeDirector
         paymentProviderDisplay={paymentProviderDisplay}
@@ -76,6 +83,10 @@ export default function StudioPageClient({
         libraryOpen={libraryOpen}
         onOpenLibrary={handleOpenLibrary}
         onLibraryUpdated={handleLibraryUpdated}
+        chrome={{
+          signIn: nav.signIn,
+          signUp: nav.signUp,
+        }}
       />
       <Biblioteca
         open={libraryOpen}

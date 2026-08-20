@@ -22,8 +22,8 @@ export default async function Home() {
 
   return (
     <>
-      <Navbar labels={content.nav} />
-      <main className="bg-black text-[#F5F5F0]">
+      <Navbar labels={content.nav} locale={content.locale} />
+      <main className="overflow-x-hidden bg-black text-[#F5F5F0]">
         <CinemaStage
           copy={content.cinema}
           videos={content.showcase}
@@ -52,7 +52,12 @@ export default async function Home() {
           ctaLabel={content.pricing.cta}
         />
 
-        <Footer labels={content.footer} brand={content.nav.brand} />
+        <Footer
+          labels={content.footer}
+          brand={content.nav.brand}
+          locale={content.locale}
+          legal={content.legalNav}
+        />
       </main>
     </>
   );

@@ -3,17 +3,38 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import type { Locale } from "@/lib/i18n";
 
 type PackagePurchaseButtonProps = {
   productKey: string;
   label: string;
   enabled: boolean;
+  locale?: Locale;
+};
+
+const CHECKOUT_LEGAL: Record<
+  Locale,
+  { lead: string; terms: string; and: string; payments: string }
+> = {
+  es: {
+    lead: "Al comprar aceptas los",
+    terms: "Términos",
+    and: "y la",
+    payments: "política de pagos y reembolsos",
+  },
+  en: {
+    lead: "By purchasing you agree to the",
+    terms: "Terms",
+    and: "and the",
+    payments: "payments and refunds policy",
+  },
 };
 
 export default function PackagePurchaseButton({
   productKey,
   label,
   enabled,
+  locale = "es",
 }: PackagePurchaseButtonProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -90,13 +111,13 @@ export default function PackagePurchaseButton({
       ) : null}
       {enabled ? (
         <p className="mt-3 text-center text-[11px] leading-4 text-white/35">
-          Al comprar aceptas los{" "}
+          {CHECKOUT_LEGAL[locale].lead}{" "}
           <Link href="/terminos" className="underline underline-offset-2 hover:text-white">
-            Términos
+            {CHECKOUT_LEGAL[locale].terms}
           </Link>{" "}
-          y la{" "}
+          {CHECKOUT_LEGAL[locale].and}{" "}
           <Link href="/pagos-reembolsos" className="underline underline-offset-2 hover:text-white">
-            política de pagos y reembolsos
+            {CHECKOUT_LEGAL[locale].payments}
           </Link>
           .
         </p>

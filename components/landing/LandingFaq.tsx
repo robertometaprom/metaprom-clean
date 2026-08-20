@@ -39,9 +39,16 @@ function FaqItem({
         }`}
       >
         <div className="overflow-hidden">
-          <p className="pb-6 text-sm leading-relaxed text-white/55 md:text-base">
-            {item.answer}
-          </p>
+          <div className="space-y-4 pb-6">
+            {item.answer.split("\n\n").map((paragraph) => (
+              <p
+                key={paragraph}
+                className="text-sm leading-relaxed text-white/55 md:text-base"
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </div>

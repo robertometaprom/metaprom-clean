@@ -343,17 +343,19 @@ export const PRICING_PACKAGES: readonly PricingPackage[] = [
   },
 ] as const;
 
-export const PRICING_FAQ = {
+const PRICING_FAQ_ES = {
   title: "Preguntas frecuentes",
   items: [
     {
       question: "¿Cómo funcionan los proyectos y ajustes?",
       paragraphs: [
-        "El objetivo de Metaprom es tu satisfacción con el proyecto original.",
+        "Compras un Comercial Premium terminado, no un intento de generación de IA.",
+        "El objetivo de Metaprom AI es tu satisfacción con el proyecto original, dentro del alcance del servicio contratado.",
         "El Director Creativo te ayuda a optimizar el proyecto antes de generar, siempre que sea posible.",
-        "Los ajustes razonables se mantienen dentro del mismo proyecto.",
-        "Si hay un error de la IA o de Metaprom, eso no debería consumir tus compras de forma injusta.",
-        "En casos excepcionales sin resolver, podemos ofrecer una corrección adicional o un reembolso, según una revisión de buena fe.",
+        "Los ajustes razonables se mantienen dentro del mismo proyecto. Eso no incluye conceptos ilimitados ni cambios de alcance.",
+        "Si hay un error de la IA o de Metaprom AI, seguimos trabajando para completar el producto comprado. Eso no debería consumir tus compras de forma injusta.",
+        "Si Metaprom AI no puede entregar un Comercial Premium satisfactorio dentro de ese alcance, se reembolsa el pago correspondiente.",
+        "Si cancelas, abandonas el proyecto, cambias el producto solicitado o, después de una entrega satisfactoria, cambias de idea, esta garantía no aplica de forma automática.",
       ],
     },
     {
@@ -381,6 +383,58 @@ export const PRICING_FAQ = {
     },
   ] satisfies readonly PricingFaqItem[],
 } as const;
+
+const PRICING_FAQ_EN = {
+  title: "Frequently asked questions",
+  items: [
+    {
+      question: "How do projects and adjustments work?",
+      paragraphs: [
+        "You are purchasing a finished Premium Commercial, not an AI-generation attempt.",
+        "Metaprom AI's aim is your satisfaction with the original project, within the scope of the service you purchased.",
+        "The Creative Director helps you refine the project before generation whenever possible.",
+        "Reasonable adjustments stay within the same project. That does not include unlimited concepts or scope changes.",
+        "If AI or Metaprom AI makes an error, we keep working to complete the purchased product. That should not consume your purchases unfairly.",
+        "If Metaprom AI cannot deliver a satisfactory Premium Commercial within that scope, the corresponding payment is refunded.",
+        "If you cancel, abandon the project, change the requested product, or change your mind after a satisfactory delivery, this guarantee does not apply automatically.",
+      ],
+    },
+    {
+      question: "Do packages expire?",
+      paragraphs: [
+        "No.",
+        "Your packages remain available until you use them.",
+      ],
+    },
+    {
+      question: "What counts as the same project?",
+      paragraphs: [
+        "The same project is the same advertising piece you are already working on: the same product or service, the same campaign, and the same creative idea.",
+        "Reasonable adjustments include changes of tone, pacing, visual detail, or message refinement — always within that same direction.",
+        "If the result feels like a natural continuation of what you originally asked for, it is still the same project.",
+      ],
+    },
+    {
+      question: "When does a new project begin?",
+      paragraphs: [
+        "A new project begins when the product, service, campaign, or creative concept changes.",
+        "For example: moving from one product to another, from a service to a different promotion, or from one creative idea to a completely different direction.",
+        "In those cases, an additional unit from your package is used.",
+      ],
+    },
+  ] satisfies readonly PricingFaqItem[],
+} as const;
+
+export const PRICING_FAQ_BY_LOCALE = {
+  es: PRICING_FAQ_ES,
+  en: PRICING_FAQ_EN,
+} as const;
+
+export const PRICING_FAQ = PRICING_FAQ_BY_LOCALE.es;
+
+export function getPricingFaq(locale: "en" | "es" = "es") {
+  return PRICING_FAQ_BY_LOCALE[locale];
+}
 
 export const ASSET_PRODUCT_NAME = "IMÁGENES PUBLICITARIAS";
 

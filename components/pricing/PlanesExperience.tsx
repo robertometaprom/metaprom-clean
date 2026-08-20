@@ -7,7 +7,7 @@ import PricingFaq from "@/components/pricing/PricingFaq";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
-import { PRICING_FAQ, PRICING_PAGE_COPY } from "@/lib/pricing";
+import { getPricingFaq, PRICING_PAGE_COPY } from "@/lib/pricing";
 import LegalLinks from "@/components/legal/LegalLinks";
 import type { Locale, Messages } from "@/lib/i18n";
 
@@ -31,6 +31,7 @@ export default function PlanesExperience({
   legal,
   categories,
 }: PlanesExperienceProps) {
+  const pricingFaq = getPricingFaq(locale);
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-black text-[#F5F5F0]">
       <div
@@ -131,7 +132,7 @@ export default function PlanesExperience({
         </section>
 
         <div className="mt-14 md:mt-20">
-          <PricingFaq title={PRICING_FAQ.title} items={PRICING_FAQ.items} />
+          <PricingFaq title={pricingFaq.title} items={pricingFaq.items} />
         </div>
 
         <section

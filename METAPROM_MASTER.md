@@ -6,161 +6,1636 @@ The definitive operating manual for Metaprom — product vision, philosophy, arc
 
 ## Current State
 
-### Project Status
+**Canonical date:** August 18–20, 2026 (product-philosophy / preview-architecture record: **August 19, 2026**; Preview duration + Preview/Premium launch-gate micro-update: **August 19, 2026**; Premium customer guarantee published: **August 20, 2026**).
 
-Metaprom has fully transitioned from **Infrastructure Phase** into **Product Phase**.
+**Governing records:**
 
-Infrastructure is no longer the primary challenge.
+* **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** — strategic phase, Stripe Live, Share P0, Commercial Rescue / Inspector, launch lanes, September 7, 2026 planning target. Supersedes earlier current-state language where they conflict — especially Stripe Test Mode, Dual Creation as the next BUILD sprint, Share as “functionally complete,” and Metaprom as primarily an AI generator.
+* **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** — results-not-generations philosophy, Correction vs Exploration, preferred future Preview funnel, rejected Motion Preview, Preview Pro same-project credit concept. Does **not** change LIVE Studio, current teaser/preview behavior, Stripe, prices, or GTM execution order. Storyboard / Preview Pro / refunds / duration changes are **not live** and must **not** be implemented from that record.
+* **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** — Veo 3.1 Fast working minimum of **4 seconds**, customer-facing Preview target of approximately **1–1.5 seconds**, deliberate trim, Preview = proof/WOW vs Premium = finished product, and Preview/Premium differentiation as a **LAUNCH PRODUCT GATE**. Production-account cost remains **unverified**. Does **not** implement anything. After that record, return to the GTM checklist.
+* **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)** — published customer guarantee for Premium Commercials: Metaprom AI sells the finished advertising product, not an AI-generation attempt; Metaprom AI bears generation/production risk within the purchased scope; if Metaprom AI cannot deliver a satisfactory Premium Commercial within that scope, the corresponding payment is refunded. Does **not** create unlimited revisions, unlimited concept changes, or refund rights for arbitrary post-delivery changes of mind. Does **not** change Stripe, prices, checkout mechanics, webhooks, or GTM #1–#5.2 protections. Does **not** start GTM #6.
 
-Current focus:
+---
 
-* Dual Creation Architecture (Commercials + Advertising Images)
-* Creative Director as central commercial orchestrator
-* Product Experience
-* Product Quality
-* Product Personality
-* Customer Confidence
-* Commercial Quality
+### Project Status — GO-TO-MARKET TRANSITION
 
-The **Creative Director** is no longer an experimental feature. It is one of Metaprom's primary competitive advantages and is expected to become the **primary intelligent interface and commercial orchestrator** across the platform. Future product decisions should prioritize protecting the Director experience.
+Metaprom is moving from prolonged **BUILD / Product Development** toward **GO TO MARKET**.
 
-Metaprom is evolving from an **AI Commercial generator** toward an **AI advertising asset platform orchestrated by an intelligent Creative Director**.
+The product will never be “perfect” before launch.
 
-We are no longer building an AI. We are building a product — perfected in the real market through launch, learn, improve, repeat.
+**New operating loop:**
+
+```
+BUILD → SELL → OBSERVE → IMPROVE
+```
+
+Not:
+
+```
+BUILD → BUILD → BUILD → BUILD
+```
+
+**Objective now:** a minimum commercially launchable Metaprom — not a theoretically complete Metaprom.
+
+**Pre-launch rule:** **NO NEW FEATURE WITHOUT LAUNCH JUSTIFICATION.**
+
+Until public launch, a new feature enters the critical path only if it materially affects the customer's ability to:
+
+```
+UNDERSTAND → BUY → PRODUCE → RECEIVE → USE / SHARE
+```
+
+Everything else goes to the post-launch backlog.
+
+**Public launch planning target:** Monday, **September 7, 2026**. This is a planning target, not an immutable promise. The calendar may move if a genuine P0 remains unresolved. Do not move it merely because non-critical polish remains.
+
+### Official Product Definition
+
+**METAPROM IS NOT PRIMARILY AN AI GENERATION TOOL.**
+
+Metaprom is an **AI-powered advertising production platform / advertising factory**.
+
+| Tool | Factory |
+| --- | --- |
+| Generation | Production |
+| User operates capabilities | Metaprom manages production toward a finished advertising asset |
+| Models are the product | Models are production machinery |
+
+**THE MODELS ARE NOT THE PRODUCT.**
+
+**THE DELIVERED ADVERTISING ASSET IS THE PRODUCT.**
+
+The customer should not need to become a prompt engineer, AI model expert, video editor, audio engineer, production supervisor, or format expert. The customer explains what they need. Metaprom handles the production complexity.
+
+Official slogan — preserved, and now understood as aligned with this philosophy:
+
+> Escribe lo que imaginas. Metaprom entiende el resto.
 
 ### Official Product Principles
+
+> **METAPROM DOES NOT SELL GENERATIONS. METAPROM SELLS RESULTS.**
+> **METAPROM NO VENDE GENERACIONES. VENDE RESULTADOS.**
+
+A customer purchasing a Commercial buys a finished professional commercial they are satisfied with — not one Veo generation, one attempt, retries, compute, tokens, or an AI lottery ticket. Internal generation cost, repair, regeneration, Commercial Rescue, and escalation are Metaprom production concerns. Canonical commercial philosophy: **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**. For Premium Commercials, the customer-facing guarantee is now **published** in **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)**. This is not a change to live Studio, Stripe, or prices.
 
 > Preview belongs to Metaprom.
 > Premium belongs to the customer.
 
 > No barriers, no nonsense.
 
-Do not make the user learn Metaprom's internal architecture. Director determines what the customer is trying to create and coordinates the correct generation, refinement, purchase, and delivery flow.
+> Producto exacto. Mensaje exacto. Creatividad libre alrededor.
 
-### Stripe V1 — Verified State (August 2026)
+Do not make the user learn Metaprom's internal architecture. The Director (now understood as **Production Director**) determines what the customer is trying to create and coordinates production, purchase, and delivery.
 
-**Commercial Stripe V1:** E2E TEST MODE — **VERIFIED SUCCESSFULLY** on [https://www.metaprom.com](https://www.metaprom.com).
+### Preview architecture — documented direction, not live
 
-Verified Commercial E2E path:
+**LIVE:** current Studio flow and current teaser/preview behavior are unchanged.
 
-```
-www.metaprom.com
-→ Studio / Commercial flow
-→ Stripe Checkout
-→ 1 Commercial — MXN $180
-→ Test Mode payment
-→ successful return
-→ server-side fulfillment
-→ entitlement grant
-→ current-project consumption
-→ success
-```
+**APPROVED PRODUCT DIRECTION (not implemented):** PHOTO / CUSTOMER ASSET → CREATIVE DIRECTOR → STORYBOARD / CREATIVE APPROVAL → AI VIDEO PREVIEW → PREMIUM COMMERCIAL → BIBLIOTECA → DOWNLOAD / SHARE.
 
-Stripe remains **TEST MODE**. Live Mode is **not** enabled.
+**REJECTED EXPERIMENT:** deterministic Motion Preview as a funnel stage.
 
-Current production commit after legacy checkout removal and entitlement fulfillment fix:
+**WORKING TECHNICAL FINDING (not live):** Veo 3.1 Fast native generation minimum = **4 seconds**. Do not assume native 1s / 1.5s / 2s Veo generation is available.
 
-`1378eb4fbd349ac4fddc03b8f09b4abeff805c1e`
+**APPROVED UX DIRECTION, REQUIRES TESTING (not live):** expose approximately **1–1.5 seconds** (maximum target ~2 seconds if testing requires it); generate 4s source → deterministically trim to one immediate proof action; Preview = proof/WOW, not a mini-commercial. **Restrict narrative quantity, not quality.**
 
-Full package catalog, entitlement architecture, fulfillment security, and Live Mode plan are recorded in **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+**LAUNCH PRODUCT GATE:** Preview/Premium differentiation must be established and validated before broad paid acquisition / serious public sales push. Storyboard, Preview Pro, and project-credit accounting are **not** automatically launch-blocking.
 
-### Advertising Image Infrastructure Status
+**STILL OPEN:** actual production-account billing/cost; final free Preview allowance; Preview Pro price / model / duration; exact same-project credit accounting; abuse protection; Storyboard implementation; correction/rework operational limits. The Premium Commercial delivery-failure refund guarantee is **no longer unpublished philosophy**; it is a published customer guarantee as of **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)**. That guarantee does **not** create unlimited revisions or refund-for-any-reason rights.
 
-| Capability | Status |
+Do **not** implement Storyboard, Preview Pro, Motion Preview, refunds, duration changes, trimming, or Preview prompt changes from this Current State note. Canonical records: **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Next execution remains the GTM launch checklist. Stop the product-architecture detour.
+
+### Stripe Live — Operational (August 18, 2026)
+
+Stripe **Live Mode is enabled** and has processed real production payments.
+
+Historical Test Mode E2E on www.metaprom.com remains valid evidence of the Commercial package path. It is **not** the current operating mode.
+
+**Canonical production webhook URL:**
+
+`https://www.metaprom.com/api/payments/webhook`
+
+Do **not** configure Stripe Live to the apex URL while apex redirects to www.
+
+**Stripe Live webhook 307 incident:** **RESOLVED** (August 18, 2026). Root cause was Stripe Live destination URL using apex `https://metaprom.com/api/payments/webhook`, which 307-redirected to www. Stripe requires 2xx and did not treat the redirect as successful. The webhook application handler was **not** the root cause. Fix: Dashboard-only edit of existing destination “Metaprom Production” to the www URL. Signing secret, events, application code, Vercel, and production env were preserved. No code deployment was required.
+
+**Purchase #34 (`assets_10`, MXN $99, 10 Advertising Images):** **RESOLVED.** Async Live event `checkout.session.async_payment_succeeded` failed historically with HTTP 307. After endpoint correction, the event was resent August 18, 2026 ~23:19 CST → Delivered, HTTP 200, `ok: true`, purchase `completed`, `pending_webhooks: 0`. Advertising Image balance **5 → 15** (exactly +10). No manual credit grant. This is evidence that the normal async Stripe fulfillment path works when the webhook reaches the canonical www endpoint.
+
+**Purchase #35 / MXN $180 Commercial** had previously been fulfilled exactly once through the return/polling path and must remain idempotent.
+
+Package ladder (unchanged unless separately changed):
+
+| Package | Price |
 | --- | --- |
-| Generation | Available |
-| Persistence | Available |
-| Package catalog (`/planes`) | Available |
-| Stripe Test checkout | Available |
-| Entitlements | Implemented |
-| Idempotent consumption | Implemented |
-| Hard entitlement gate | Implemented |
-| Standalone customer journey | **NOT COMPLETE** |
+| 1 Commercial | MXN $180 |
+| 5 Commercials | MXN $640 |
+| 10 Commercials | MXN $990 |
+| 20 Commercials | MXN $1,780 |
+| 10 Advertising Images | MXN $99 |
+| 25 Advertising Images | MXN $199 |
+| 50 Advertising Images | MXN $349 |
+| 100 Advertising Images | MXN $599 |
 
-Advertising Image Stripe checkout infrastructure exists, but full product E2E is **not** complete until Dual Creation Architecture corrects the UX/product orchestration.
+Do **not** lower the $180 Commercial launch price preemptively. Validate through real conversion after launch / soft launch.
 
-### Current Stopping Point
+Pricing must speak the language of **results** (`1 Commercial`, `10 Advertising Images`), not compute (generations, tokens, model credits). Internal retries/repairs are production cost.
 
-* Commercial Stripe V1 — E2E TEST MODE verified on www.metaprom.com
-* Advertising Image customer journey — **not complete**
-* Stripe Live Mode — **do not enable yet**
+### Dual Creation — Foundation, Not the Next BUILD Sprint
+
+Dual Creation Architecture (Commercials + Advertising Images, Director as entry point) is the **current dual-product foundation**, not the active next BUILD sprint.
+
+Advertising Image packages, entitlements, and Live fulfillment are operational. Purchase #34 credited 10 Advertising Images through the normal webhook path.
+
+Unknown-customer E2E of both journeys remains a **launch-readiness audit** item (GTM Lane A). Do not claim a CEO Product Review PASS of the full unknown-customer Advertising Image journey unless separately recorded. Do not treat Dual Creation as a reason to remain in BUILD-only mode.
+
+### Share — Launch-Critical P0
+
+RC1 built a **functional Share foundation** (public Preview pages, share controls, signed streaming). That historical milestone remains true.
+
+Share is **not** launch-complete. As of August 18–19, 2026, Share is **P0 launch-hardening**: video and image previews must distribute a Metaprom public share page (not raw media), with branding, acquisition CTA, and instrumentation. See the GTM update.
+
+### Commercial Rescue / Inspector / Escalation
+
+**Commercial Rescue R1:** isolated local FFmpeg repair library. Architecture and evidence: `docs/commercial-rescue-r1-closeout.md`. Closeout verdict: **READY WITH EXCLUSIONS** for a clean selective commit. Inspector is **not** implemented. Library was uncommitted at closeout.
+
+**Inspector:** intentionally **not** a universal AI judge. Decomposed by defect category. Feasibility matrix lives in the closeout document (58 rows: Deterministic 20 · Reliably machine-inspectable 5 · Probabilistic 10 · Human-judgment 23). Do not duplicate every row here.
+
+**Human escalation:** internal production architecture. Not a customer-facing button, advertised premium service, or default workflow.
 
 ### Active Next Objective
 
-**METAPROM DUAL CREATION ARCHITECTURE — COMMERCIALS + ADVERTISING IMAGES**
+**GO-TO-MARKET — minimum commercially launchable Metaprom.**
 
-One intelligent entry point through Director, with separate downstream product journeys. Advertising Image route must terminate as an image product and must not auto-proceed into video/commercial flows.
+Not a new feature. Not Dual Creation as a BUILD sprint. Not Inspector implementation. Not destination packs. Not Storyboard. Not Preview Pro. Not Motion Preview. Not refunds implementation.
 
-### Completed (RC2)
+The August 19, 2026 product-architecture discussion is **documented**, including the same-day Preview duration + launch-gate micro-update. It must **not** restart broad development. **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM launch checklist.
 
-* Hero layout restoration
-* Pixel-perfect Hero preservation
-* Premium generation alignment
-* Premium duration correction
-* Premium aspect-ratio preservation
-* Biblioteca persistence fallback
-* Creative Director integration after Preview
-* Creative Director integration after Premium
-* Creative Director product refinement
-* Creative Director personality redesign
-* Stripe V1 package catalog (8 packages) in Test Mode
-* Commercial package checkout E2E on production domain (Test Mode)
-* Legacy single Commercial `$149` checkout path removed from Studio
-* Separate Commercial vs Advertising Image entitlements
-* Server-only `grant_package_entitlement` fulfillment via service_role
-* Idempotent entitlement grant and consumption
+Preview/Premium differentiation is a **LAUNCH PRODUCT GATE** (validate before broad sales push). It is **not** the next implementation task. Storyboard, Preview Pro, and project-credit accounting are **not** automatically launch-blocking.
 
-Prior RC1 milestones remain valid foundation: Enhancement, Preview Generation, Premium Generation, Biblioteca, Persistence, Workflow Layer, Public Commercial Pages, Growth Engine Foundation, Product Stabilization, Share Experience (functional), and Stripe commercial flow.
+See **NEXT SESSION START HERE**.
 
 ### CEO Product Rule
 
-The **CEO Product Review** is the final validation step.
+The **CEO Product Review** remains the final validation step for product work. Compilation is not completion.
 
-A feature is **NOT** considered complete because it compiles.
+Launch classification now also applies:
 
-A feature is complete only after:
+* **P0** — blocks public launch
+* **P1** — should complete before launch
+* **P2** — post-launch
 
-Implementation
-
-↓
-
-Smoke Test
-
-↓
-
-CEO Product Review
-
-↓
-
-PASS
-
-Only then may the next objective begin.
-
-### Product Backlog
-
-Discovered product issues are captured in `RC1_PRODUCT_BACKLOG.md` without interrupting the active objective.
-
-Development rule: register → prioritize → execute only after the current objective reaches PASS. Only **ONE** active objective may exist at any time.
-
-Active backlog priorities are defined in **Product Backlog (RC2)** later in this document. Dual Creation Architecture is the active next major product sprint — see **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+Do not automatically classify every unfinished feature as P0.
 
 ### Validation Environment
 
 Official development environment: `localhost`
 
-Official production validation domain for Stripe V1 E2E: `https://www.metaprom.com`
+Official production domain: `https://www.metaprom.com`
+
+Canonical Stripe Live webhook: `https://www.metaprom.com/api/payments/webhook`
 
 Official repository: `metaprom-ai`
 
+Recent production commit cited in the Commercial Rescue closeout and Stripe Live audit (August 18, 2026): `078da0545d086b53e46fcea9cd59b4843c9dd6cb`
+
 ---
+
+## NEXT SESSION START HERE
+
+Do **not** restart old debates (Stripe Test Mode, Dual Creation as the next BUILD sprint, Share as complete, Metaprom as a generator, lowering $180 without market evidence, building Inspector as a universal judge, inventing a new feature).
+
+**STOP THE PRODUCT-ARCHITECTURE DETOUR.**
+
+Do **not** begin Storyboard, Preview Pro, Motion Preview, refunds, Preview duration changes, trimming, Preview prompt work, or any other work from **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** or **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Those records are documentation of product decisions from a GTM architecture detour. They are **not** the next execution task.
+
+GTM #5.3 published the Premium Commercial customer guarantee. **Do not begin GTM #6 from this record.**
+
+The one-page GO TO MARKET launch-hardening checklist below is the next-session execution compass.
+
+Preserve: **Preview/Premium differentiation = LAUNCH PRODUCT GATE** — must be established and validated before broad paid acquisition / serious public sales push. Do **not** make Storyboard, Preview Pro, or project-credit accounting automatically launch-blocking merely because they are related to the future architecture.
+
+**Current strategic state:**
+
+* Metaprom has entered **GO-TO-MARKET** transition.
+* Stripe Live webhook 307 incident is **RESOLVED**.
+* #34 $99 async purchase recovered through the **normal webhook flow**.
+* Advertising Image balance visibly moved **5 → 15**.
+* Commercial Rescue R1 architecture is ready for a **clean selective commit**, with exclusions already identified in `docs/commercial-rescue-r1-closeout.md`.
+* Inspector is intentionally **not** universal and **not** yet implemented.
+* Share is **launch-critical** and needs final hardening/audit.
+* Landing positioning / customer education is **launch-critical**.
+* **MXN $180** Commercial price remains for initial market validation.
+* Product philosophy **results, not generations** and preferred future Preview architecture are **documented** (August 19, 2026). They are **not** live implementation work.
+* Veo 3.1 Fast working generation minimum (**4 seconds**), customer-facing Preview target (~**1–1.5 seconds**), deliberate trim, and Preview/Premium **LAUNCH PRODUCT GATE** are **documented**. They are **not** live. Production-account cost remains **unverified**.
+* No unnecessary new features before launch.
+
+**Core operating rule until launch:** If it is on the GTM launch checklist, do it. If it is not on the checklist and is not a newly discovered real P0/P1 blocker, defer it until after launch.
+
+**NEXT EXECUTION ORDER** (existing GTM launch-hardening sequence — unchanged):
+
+1. Verify/close Stripe incident in repo documentation if needed.
+2. Perform clean Commercial Rescue R1 **COMMIT ONLY** with known exclusions.
+3. Run formal **LAUNCH READINESS AUDIT** against production + MASTER.
+4. Produce closed **P0 / P1 / P2** launch list.
+5. Audit/harden Share for video + image.
+6. Audit full unknown-customer E2E.
+7. Implement Landing positioning + FAQ.
+8. Complete analytics / instrumentation / legal minimum.
+9. Product freeze.
+10. Build launch content.
+11. Soft launch.
+12. Public launch target **September 7, 2026**.
+
+Do not begin by inventing a new feature. Do not begin Storyboard, Preview Pro, duration/trim implementation, or Preview prompt work. Do not begin another product-architecture detour. Do **not** begin GTM #6 from this record.
+
+---
+
+## MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)
+
+*Canonical record for publishing the Premium Commercial customer guarantee. Supersedes August 19, 2026 language that this satisfaction/rework/refund-if-undeliverable principle must remain unpublished, merely philosophical, or legally OPEN for the specific case of Metaprom AI being unable to deliver the purchased Premium Commercial. Does **not** supersede Stripe Live operations, prices, GTM #1–#5.2 protections, or the GTM launch checklist. Does **not** start GTM #6.*
+
+### Approved product principle
+
+For Premium Commercials, Metaprom AI sells the **finished advertising product**, not an AI-generation attempt.
+
+AI generation is only one part of Metaprom AI's production process.
+
+Metaprom AI bears generation/production risk **within the purchased scope**.
+
+If an AI generation does not work, that production risk belongs to Metaprom AI, not the customer. Metaprom AI continues working on the result within the purchased scope.
+
+If Metaprom AI cannot deliver a satisfactory Premium Commercial within that purchased scope, the corresponding payment **is refunded**.
+
+This is an intentional customer guarantee. It is not “may refund,” “may consider a refund,” or “at our sole discretion.” It is not “AI results are not guaranteed, therefore the customer accepts the output.”
+
+### Boundary
+
+This guarantee does **not** create:
+
+* unlimited concepts
+* unlimited scope changes
+* unlimited revisions unrelated to correcting or finishing the purchased product
+* a right to repeatedly change the requested product after production
+* a refund after satisfactory delivery simply because the customer later changes their mind
+
+The key boundary remains: **within the scope of the Premium Commercial purchased.**
+
+Customer review of the **final delivered content** before publication remains. That review responsibility is not the same as accepting whatever an AI model generated during production.
+
+During production: Metaprom AI bears the production risk within the purchased scope.
+
+After satisfactory delivery: the customer remains responsible for reviewing the final content before publication and for how/where they use it.
+
+Do not create claims of platform compliance, legal compliance, advertising approval, or guaranteed business results.
+
+### Customer-facing surfaces aligned by this update
+
+* Landing FAQ (ES/EN) — approved failed-generation answer preserved
+* Payments, Credits, Cancellations, and Refunds
+* Terms §5
+* Planes / Premium purchase FAQ
+* Premium checkout links to those documents without adding checkout friction
+
+For the specific case of Metaprom AI being unable to deliver the purchased Premium Commercial, customer-facing language must not contradict itself with discretionary refund wording.
+
+### Unchanged
+
+Stripe configuration, Stripe prices, checkout mechanics, webhook behavior, purchase integrity (GTM #2), antiabuse (GTM #3), Premium fulfillment security, and GTM #1–#5.2 protections remain intact. Package prices are unchanged.
+
+This update is legal/copy/product-guarantee alignment. It is **not** a refund-engine implementation and **not** GTM #6.
+
+---
+
+## MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)
+
+*Current canonical record for strategic phase, product positioning, Stripe Live operations, Share launch status, Commercial Rescue / Inspector philosophy, and the September 7, 2026 public-launch planning target. Supersedes earlier current-state language in **Current State** (pre-GTM), **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**, **Product Backlog (RC2)** Dual Creation as next sprint, **Revenue Strategy (July 10, 2026)** Test Mode status, and **Launch Strategy (July 10, 2026)** where they conflict. Prior sections remain historical context and previously validated decisions remain valid unless explicitly updated here.*
+
+*August 19, 2026: core commercial philosophy (results, not generations), Correction vs Exploration, preferred future Preview architecture, rejected Motion Preview, Preview Pro project-credit concept, and related open questions are recorded in **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**. Same-day duration / trim / Preview-Premium **LAUNCH PRODUCT GATE** conclusions are recorded in **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Those updates do **not** replace this GTM launch record. After documenting them, return to this GTM checklist. Where this GTM commercial-philosophy language is less specific than the August 19 formulation, the August 19 records govern product philosophy. LIVE Studio / Preview behavior remains as shipped. Production-account Veo cost remains unverified.*
+
+### 1. Strategic Phase Transition
+
+Metaprom has entered a major transition: from prolonged BUILD / Product Development toward GO TO MARKET.
+
+The product will never be perfect before launch. The operating loop is BUILD → SELL → OBSERVE → IMPROVE.
+
+**Pre-launch rule:** no new feature without launch justification. Until public launch, a feature enters the critical path only if it materially affects UNDERSTAND → BUY → PRODUCE → RECEIVE → USE / SHARE. Everything else is post-launch backlog.
+
+The objective is a minimum commercially launchable Metaprom.
+
+### 2. Official Product Definition / Positioning
+
+Metaprom is **not** primarily an AI generation tool.
+
+Metaprom is an **AI-powered advertising production platform / advertising factory**.
+
+Core distinction: **TOOL vs FACTORY** and **GENERATION vs PRODUCTION**.
+
+A generative tool gives the user capabilities and generations. Metaprom accepts the desired commercial result and manages production toward a usable finished advertising asset.
+
+The AI models are production machinery inside the factory.
+
+**THE MODELS ARE NOT THE PRODUCT. THE DELIVERED ADVERTISING ASSET IS THE PRODUCT.**
+
+Core customer promise: the customer should not need to become a prompt engineer, AI model expert, video editor, audio engineer, production supervisor, or format expert. The customer explains what they need. Metaprom handles the production complexity.
+
+Official slogan, preserved:
+
+> Escribe lo que imaginas. Metaprom entiende el resto.
+
+This slogan is now understood as directly aligned with the factory philosophy — not as a prompt-engineering invitation.
+
+Older MASTER language that describes Metaprom as evolving from an “AI Commercial generator,” or that “the Director is the product” as what the customer buys, is **superseded** as current commercial truth. The Director remains a primary competitive advantage and the customer's production interface. What the customer **buys** is the finished advertising asset. Historical sections that used generator / Director-as-product language remain useful history.
+
+### 3. Official Commercial Philosophy
+
+Governing principles:
+
+> Generar es fácil. Entregar algo que puedas usar es otra cosa.
+
+> No compras intentos. Compras el resultado.
+
+> Metaprom no cobra por darte acceso a un generador. Metaprom cobra por encargarse de la producción.
+
+> Con una herramienta, tú haces la producción. Con Metaprom, la hacemos nosotros.
+
+> Los modelos no son el producto.
+
+> El cliente compra la pieza terminada, no las generaciones.
+
+**August 19, 2026 — major product principle (canonical formulation):**
+
+> **METAPROM DOES NOT SELL GENERATIONS. METAPROM SELLS RESULTS.**
+> **METAPROM NO VENDE GENERACIONES. VENDE RESULTADOS.**
+
+The customer purchases a finished professional commercial they are satisfied with. They do not purchase one Veo generation, one attempt, a retry quota, compute, tokens, or an AI lottery ticket. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§1–3 and §13.
+
+**Messaging candidates** — subject to final commercial copy review. **Not** necessarily final immutable landing copy:
+
+* “Metaprom no es otra herramienta de IA. Es tu fábrica de publicidad.”
+* “No necesitas aprender IA para hacer publicidad con IA.”
+* “No pagas por usar nuestra tecnología. Pagas por lo que te entregamos.”
+* “Tú pides el comercial. Nosotros nos encargamos del resto.”
+* “Si algo sale mal durante la producción, ése es nuestro problema, no el tuyo.”
+
+Do **not** convert reasonable production responsibility into unlimited revisions, unlimited concept changes, or refund rights for arbitrary post-delivery changes of mind. For Premium Commercials, the satisfaction / continue-working / refund-if-undeliverable principle is **no longer unpublished philosophy**. It is a published customer guarantee as of **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)**. Operational limits for correction/rework remain a production matter; they must not weaken the published delivery-failure refund.
+
+### 4. The “Free AI” Objection — P0 Positioning
+
+Potential customers may reasonably ask:
+
+> Why should I pay Metaprom if Flow / other AI tools let me generate videos for free?
+
+Metaprom must **not** pretend free or cheap generation does not exist. Explain the category difference.
+
+**Free / credit-based generation:** the user operates the tool, prompts, evaluates output, retries, corrects, edits, and determines when it is usable.
+
+**Metaprom:** the customer states the desired result; the Director interprets the production need; Metaprom coordinates production; approved components are preserved; failed components are repaired/retried; exact commercial information is composed deterministically where possible; production is verified; the finished asset is delivered.
+
+The comparison is **not** FREE AI vs PAID AI.
+
+The comparison is **DO IT YOURSELF** vs **METAPROM DOES THE PRODUCTION FOR YOU**.
+
+This customer education must be explicit enough to justify pricing without requiring the customer to study generative AI. Do not attack competitors by name unnecessarily. Explain the category difference factually.
+
+### 5. Landing / FAQ Commercial Education — Pre-Launch P0
+
+Landing may remain visually premium and minimalist, but commercial communication must become substantially clearer and more explicit.
+
+Required conceptual section: **GENERAR NO ES PRODUCIR.**
+
+Required comparison concept:
+
+| Generation tool | Metaprom |
+| --- | --- |
+| You write/adjust prompts | You say what you need |
+| You inspect generations | Metaprom manages production |
+| You regenerate failures | Metaprom repairs/retries production |
+| You edit | Metaprom finishes the asset |
+| You determine when it works | You receive usable advertising |
+| You receive generations | You receive finished advertising |
+
+FAQ must explicitly address at minimum:
+
+* What is free AI generation?
+* Why pay Metaprom if AI generation can be free?
+* What makes Metaprom AI different?
+* Is Metaprom an AI generator?
+* Do I need to know AI?
+* Do I need to know prompting?
+* Do I need to choose a model?
+* What happens if a generation fails?
+* What exactly am I buying?
+* Can Metaprom produce for Amazon / Mercado Libre / Shopify / Real Estate?
+* How does Metaprom handle corrections / production problems?
+
+FAQ answers must not describe the purchase as a generation, attempt, or lottery ticket. **What the customer buys is a result.** Distinguish **correction** (Metaprom's execution failure — part of delivering the product) from **exploration** (customer wants a different creative direction). For Premium Commercials, if Metaprom AI cannot deliver a satisfactory finished commercial within the purchased scope, the corresponding payment is refunded. See **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)** and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§1–3.
+
+### 6. Director Role Redefinition
+
+Creative Director should increasingly be understood as **DIRECTOR DE PRODUCCIÓN / PRODUCTION DIRECTOR**, not merely “chat with our AI.”
+
+The Director understands what the customer wants to sell/communicate, destination/channel, required asset, production constraints, commercial information, and brand/product requirements — and coordinates the factory.
+
+Users ask for **outcomes**, not technical parameters.
+
+| Not this | But this |
+| --- | --- |
+| “Create a 2048x2048 AI image.” | “I need images to sell this on Amazon.” |
+| “Generate a 9:16 10-second video.” | “I need a TikTok ad for this product.” |
+| “HDR correction + virtual staging.” | “I need this property ready to publish.” |
+
+Director jurisdiction, immutable customer copy, Production Risk vs marketing language, and Dual Creation routing remain in force. See **Creative Director** and `CREATIVE_DIRECTOR_ARCHITECTURE.md`.
+
+### 7. Destination-Aware Production
+
+Strategic product direction: expand from generic Commercial / Advertising Image toward customer-recognizable production destinations / use cases:
+
+* Instagram / TikTok / social commercials
+* Amazon
+* Mercado Libre
+* Shopify / ecommerce
+* Real Estate
+* general social advertising
+* future: menus, flyers, posters, catalogs, and other commercial assets
+
+Organizing principle: **WHAT DOES THE CUSTOMER NEED TO PRODUCE, FOR WHERE, AND FOR WHAT PURPOSE?**
+
+Potential future commercial packaging (roadmap only — **do not implement these packs now**):
+
+* Amazon Pack
+* Mercado Libre Pack
+* Shopify / Ecommerce Pack
+* Real Estate Pack
+* Social / Commercial Pack
+
+This is product/commercial roadmap direction, not a pre-launch BUILD item.
+
+### 8. Pricing Philosophy
+
+Current commercial price remains **1 Commercial = MXN $180**.
+
+Current package ladder remains unless separately changed (see Current State table).
+
+Do **not** lower the $180 launch price preemptively. There is currently insufficient real-market evidence that $180 is too high. Validate pricing through real conversion behavior after launch / soft launch.
+
+Metaprom pricing should speak the language of **results**, not compute.
+
+Prefer: “1 Commercial”, “10 Advertising Images.”
+
+Not: “X AI generations”, “X tokens”, “X model credits.”
+
+Normal internal retries/repairs are production cost, not customer generation units. Corrections (Metaprom failed to execute approved direction) must not be monetized as exploration. Optional paid exploration (future Preview Pro) is a separate concept and is **not live**. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§3, 9–10, 13.
+
+Future unit economics must measure:
+
+* provider cost per base generation
+* average video generations per delivered commercial
+* image generations per delivered image
+* cheap component retries
+* local rescue rate
+* expensive regeneration rate
+* human escalation rate
+* expected cost per delivered asset
+* worst automatic cost before escalation
+* gross production margin
+
+Commercial Rescue exists in part to reduce cost variance by avoiding expensive full regeneration when deterministic/local repair can save the asset.
+
+### 9. Commercial Fidelity / Commercial Rescue R1
+
+Official production principle:
+
+> Producto exacto. Mensaje exacto. Creatividad libre alrededor.
+
+**Protect:** packaging, labels, logos, critical typography, shape, colors, proportions, exact commercial copy where required.
+
+**Creative freedom:** camera, lighting, environment, particles, transitions, atmosphere, pacing/motion where safe.
+
+Copy/branding should remain deterministic where required rather than delegated to generative video.
+
+**Commercial Rescue invariants:**
+
+* PRESERVE WHAT WORKS.
+* REPAIR ONLY WHAT FAILED.
+* NEVER REGRESS.
+* CURRENT VALID STATE MUST BE EXPLICIT.
+* NEVER REGENERATE WHAT METAPROM CAN REPAIR.
+
+Do not silently choose sources based on filename, “final” suffix, newest mtime, or arbitrary directory search. Ambiguous provenance: **FAIL CLOSED**.
+
+General escalation concept (exact order may vary by defect class):
+
+```
+PASS
+→ LOCAL DETERMINISTIC REPAIR
+→ CHEAP COMPONENT RETRY
+→ ALTERNATE CHEAP COMPONENT STRATEGY/PROVIDER
+→ EXPENSIVE VIDEO REGENERATION
+→ INTERNAL HUMAN ESCALATION
+```
+
+**R1 closeout (August 18, 2026):** research cycle closed. Isolated local FFmpeg repair library. Not an Inspector, not a Director path, not a customer feature. Tests at closeout: `npm run test:video-repair` → 13 pass / 0 fail. Verdict: **READY WITH EXCLUSIONS**. Include/exclude lists and known caveats are in `docs/commercial-rescue-r1-closeout.md`. Do not commit QA trees (`tmp-*`), unrelated dirty files, or wire production in the R1 commit.
+
+### 10. Sattva / Caroline Learnings
+
+Preserve actual QA evidence. Do not pretend automation performed better than it did. Contemporaneous automation records and later human/owner judgment are listed separately in `docs/commercial-rescue-r1-closeout.md`. Summary:
+
+**Sattva**
+
+* Packaging was ultimately judged visually excellent by human review.
+* Automated packaging scoring had been harsher than human judgment (contemporaneous overall identity 7/10 FAIL vs later human excellent). Microcopy issues remain real.
+* Extra-hand anomaly was localized around **~3.54s–4.75s** (human frame review: 3.542s–4.750s / frames 85–113).
+* An earlier automated defect-window conclusion materially overstated the duration of the defect (first treated as 2.25s–10.0s).
+* Direct cutting removed the visual defect but introduced timeline/audio continuity problems.
+* Editorial cutaway successfully rescued the localized visual problem with effectively **zero additional generative provider cost**.
+* TTS/ASR could report the expected brand word while human listening still heard poor pronunciation such as “Chacha” / “Schatva”.
+* Exact CTA/phone overlay could be handled deterministically (`PÍDELO POR WHATS AL 5529 434693`).
+* Pronunciation quality remains a strong example of an area where machine verification can be weaker than human listening.
+
+**Caroline**
+
+* Result was human-judged highly sellable / premium.
+* Product remained recognizably faithful.
+* Minor garment/detail changes existed (coat recognizable, not pixel-faithful).
+* No major anatomy defect observed.
+* Composed video/audio demonstrated strong end-to-end commercial value.
+
+### 11. Inspector Philosophy
+
+Inspector must **not** be designed as a magical universal AI judge.
+
+Inspection is decomposed by defect category.
+
+Latest feasibility work (closeout matrix, 58 rows, one primary class each):
+
+* **20** deterministic categories
+* **5** reasonably machine-inspectable categories
+* **10** probabilistic / confidence categories
+* **23** human-judgment / escalation categories
+
+Do not duplicate all rows into MASTER. Canonical matrix: `docs/commercial-rescue-r1-closeout.md` §5. Interactive canvas `inspector-feasibility-matrix.canvas.tsx` is outside the git repo.
+
+High-level status model:
+
+* HARD_PASS
+* LIKELY_PASS
+* REPAIR
+* RETRY_COMPONENT
+* REGENERATE
+* ESCALATE_INTERNAL
+* FAIL_TECHNICAL
+
+Smallest future Inspector R1 should prioritize strong automation:
+
+* deterministic media health
+* deterministic copy/overlay verification
+* technical A/V checks
+* unauthorized speech/vocal checks on isolated stems where evidence supports reliability
+* structured production QA output
+
+Do **not** hard-gate subjective “premium” quality with weak automated scoring.
+
+Do **not** claim universal pronunciation-quality inspection.
+
+Inspector is **not** implemented. Do not implement it as a pre-launch P0 unless a later launch-readiness audit separately classifies a minimal media-health slice as blocking.
+
+### 12. Internal Human Escalation
+
+Human escalation is **INTERNAL**.
+
+It is **not**: a customer-facing button, an advertised premium service, or the default workflow.
+
+Director/Orchestrator may internally escalate when automated production cannot reach sufficient quality/confidence within defined repair attempts, retry limits, provider-cost budget, time budget, and confidence limits.
+
+The customer should experience **one continuous Metaprom production process**.
+
+Possible escalation triggers:
+
+* repeated low-confidence inspection
+* repair attempts exhausted
+* expensive regeneration limit reached
+* brand/product fidelity ambiguous
+* pronunciation cannot be reliably judged automatically
+* contradictory inspection results
+* customer-critical element cannot be verified
+
+Initial limits recorded in the closeout document are **engineering defaults** and must not become public customer promises without separate approval.
+
+### 13. Share System — Pre-Launch P0
+
+**Reconciliation:** RC1.4 recorded Share Experience as “functionally complete.” That was true as a **historical foundation** (share controls, `share_slug`, public `/p/{share_slug}` pages, signed-URL streaming, CTA). It is **not** current launch-complete status.
+
+Share is now **LAUNCH-CRITICAL** and requires final hardening/validation.
+
+Official principle remains:
+
+> PREVIEW BELONGS TO METAPROM.
+> PREMIUM BELONGS TO THE CUSTOMER.
+
+Required launch behavior for **VIDEO AND IMAGE** previews:
+
+* no direct preview download
+* share should distribute a Metaprom public share page, not merely raw media
+* public recipient can view without account
+* shared page includes Metaprom branding and acquisition CTA
+* recipient can route into signup/create flow
+* avoid exposing direct Storage URLs that bypass the Metaprom experience
+* sharing should support practical channels: WhatsApp, SMS, copy link, X / relevant social flows where appropriate
+* Mexico can prioritize WhatsApp
+* English/USA experience should emphasize SMS/copy-link appropriately
+* do not show Spanish promotional share assets in English browser context
+* video and image share should follow the same product philosophy
+* purchased Premium/original assets retain their normal download rights
+
+Required instrumentation (launch requirement — not claimed as already complete):
+
+* `share_created`
+* `share_opened`
+* `share_to_signup`
+* `share_to_creation`
+* `share_to_purchase`
+
+Existing growth events such as `share_whatsapp` / `share_copy` are historical foundation, not the full required set.
+
+Pre-launch validation should include: iPhone, Android, desktop, WhatsApp, SMS/copy-link, Spanish browser, English browser.
+
+Sharing is both (1) product utility and (2) organic acquisition loop. Every shared preview can become a mini Metaprom landing page.
+
+### 14. Stripe Live Webhook Incident — RESOLVED
+
+**Incident:** Stripe Live webhook destination had been configured as `https://metaprom.com/api/payments/webhook`. Production canonical domain redirects apex to www. Stripe POST received **307 Temporary Redirect** to `https://www.metaprom.com/api/payments/webhook`. Stripe requires 2xx delivery and did not treat the redirect as successful. This caused repeated webhook delivery failures.
+
+**Root cause:** Stripe Live endpoint URL configuration used apex instead of the canonical www endpoint. The webhook application handler itself was **not** the root cause.
+
+**Resolution (August 18, 2026):** Existing Stripe Live webhook destination “Metaprom Production” was edited in Stripe Dashboard **ONLY**.
+
+Changed:
+
+`https://metaprom.com/api/payments/webhook`
+
+to:
+
+`https://www.metaprom.com/api/payments/webhook`
+
+Preserved: existing destination, signing secret, event configuration, application code, Vercel configuration, production env.
+
+No code deployment was required.
+
+**Status: RESOLVED.**
+
+### 15. Stripe Purchase #34 Recovery — VERIFIED / RESOLVED
+
+**Purchase:**
+
+* package: `assets_10`
+* amount: MXN $99
+* quantity: 10 Advertising Images
+* purchase UUID: `2cb17a62-947a-4817-9842-9faa63cf84e9`
+* Stripe Checkout Session: `cs_live_b1xXxo4J2a9TZFPmXRgMn7xM6lPRp30aXAiYTets9GOfDXDHVpleTn3Utf`
+* Stripe Event: `evt_1U4NsQPMPkLtv2TRICJpZwo9`
+* event type: `checkout.session.async_payment_succeeded`
+* PaymentIntent: `pi_3U3r8GPMPkLtv2TR0E7ZhNOM`
+
+**Stripe authoritative state:** `livemode: true`, `payment_status: paid`, Checkout status: `complete`.
+
+**Historical delivery:** failed with HTTP 307 because of apex → www redirect.
+
+**After endpoint correction:** Event manually resent on August 18, 2026 ~23:19 CST.
+
+**Result:** Delivered. Recovered. HTTP 200. Response `ok: true`. Purchase status: `completed`. `pending_webhooks: 0`.
+
+**Customer entitlement verification:** Advertising Image balance before recovery: **5**. After recovered webhook: **15**. Therefore exactly **+10** Advertising Image credits were visibly credited.
+
+No manual credit grant was used.
+
+This is strong evidence that the existing normal async Stripe fulfillment path works when the webhook reaches the correct endpoint. This is the Stripe / OXXO-style async Live path (`checkout.session.async_payment_succeeded`).
+
+Purchase #35 / $180 Commercial had previously been fulfilled exactly once through the return/polling path and should remain idempotent.
+
+**Stripe/OXXO #34 incident: RESOLVED.**
+
+### 16. Payment Operations Lesson
+
+The canonical Stripe webhook URL for production is:
+
+`https://www.metaprom.com/api/payments/webhook`
+
+Do not configure Stripe Live to the apex URL while apex redirects.
+
+Webhook monitoring must be part of launch operations.
+
+A paid Stripe transaction with missing Metaprom entitlement should be reconciled using authoritative Stripe state + normal idempotent fulfillment/replay whenever possible.
+
+Do **not** manually grant credits unless a separate controlled recovery procedure explicitly requires it.
+
+Test Mode Commercial E2E on www.metaprom.com (1 Commercial — MXN $180) remains a valid **historical** verification. Live Mode is now the operating mode for production payments.
+
+### 17. Go-to-Market / Launch Roadmap
+
+**PUBLIC LAUNCH TARGET:** Monday, **September 7, 2026**.
+
+**Planning target, not an immutable promise.** Current date context: August 18–19, 2026.
+
+Three parallel launch lanes:
+
+**A — PRODUCT.** Unknown customer can understand, create, buy, receive, use/share.
+
+**B — OPERATIONS.** Metaprom can observe, reconcile, repair, escalate, and support production.
+
+**C — MARKET.** Content, social distribution, acquisition, and real customer traffic.
+
+Provisional schedule:
+
+**AUG 19–23 — LAUNCH BLOCKERS**
+
+* Stripe final verification/monitoring
+* clean R1 closeout/commit
+* complete customer-journey audit
+* classify P0/P1/P2
+* legal minimum
+* analytics/conversion instrumentation
+* error/recovery UX
+* real purchase/fulfillment regression
+* share-system launch audit
+
+**AUG 24–28 — PRODUCT FREEZE + COMMERCIAL WEBSITE**
+
+* only launch blockers
+* sharpen Landing positioning
+* explain generation vs production
+* pricing/CTA clarity
+* FAQ
+* Spanish/English behavior
+* USA/MX behavior
+* mobile validation
+* full customer E2E
+
+**AUG 29–SEP 2 — CONTENT FACTORY**
+
+* Metaprom launch commercial
+* before/after demonstrations
+* suitable Caroline/Sattva-derived lessons/examples where commercially safe
+* social assets
+* vertical clips
+* X / Instagram / TikTok content
+* use Metaprom to market Metaprom
+
+**SEP 3–6 — SOFT LAUNCH**
+
+* controlled real traffic
+* unknown-user testing
+* observe: Landing → Director → generation → preview → checkout → payment → delivery → share
+* fix only conversion/delivery blockers
+
+**SEP 7 — PUBLIC LAUNCH TARGET**
+
+* coordinated X / Instagram / TikTok launch
+* transition into continuous SELL → OBSERVE → IMPROVE
+
+Calendar may move if a genuine P0 remains unresolved. Do not move it merely because non-critical polish remains.
+
+### 18. Social / External Launch
+
+Current external channels: **X**, **Instagram**, **TikTok**.
+
+These are launch distribution channels. The campaign should demonstrate rather than lecture.
+
+Core content concept: show the difference between “amazing generation” and “publishable commercial.”
+
+Possible narrative:
+
+1. “This is a generation.” → reveal a subtle but commercially unacceptable problem
+2. “This is a commercial.” → show finished corrected result
+3. “Generating was easy. Finishing it was another thing. That's Metaprom.”
+
+Do not make competitor-bashing the campaign. Own the category distinction: **GENERATION ≠ FINISHED ADVERTISING.**
+
+### 19. Launch Readiness Classification
+
+**P0 — BLOCKS PUBLIC LAUNCH**
+
+Examples: payments/fulfillment broken; customer cannot complete core journey; paid asset cannot be delivered; serious share/privacy/access flaw; core product misunderstanding on Landing; critical mobile breakage.
+
+**P1 — SHOULD COMPLETE BEFORE LAUNCH**
+
+Examples: conversion polish; analytics completeness; FAQ; English/MX-US refinements; operational monitoring; recovery messaging.
+
+**P2 — POST-LAUNCH**
+
+Examples: broader Inspector sophistication; complete autonomous rescue; additional asset categories; advanced packs; nonessential UX polish; speculative features. Storyboard, Preview Pro, and project-credit accounting are **documented approved direction** and must **not** be auto-classified as P0 merely because they are documented. They are **not** automatically launch-blocking. **Preview/Premium differentiation** is a **LAUNCH PRODUCT GATE**: it must be established and validated before broad paid acquisition / serious public sales push, but that is **not** authorization to implement Storyboard / Preview Pro / duration/trim from documentation. Do not implement them from documentation. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+Do not automatically classify every unfinished feature as P0.
+
+A closed P0 / P1 / P2 list is a **next-session deliverable** (formal launch-readiness audit). This section is the classification framework, not that closed list.
+
+---
+
+## MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)
+
+*Canonical record for the Go-To-Market product-architecture discussion of August 19, 2026. Governs: core commercial philosophy (results, not generations), satisfaction/rework as product philosophy, Correction vs Exploration, preferred future Preview funnel, Storyboard purpose, rejected Motion Preview experiment, AI Video Preview purpose, Preview Pro same-project credit concept, and economic philosophy.*
+
+*Duration, trim, customer-facing Preview length, Preview prompt philosophy, working (unverified) Fast economics, and Preview/Premium as a **LAUNCH PRODUCT GATE** are reconciled in the same-day **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. That micro-update supersedes this record where they conflict on those points. Native Veo minimum is no longer an open question.*
+
+*Does **not** supersede **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** for strategic phase, Stripe Live operations, Share P0, Commercial Rescue / Inspector, launch lanes, or the public-launch planning target. The GTM one-page checklist remains the execution compass. This update is documentation of product decisions. It is **not** authorization to implement Storyboard, Preview Pro, Motion Preview, refunds, duration changes, trimming, Preview prompts, or any other non-checklist work.*
+
+*LIVE Studio flow, current teaser/preview behavior, Stripe, prices, and Commercial Rescue R1 are unchanged by this record.*
+
+### Status legend (this update)
+
+| Label | Meaning |
+| --- | --- |
+| **LIVE** | Current product as shipped. Do not treat this update as a change to live behavior. |
+| **APPROVED PRODUCT DIRECTION** | Decided future product architecture or commercial philosophy. **Not implemented. Do not implement from this record.** |
+| **REJECTED EXPERIMENT** | Tested and rejected. Do not add to the funnel unless future evidence materially changes the conclusion. |
+| **WORKING TECHNICAL FINDING** | Current working technical conclusion. Not live implementation. Not an audited billing fact unless separately labeled. |
+| **APPROVED UX DIRECTION, REQUIRES TESTING** | Preferred customer-facing direction. Not live. Not a confirmed production spec until tested. |
+| **LAUNCH PRODUCT GATE** | Must be established and validated before broad paid acquisition / serious public sales push. Not authorization to implement in this task. |
+| **OPEN / REQUIRES VALIDATION** | Unresolved. Do not invent a decision, price, audited cost, legal term, or allowance. |
+
+### 1. Core product philosophy — results, not generations
+
+**Status:** **APPROVED PRODUCT DIRECTION** (major product principle). Compatible with GTM factory positioning. Strengthens, and where needed supersedes, earlier generator / “buy attempts” framing.
+
+**METAPROM DOES NOT SELL GENERATIONS. METAPROM SELLS RESULTS.**
+
+Spanish formulation:
+
+**METAPROM NO VENDE GENERACIONES. VENDE RESULTADOS.**
+
+A customer purchasing a Commercial is **NOT** purchasing:
+
+* one Veo generation
+* one attempt
+* a fixed number of retries
+* compute time
+* model tokens
+* an AI lottery ticket
+
+The customer is purchasing:
+
+**a finished professional commercial that they are satisfied with.**
+
+Internal generation cost, retries, repair, regeneration, segment repair, deterministic overlays, Commercial Rescue, provider/model behavior, and human escalation are **Metaprom production concerns**.
+
+They must not become the customer's technological risk.
+
+The customer should never feel:
+
+> “I already used my generation, it failed, so I lost my money.”
+
+Related LIVE commercial language that remains valid and is now understood under this principle: GTM §3 (“No compras intentos. Compras el resultado.” / “El cliente compra la pieza terminada, no las generaciones.”), Current State pricing language of results not compute, and **Product Philosophy** “the customer buys results.”
+
+### 2. Satisfaction / rework principle
+
+**Status:** **PUBLISHED CUSTOMER GUARANTEE** for Premium Commercials as of **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)**. This is no longer unpublished product philosophy. Exact operational correction/rework limits remain a production matter and must **not** weaken the published delivery-failure refund.
+
+Once a customer purchases a Premium Commercial, Metaprom should work and rework the product within the purchased scope until a satisfactory deliverable is achieved.
+
+If Metaprom fails to execute the approved direction correctly, correcting that failure is part of delivering the purchased product.
+
+Do **not** automatically charge another generation merely because Metaprom or the underlying model produced an inadequate result.
+
+Commercial Rescue R1, deterministic repair, and selective regeneration support this philosophy economically.
+
+Internal human escalation remains a fallback for exceptional cases.
+
+If Metaprom cannot deliver a satisfactory Premium Commercial within the purchased scope, the corresponding payment **is refunded**. This is an intentional customer guarantee, not a discretionary “may refund.”
+
+This guarantee does **not** create unlimited revisions, unlimited concept changes, or refund rights for arbitrary post-delivery changes of mind. Customer review of the final delivered content before publication remains. That review is not acceptance of a failed generation.
+
+GTM §3 remains in force as a caution against converting this guarantee into unlimited revisions or refund-for-any-reason. Philosophy and published legal terms are now aligned for the Premium Commercial delivery-failure case.
+
+### 3. Correction vs Exploration
+
+**Status:** **APPROVED PRODUCT DIRECTION**. Critical commercial distinction. Not implemented as a billing system.
+
+#### Correction
+
+A correction means Metaprom failed to execute the creative direction / product that was already agreed or approved.
+
+Examples:
+
+* incorrect execution
+* failed component
+* unacceptable model artifact
+* product fidelity failure
+* incorrect copy / logo / composition
+* generation failure
+* execution inconsistent with approved direction
+
+Corrections are part of delivering the purchased product.
+
+They must **not** be monetized as additional creative exploration.
+
+#### Exploration
+
+Exploration means the customer voluntarily wants to try a **materially different** creative direction.
+
+Examples:
+
+* try a different concept
+* change the emotional direction
+* test another environment
+* test different people / characters
+* try another visual story
+* explore another execution after already having a valid direction
+
+Exploration may legitimately use paid optional previews (future **Preview Pro** concept — see §9).
+
+**Metaprom must not charge customers for Metaprom's own mistakes under the label of Preview Pro.**
+
+### 4. Preview architecture — preferred conceptual funnel
+
+**Status:** **APPROVED PRODUCT DIRECTION**. **Not LIVE. Not implemented by this record.**
+
+Preferred future architecture:
+
+```
+PHOTO / CUSTOMER ASSET
+  → CREATIVE DIRECTOR
+  → STORYBOARD / CREATIVE APPROVAL
+  → AI VIDEO PREVIEW
+  → PREMIUM COMMERCIAL
+  → BIBLIOTECA
+  → DOWNLOAD / SHARE
+```
+
+**LIVE** Studio / Biblioteca visual story remains the current product (photo → image / teaser / commercial as presently shipped). That live journey is **not** changed by this documentation.
+
+This preferred funnel must **not** currently include a deterministic Motion Preview stage (see §6).
+
+### 5. Storyboard purpose
+
+**Status:** **APPROVED PRODUCT DIRECTION**. **Not LIVE. Do not implement from this record.** Storyboard is **not** automatically launch-blocking. Preview/Premium differentiation is the **LAUNCH PRODUCT GATE** (see **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**).
+
+Storyboard is **not** intended to replace the WOW factor of video.
+
+Its purpose is:
+
+**creative approval before expensive video generation.**
+
+Director should translate the customer's intent into a simple visual plan.
+
+The customer should be able to understand and correct, before expensive AI video generation:
+
+* concept
+* opening
+* environment
+* people / characters
+* product treatment
+* emotional tone
+* hero moment
+* general narrative
+* closing direction
+
+The customer should **NOT** need to understand:
+
+* prompting
+* Veo
+* models
+* seeds
+* camera terminology
+* production profiles
+* AI architecture
+
+Desired interaction:
+
+**“This is what Metaprom understood. Is this what you want?”**
+
+Customer:
+
+* approves
+  or
+* asks Director for simple corrections
+
+Storyboard therefore functions as both:
+
+1. customer creative control
+2. economic guard rail against unnecessary video generation
+
+Related historical backlog item **Story Planner** (Product Backlog MEDIUM) is **not** this Storyboard decision and is **not** authorization to build either.
+
+### 6. Motion Preview experiment — REJECTED
+
+**Status:** **REJECTED EXPERIMENT**. Do not implement unless future evidence materially changes this conclusion.
+
+During this product discussion, a proposed intermediate deterministic **Motion Preview** was tested using an existing Premium pizza image.
+
+Three approximately 2-second non-generative variants were created:
+
+* cinematic push-in
+* push-in + camera drift
+* premium motion treatment
+
+using deterministic image/video manipulation rather than Veo.
+
+**Result: REJECTED AS A PRODUCT STAGE.**
+
+Reason: the result reads primarily as zoom/pan applied to a still photograph. It does **not** create sufficient perception that the customer's asset has genuinely become a new video production. It does not preserve enough WOW factor to justify another funnel step.
+
+Therefore the preferred architecture must **NOT** currently include:
+
+```
+Storyboard
+  → deterministic Motion Preview
+  → AI Preview
+```
+
+Instead:
+
+```
+Storyboard
+  → AI Video Preview
+```
+
+### 7. AI Video Preview — purpose
+
+**Status:** **APPROVED PRODUCT DIRECTION** for future Preview meaning. **LIVE** current Preview/Teaser behavior is unchanged.
+
+The AI Video Preview is where the initial video WOW should occur.
+
+Its purpose is **NOT** to give away a shortened version of the complete Premium Commercial.
+
+Its purpose is to prove:
+
+**“Metaprom can actually turn MY asset into a living professional production.”**
+
+The Preview should create genuine new visual information / motion that could not be achieved by simple pan/zoom.
+
+Examples may include:
+
+* people entering a room
+* family / lifestyle activity
+* dog moving through scene
+* product interaction
+* food motion / steam
+* clothing movement
+* cinematic environmental change
+* meaningful generated camera / action behavior
+
+The AI Preview should leave the customer thinking:
+
+**“I want to see the complete commercial.”**
+
+not:
+
+**“I already saw the commercial; the paid version is merely longer.”**
+
+This explicitly addresses a weakness in the **LIVE** product:
+
+**the current Preview and Premium Commercial are not differentiated enough in perceived value.**
+
+This weakness is now a **LAUNCH PRODUCT GATE**: it must be established and validated before broad paid acquisition / serious public sales push. Canonical expansion (Preview = proof/WOW; Premium = the finished product; restrict narrative quantity, not quality): **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+The standing product rule (“The Premium commercial must always feel significantly more valuable than the Preview”) remains in force. The finding is that current Preview/Premium do not yet create a sufficiently clear product gap. Future architecture must create a much clearer gap. That is **not** a license to change live Preview/Premium in this task. The short ~1–1.5s Preview is **not** live.
+
+### 8. Preview duration — reconciled (same-day micro-update)
+
+**Status:** Native Veo minimum = **WORKING TECHNICAL FINDING**. Customer-facing length = **APPROVED UX DIRECTION, REQUIRES TESTING**. **Not LIVE. Do not implement duration, trim, or Preview prompt changes from this record.**
+
+This section previously left Veo minimum duration and the approximately 2-second Preview question fully **OPEN**. That is **superseded** by **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+**Working technical finding (Veo 3.1 Fast path):**
+
+**minimum generated duration = 4 seconds**
+
+Metaprom should **NOT** assume that requesting a native 1-second, 1.5-second, or 2-second Veo generation is available. The underlying generation may need to be 4 seconds even when the customer-facing Preview is substantially shorter.
+
+**Architecture distinction (approved, not implemented):**
+
+**Generation duration ≠ customer-facing Preview duration.**
+
+Metaprom does **NOT** need to expose the entire generated Veo clip merely because the provider generated 4 seconds.
+
+Preferred product direction:
+
+**Generate minimum viable Veo source clip → deterministically extract/cut the strongest short proof moment → expose only that short customer-facing Preview.**
+
+Metaprom already has deterministic FFmpeg capabilities, so trimming is conceptually straightforward. This is a product architecture decision, **not** an implementation instruction.
+
+**Customer-facing UX target (requires testing, not live):**
+
+**approximately 1–1.5 seconds visible to the customer**
+
+with an approximate maximum target around **2 seconds** if testing demonstrates that more time is required.
+
+The objective is **NOT** to summarize the Premium Commercial. The objective is to show **ONE unmistakable piece of genuine generated action**, then end. Deliberate early cut is a product feature. Unused generated duration is acceptable production overhead if economics support it. Do **not** show all generated seconds merely because they exist.
+
+Core principle:
+
+**Restrict narrative quantity, not quality.**
+
+The Preview should be visually excellent — **spectacular but incomplete** — not intentionally ugly, low-quality, or weak to protect Premium.
+
+Future Preview prompts should target an **immediate proof action**, not a miniature complete commercial. Exact prompt implementation remains future work.
+
+**LIVE / historical documented characteristic:** Preview Policy and earlier commercial-tier language still describe the current teaser as approximately **3–5 seconds**. That remains the documented LIVE/historical target. It is **unchanged**. The short Preview is **not** already implemented.
+
+Canonical expansion: **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+### 9. Preview Pro — optional creative exploration
+
+**Status:** **APPROVED PRODUCT DIRECTION** (concept). **Not LIVE.** Exact name is **not** final. Do not implement from this record.
+
+Customers who want to explore additional creative directions may optionally purchase additional AI previews.
+
+Working concept name: **Preview Pro**.
+
+Preview Pro is for **EXPLORATION**, not **CORRECTION** (see §3).
+
+A customer could use Director between previews to request another creative direction.
+
+Example:
+
+* Preview A: elegant / premium
+* Preview B: family / lifestyle
+* Preview C: night / dramatic
+* Preview D: energetic / TikTok
+
+This allows customers who want greater creative exploration to do so without Metaprom funding unlimited expensive generations.
+
+### 10. Preview Pro payments become project credit
+
+**Status:** **APPROVED PRODUCT DIRECTION** (major commercial concept). Exact accounting / payment architecture is **OPEN** and **not yet designed**. Do not implement from this record.
+
+**Money paid for optional Preview Pro generations should be credited toward the final Premium Commercial for THAT SAME PROJECT.**
+
+Conceptually:
+
+```
+Premium Commercial price
+minus eligible paid Preview Pro amounts for that project
+========================================================
+remaining amount to unlock the Premium Commercial
+```
+
+The customer should feel:
+
+**“The money I spend exploring is not lost. It is advancing me toward my final commercial.”**
+
+Guard rails:
+
+* credit belongs to the **same** project / commercial
+* it is **not** general account credit
+* it is **not** transferable to another project
+* credit cannot exceed the final eligible commercial price
+* it must never produce a negative purchase price
+* consumed previews remain consumed
+* this is **purchase credit**, **not** a promise that preview fees are independently refundable
+* exact accounting / payment architecture is **not** yet designed
+
+### 11. First Preview / Free WOW — OPEN
+
+**Status:** **OPEN / REQUIRES VALIDATION**. Do not invent a free-preview allowance.
+
+Metaprom wants to preserve the powerful acquisition moment:
+
+customer uploads / takes a normal photo → minutes later sees that **THEIR OWN** asset has become genuine video.
+
+Possible future model (not final):
+
+* Storyboard available before video generation
+* first AI Video Preview may be included / free after signup
+* additional creative exploration uses paid Preview Pro
+* paid Preview Pro amounts credit toward the same Premium project
+
+This is **not** final until real Veo generation economics are validated.
+
+**LIVE** current product still includes the existing Studio teaser / Preview as currently implemented. This OPEN item is about the **future** first-preview commercial model, not a change to live teaser behavior.
+
+### 12. Premium Commercial — clear value distance
+
+**Status:** **APPROVED PRODUCT DIRECTION** for the desired distinction. This distinction is now a **LAUNCH PRODUCT GATE**. Premium as purchased complete commercial remains **LIVE**. Future Preview/Premium gap is not yet implemented beyond current Studio. The short proof Preview is **not** live.
+
+**AI VIDEO PREVIEW** = **PROOF + WOW** — very short; one genuine generated action; high visual quality; intentionally incomplete; does not tell the complete advertising story.
+
+Customer reaction sought: **“Wow. It really did that with my image. I want to see the commercial.”**
+
+**PREMIUM COMMERCIAL** = **THE PRODUCT** — complete commercial and narrative; full intended duration; Commercial Fidelity; Biblioteca; download; sharing; correction/rework philosophy.
+
+Customer reaction sought: **“This is the finished commercial I paid for.”**
+
+The Premium must **NOT** feel like **“the same Preview, only longer.”**
+
+Public-share growth rules remain **LIVE**: Preview belongs to Metaprom; Premium belongs to the customer; Preview is never downloadable; share distributes a Metaprom page. See GTM §13 and **Preview Policy**. Full launch-gate record: **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** §5.
+
+### 13. Economic philosophy
+
+**Status:** **APPROVED PRODUCT DIRECTION**. Aligns with GTM §8 (results pricing, retries as production cost, Rescue to reduce cost variance). Does not change live prices.
+
+Public pricing research indicates Veo 3.1 Fast may be economically compatible with a 4-second source + short exposed Preview, with a working **external** reference of approximately **USD $0.08 per generated second** for Fast 720p without audio (~**USD $0.32** for a 4-second minimum source generation).
+
+Do **NOT** represent this as Metaprom's audited internal production cost. Actual Vertex billing for the production account remains **OPEN / unverified**. See **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+Metaprom should optimize economics across the customer portfolio, not require every individual generation to have identical margin.
+
+Some customers will require:
+
+* minimal generation
+* some will require retries
+* some will require repair
+* exceptional cases may require substantial rework
+* rare cases may require refund
+
+That variance is acceptable if overall unit economics remain healthy.
+
+The product should use:
+
+* Director
+* Storyboard
+* approval
+* short Preview
+* Commercial Rescue
+* deterministic repair
+* selective regeneration
+* human fallback
+
+to reduce expected production cost while maintaining a strong customer promise.
+
+The goal is **NOT**:
+
+**minimize generations at any cost.**
+
+The goal is:
+
+**deliver a satisfactory product while controlling expected production cost intelligently.**
+
+### 14. GTM priority must not change
+
+**Status:** Operating rule. **LIVE** execution compass remains the GTM launch checklist.
+
+This discussion was a necessary product-architecture detour.
+
+**STOP THE PRODUCT-ARCHITECTURE DETOUR.**
+
+It must **NOT** restart broad development.
+
+The existing one-page GO TO MARKET checklist remains the execution compass.
+
+After documenting these decisions — including the same-day duration / launch-gate micro-update — development returns immediately to the GTM launch-hardening sequence.
+
+Do **not** implement Storyboard, Preview Pro, duration/trim, or Preview prompts merely because they are now documented.
+
+Do **not** expand scope.
+
+**Preview/Premium differentiation = LAUNCH PRODUCT GATE.** It must be resolved/validated before broad paid acquisition / serious public sales push. Do **not** make Storyboard, Preview Pro, or project-credit accounting automatically launch-blocking merely because they are related to the future architecture.
+
+Do **not** delay launch for nonessential architecture work unless later analysis determines a specific element is required for safe / commercially viable launch.
+
+Core operating rule until launch:
+
+**If it is on the GTM launch checklist, do it.**
+
+**If it is not on the checklist and is not a newly discovered real P0/P1 blocker, defer it until after launch.**
+
+See **NEXT SESSION START HERE**.
+
+### 15. Open questions — unresolved
+
+**Status:** mixed. Do **not** resolve remaining items by assumption. Duration questions previously listed here are **superseded** by **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
+
+**RESOLVED / WORKING TECHNICAL FINDING:**
+
+* native generation minimum: **4 seconds** (currently relevant Veo 3.1 Fast path)
+
+**APPROVED UX DIRECTION, REQUIRES TESTING (not live):**
+
+* expose approximately 1–1.5 seconds
+* maximum target approximately 2 seconds if needed
+* deliberately trim generated source
+* one immediate generated action
+* Preview = proof/WOW, not mini-commercial
+
+**STILL OPEN:**
+
+1. Actual Vertex billing / cost for the production account (external Fast research is **not** audited internal cost).
+2. Final free Preview allowance (whether first AI Preview is free, signup-gated, included, or otherwise controlled).
+3. Preview Pro price.
+4. Preview Pro model / duration / quality.
+5. Exact same-project credit accounting architecture.
+6. Abuse protection.
+7. Storyboard visual implementation and generation cost (Storyboard is **not** automatically launch-blocking).
+8. Exact correction / rework operational limits.
+9. Advertising-image and other non–Premium-Commercial refund distinctions beyond the published Premium delivery-failure guarantee. Premium Commercial delivery-failure refund language is **published** (GTM #5.3, August 20, 2026).
+
+Preview/Premium differentiation is a **LAUNCH PRODUCT GATE**, not merely an open optimization.
+
+### 16. Reconciliation with existing Preview / Teaser philosophy
+
+Where earlier MASTER language conflicts with this update on **future Preview architecture or commercial-results philosophy**, this update governs future direction. **LIVE** Preview/Teaser behavior is unchanged.
+
+| Earlier language | How to read it now |
+| --- | --- |
+| Preview is approximately 3–5 seconds (Preview Policy, commercial tiers, RC1.3.5 Preview vs Premium) | **LIVE / historical documented characteristic.** Future direction: generate ~4s Veo source, expose ~1–1.5s (max ~2s if testing requires). **Not live.** See §8 and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Do not change live duration from this record. |
+| Preview exists only to create desire / attract new users; “the Preview does not sell a video; it sells the next user.” | **Still true for public share / Growth Engine.** In-Studio AI Video Preview also has a second job: **PROOF + WOW** — prove that **this customer's asset** became a living production, and create desire for the complete Premium — without giving the complete commercial away. Growth-asset rules (never downloadable, Metaprom-owned, share page) remain **LIVE**. |
+| Biblioteca story: Original Photo → Premium Image → Free Teaser → HD Commercial | **LIVE** current portfolio storytelling. Preferred future funnel is §4 (**APPROVED PRODUCT DIRECTION**, not live). |
+| Free Teaser as a given product stage | **LIVE** current teaser remains as shipped. Whether the **future** first AI Video Preview is free / included / signup-gated is **OPEN** (§11). |
+| “The Premium must never feel like a slightly longer Preview” / must feel significantly more valuable | **Still in force.** Now a **LAUNCH PRODUCT GATE**. **LIVE** Preview and Premium are **not yet differentiated enough**. Closing that gap is future architecture, not a live change in this task. Premium must not feel like “the same Preview, only longer.” |
+| Current Studio: Director integrated after Preview and Premium generation | **LIVE** current Director timing. Preferred funnel places Director (and Storyboard approval) **before** expensive video generation. Not implemented. |
+| GTM §3: do not convert production responsibility into unlimited revisions or refund-for-any-reason | **Still in force as a boundary.** The Premium Commercial delivery-failure refund is now a **published customer guarantee** (GTM #5.3, August 20, 2026). It remains scoped: within the purchased Premium Commercial, not unlimited revisions, not a change-of-mind refund after satisfactory delivery. |
+| Product Backlog MEDIUM “Story Planner” | Historical / backlog. **Not** the §5 Storyboard decision. Do not implement Storyboard from backlog language. |
+
+**Not LIVE (do not ship from this record):** Storyboard, Preview Pro, same-project Preview credit accounting, Motion Preview, refunds, 1–1.5s customer-facing Preview, 4s-source trim pipeline, Preview-specific immediate-action prompts, free-preview allowance.
+
+---
+
+## MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)
+
+*Documentation-only micro-update. Reconciles Veo generation minimum, customer-facing Preview duration, deliberate trim, Preview prompt philosophy, working (unverified) Fast economics, and Preview/Premium differentiation as a **LAUNCH PRODUCT GATE**. Does **not** change LIVE Studio, current teaser/preview behavior, Stripe, prices, or GTM execution order. Does **not** implement Storyboard, Preview Pro, duration changes, trimming, or prompt changes.*
+
+*Amends **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** on duration, economics status, and launch gating. Funnel, Storyboard purpose, rejected Motion Preview, Preview Pro exploration + same-project credit, Correction vs Exploration, and results-not-generations philosophy remain as recorded there.*
+
+*After this record: **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM launch-hardening checklist. See **NEXT SESSION START HERE**.*
+
+### Status legend (this update)
+
+| Label | Meaning |
+| --- | --- |
+| **LIVE** | Current product as shipped. This update does not change live behavior. |
+| **WORKING TECHNICAL FINDING** | Current working technical conclusion. Not an implementation instruction. Not a claim that live Preview already uses this. |
+| **APPROVED UX DIRECTION, REQUIRES TESTING** | Preferred customer-facing product direction. Not live. Duration/trim/prompt are not implemented from this record. |
+| **LAUNCH PRODUCT GATE** | Must be established and validated before broad paid acquisition / serious public sales push. Not authorization to implement in this task. Not a reason to auto-block launch with Storyboard / Preview Pro / project-credit work. |
+| **APPROVED PRODUCT DIRECTION** | Already recorded future architecture. Still not live. Do not implement from this record. |
+| **OPEN / REQUIRES VALIDATION** | Unresolved. Do not invent a price, allowance, legal term, or audited cost. |
+
+### 1. Veo generation minimum
+
+**Status:** **WORKING TECHNICAL FINDING**. **Not LIVE. Do not implement from this record.**
+
+For the currently relevant **Veo 3.1 Fast** generation path, the working technical finding is:
+
+**minimum generated duration = 4 seconds**
+
+Metaprom therefore should **NOT** assume that requesting a native 1-second, 1.5-second, or 2-second Veo generation is available.
+
+The underlying generation may need to be **4 seconds** even when the customer-facing Preview is substantially shorter.
+
+This finding **resolves** the prior OPEN question of native Veo minimum duration. It does **not** change the current implementation.
+
+### 2. Generation duration ≠ customer-facing Preview duration
+
+**Status:** **APPROVED PRODUCT DIRECTION** (product architecture). **Not implemented. Do not implement from this record.**
+
+Metaprom does **NOT** need to expose the entire generated Veo clip merely because the provider generated 4 seconds.
+
+Preferred product direction:
+
+**Generate minimum viable Veo source clip → deterministically extract/cut the strongest short proof moment → expose only that short customer-facing Preview.**
+
+Metaprom already has deterministic FFmpeg capabilities, so trimming is conceptually straightforward.
+
+This is a product architecture decision, **not** an implementation instruction in this task.
+
+### 3. Customer-facing Preview target
+
+**Status:** **APPROVED UX DIRECTION, REQUIRES TESTING**. **Not LIVE.** Do not treat approximately 1–1.5 seconds as already implemented.
+
+Preferred UX target:
+
+**approximately 1–1.5 seconds visible to the customer**
+
+with an approximate **maximum target around 2 seconds** if testing demonstrates that more time is required.
+
+This duration is deliberately short.
+
+The objective is **NOT** to summarize the Premium Commercial.
+
+The objective is to show **ONE unmistakable piece of genuine generated action.**
+
+Examples:
+
+* human hand takes the customer's product
+* pizza slice lifts and cheese stretches
+* person enters the customer's room
+* family begins interacting in the space
+* dog moves through the scene
+* model begins using/wearing the product
+* food visibly comes alive through real generated action
+
+The customer only needs enough evidence to conclude:
+
+**“Metaprom actually turned MY image/product into video.”**
+
+Then the Preview should end.
+
+**LIVE / historical documented characteristic:** current teaser remains approximately **3–5 seconds** (Preview Policy / earlier commercial-tier language). Unchanged.
+
+### 4. Deliberate early cut is a product feature
+
+**Status:** **APPROVED PRODUCT DIRECTION**. **Not LIVE.**
+
+The short cut is intentional.
+
+Metaprom may internally generate 4 seconds but deliberately expose only approximately 1–1.5 seconds.
+
+The unused generated duration is acceptable production overhead if the economics support it.
+
+Do **NOT** optimize the Preview by showing all generated seconds merely because they already exist.
+
+Showing more can reduce the perceived-value gap between Preview and Premium.
+
+The customer-facing Preview should end while curiosity remains.
+
+Core principle:
+
+**Restrict narrative quantity, not quality.**
+
+The Preview should be visually excellent.
+
+It should **NOT** be intentionally ugly, low-quality, or weak merely to protect the Premium product.
+
+Instead, it should be:
+
+**spectacular but incomplete.**
+
+### 5. LAUNCH PRODUCT GATE — PREVIEW/PREMIUM DIFFERENTIATION
+
+**Status:** **LAUNCH PRODUCT GATE**. Acknowledged LIVE weakness. Future architecture is **APPROVED PRODUCT DIRECTION** and **not implemented**. Do not change live Preview/Premium in this task.
+
+The current live product has an acknowledged weakness:
+
+**Preview and Premium are too similar in perceived product value.**
+
+This is no longer merely a future optimization.
+
+Before **broad paid acquisition / serious public sales push**, Metaprom must establish and validate a materially clear distinction between:
+
+#### AI VIDEO PREVIEW
+
+Purpose:
+
+**PROOF + WOW**
+
+* very short
+* one genuine generated action
+* proves transformation capability
+* high visual quality
+* intentionally incomplete
+* does not tell the complete advertising story
+* should create desire to continue
+
+Customer reaction sought:
+
+**“Wow. It really did that with my image. I want to see the commercial.”**
+
+#### PREMIUM COMMERCIAL
+
+Purpose:
+
+**THE PRODUCT**
+
+* complete commercial
+* complete narrative
+* full intended duration
+* multiple meaningful beats where appropriate
+* polished production
+* Commercial Fidelity
+* exact deterministic copy/logo/CTA where applicable
+* Biblioteca
+* download
+* sharing
+* correction/rework philosophy
+
+Customer reaction sought:
+
+**“This is the finished commercial I paid for.”**
+
+The Premium must **NOT** feel like:
+
+**“the same Preview, only longer.”**
+
+**Launch-gate scope:** this gate is **Preview/Premium differentiation**. It does **not** automatically make Storyboard, Preview Pro, or same-project credit accounting launch-blocking. The immediate execution compass remains the GTM checklist. This gate must be resolved/validated before broad sales push; it is **not** authorization to begin implementation in this session.
+
+### 6. Storyboard relationship
+
+**Status:** **APPROVED PRODUCT DIRECTION** (funnel). **Not LIVE. Do not implement Storyboard from this record.**
+
+Preserve the approved conceptual funnel:
+
+```
+CUSTOMER ASSET
+  → DIRECTOR
+  → STORYBOARD / CREATIVE APPROVAL
+  → SHORT AI VIDEO PREVIEW
+  → PREMIUM COMMERCIAL
+```
+
+Storyboard remains the economic/creative guard rail **BEFORE** expensive video generation.
+
+Short AI Preview remains the WOW/proof stage.
+
+Premium remains the actual purchased deliverable.
+
+Deterministic Motion Preview remains **REJECTED**.
+
+### 7. Preview generation prompt philosophy
+
+**Status:** **APPROVED PRODUCT DIRECTION**. Exact prompt implementation remains **future work**. **Do not implement from this record.**
+
+Future Preview generation should be prompted specifically for an **immediate proof action**.
+
+Do **NOT** design Preview prompts as miniature complete commercials.
+
+The important generated action should occur as early as practical in the underlying Veo generation so that Metaprom can extract a compelling approximately 1–1.5-second proof moment.
+
+Example:
+
+Instead of asking Veo to create a complete pizza commercial:
+
+**Prompt toward immediate action: a human hand immediately reaches for and lifts a pizza slice, producing visible cheese stretch.**
+
+The purpose is to maximize proof/WOW per exposed second.
+
+### 8. Economic status
+
+**Status:** working **external** cost research. **Not** audited internal production cost. Production-account billing remains **OPEN / REQUIRES VALIDATION**.
+
+Public pricing research indicates that Veo 3.1 Fast video generation may be economically compatible with this architecture, with a working external reference of approximately:
+
+**USD $0.08 per generated second for Fast 720p video without audio**
+
+which would imply approximately:
+
+**USD $0.32 for a 4-second minimum source generation**
+
+Do **NOT** represent this as Metaprom's audited internal production cost yet.
+
+Actual Vertex billing for the production account must still be verified before final pricing/allowance decisions.
+
+### 9. Preview Pro remains separate
+
+**Status:** **APPROVED PRODUCT DIRECTION** (unchanged). **Not LIVE. Do not implement from this record.**
+
+Do not change the previously approved Preview Pro philosophy.
+
+Preview Pro remains:
+
+**optional paid creative EXPLORATION**
+
+not payment for Metaprom corrections.
+
+Paid Preview Pro amounts are intended to become credit toward the Premium Commercial of the **SAME** project.
+
+### 10. Question status after this micro-update
+
+**RESOLVED / WORKING TECHNICAL FINDING:**
+
+* native generation minimum: **4 seconds**
+
+**APPROVED UX DIRECTION, REQUIRES TESTING:**
+
+* expose approximately **1–1.5 seconds**
+* maximum target approximately **2 seconds** if needed
+* deliberately trim generated source
+* one immediate generated action
+* Preview = proof/WOW, not mini-commercial
+* restrict narrative quantity, not quality — spectacular but incomplete
+
+**STILL OPEN:**
+
+* actual production-account billing/cost
+* final free Preview allowance
+* Preview Pro price
+* Preview Pro model/duration
+* exact same-project credit accounting
+* abuse protection
+* Storyboard implementation
+* correction/rework operational limits
+* refund terms
+
+### 11. GTM priority after this micro-update
+
+**STOP THE PRODUCT-ARCHITECTURE DETOUR.**
+
+The one-page GO TO MARKET launch-hardening checklist is again the next-session execution compass. See **NEXT SESSION START HERE**.
+
+Preserve:
+
+**Preview/Premium differentiation = LAUNCH PRODUCT GATE**
+
+meaning it must be resolved/validated before broad paid acquisition / serious public sales push.
+
+Do not make Storyboard, Preview Pro, or project-credit accounting automatically launch-blocking merely because they are related to the future architecture.
+
+**Not LIVE (do not ship from this record):** short 1–1.5s customer-facing Preview, Veo 4s source + FFmpeg trim pipeline, Preview-specific immediate-action prompts, Storyboard, Preview Pro, same-project credit accounting, refunds, free-preview allowance.
+
+---
+
+## Historical Milestones
+
+*The sections below record prior sprint and RC milestones. Where they conflict with **Current State**, **NEXT SESSION START HERE**, **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**, **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**, or **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**, those later sections govern. GTM governs launch/Stripe/Share/Rescue. The August 19, 2026 records govern future Preview architecture, results-not-generations commercial philosophy, Veo duration/trim direction, and Preview/Premium as a **LAUNCH PRODUCT GATE**. LIVE Studio behavior is unchanged until separately implemented.*
+
+*In particular, treat as historical rather than current truth: Stripe remains Test Mode / Live not enabled; Dual Creation as the next BUILD sprint; Advertising Image journey as the single active blocker; Share Experience as launch-complete; Metaprom as primarily an AI Commercial generator; older “current active objective” and June/July 2026 “current priorities” tables.*
 
 ## MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)
 
-*Current canonical record for Stripe V1 verified state, package entitlements, fulfillment security, and the approved Dual Creation Architecture direction. Supersedes earlier Revenue Sprint / Stripe soft-launch status where they conflict. Prior sections remain historical context.*
+*HISTORICAL — Test Mode era and Dual Creation as the next BUILD sprint. Package catalog, entitlement architecture, fulfillment security (`grant_package_entitlement` server-only), Dual Creation journey design, and the Test Mode Commercial E2E remain valid historical record. Current operating truth (Stripe Live, GTM, Share P0, factory positioning) is **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
-### 1. Stripe V1 — Current Verified State
+*Supersedes earlier Revenue Sprint / Stripe soft-launch status for the Test Mode verification milestone. Does **not** supersede the August 18–19, 2026 GTM update.*
 
-Stripe V1 has reached successful **real-domain Test Mode E2E validation** on:
+### 1. Stripe V1 — Historical Test Mode Verified State
+
+Stripe V1 reached successful **real-domain Test Mode E2E validation** on:
 
 [https://www.metaprom.com](https://www.metaprom.com)
 
@@ -182,9 +1657,9 @@ www.metaprom.com
 
 The manual E2E payment using Stripe Test Mode succeeded.
 
-**Stripe remains TEST MODE.**
+**Historical status at the time of this update:** Stripe remained TEST MODE; Live Mode was not yet enabled.
 
-Do **not** state that Live Mode is enabled.
+**Superseded August 18, 2026:** Stripe Live Mode is operational. See **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §§14–16. Do **not** treat “Stripe remains TEST MODE” as current truth.
 
 ### 2. Stripe V1 Packages
 
@@ -206,13 +1681,15 @@ Do **not** state that Live Mode is enabled.
 | 50 Images | MXN $349 |
 | 100 Images | MXN $599 |
 
-All **8** package Price IDs exist in Stripe Test Mode.
+All **8** package Price IDs existed in Stripe Test Mode at the time of this update. Package prices remain the current catalog unless separately changed.
 
-Card and OXXO are available in Test Checkout.
+Card and OXXO were available in Test Checkout.
 
-Commercial package checkout has passed production-domain Test Mode validation.
+Commercial package checkout passed production-domain Test Mode validation.
 
-Advertising Image package Stripe checkout infrastructure exists, but full product E2E is **NOT** yet considered complete because the UX/product architecture must be corrected first.
+**Historical:** Advertising Image package Stripe checkout infrastructure existed, but full product E2E was **not** yet considered complete because Dual Creation UX/product orchestration had to be built first.
+
+**Superseded August 18–19, 2026:** Dual Creation is the current dual-product foundation; Live Advertising Image fulfillment is evidenced by purchase #34. Unknown-customer E2E remains a launch-readiness audit item, not a Test Mode / BUILD-phase stopping point. See the GTM update.
 
 ### 3. Legacy Stripe Checkout Removed
 
@@ -232,9 +1709,11 @@ productKey: commercial_1
 
 The legacy **$149** Stripe Price must **NOT** be restored.
 
-Current production commit after this fix and entitlement fix:
+Historical production commit after this fix and entitlement fix:
 
 `1378eb4fbd349ac4fddc03b8f09b4abeff805c1e`
+
+Later production commit cited August 18, 2026 (Commercial Rescue closeout / Stripe Live audit): `078da0545d086b53e46fcea9cd59b4843c9dd6cb`
 
 ### 4. Entitlement Architecture
 
@@ -282,13 +1761,15 @@ Do **NOT** broaden database permissions.
 
 Purchase fulfillment remains idempotent.
 
-### 6. Important Product Architecture Finding
+### 6. Important Product Architecture Finding (historical)
 
-Current UX was originally designed around Commercial generation.
+*HISTORICAL observation that Dual Creation was designed to correct. Do not present as current stopping point. Unknown-customer E2E remains a launch audit item.*
 
-This creates a structural problem for Advertising Images.
+Then-current UX was originally designed around Commercial generation.
 
-**Observed current behavior:**
+This created a structural problem for Advertising Images.
+
+**Observed behavior at the time of this update:**
 
 ```
 User uploads/provides an image
@@ -303,11 +1784,11 @@ User uploads/provides an image
 
 Therefore:
 
-Advertising Images are technically supported by generation, persistence, Stripe packages, and entitlements, but are **NOT** yet exposed as a coherent standalone customer journey.
+**Then:** Advertising Images were technically supported by generation, persistence, Stripe packages, and entitlements, but were **not** yet exposed as a coherent standalone customer journey.
 
-This is **NOT** a Stripe problem.
+This was **not** a Stripe problem. It was a **product/UX orchestration** problem.
 
-It is a **product/UX orchestration** problem.
+**August 18–19, 2026:** Dual Creation is the current dual-product foundation; Live Advertising Image fulfillment is evidenced by purchase #34. Full unknown-customer E2E is a GTM launch-readiness audit, not this Test Mode finding.
 
 ### 7. Approved Direction — Director as Central Orchestrator
 
@@ -335,9 +1816,11 @@ When intent is ambiguous, Director may ask a simple high-level question:
 
 Avoid exposing unnecessary technical complexity.
 
-### 8. Dual Creation Architecture — Next Sprint
+### 8. Dual Creation Architecture — Approved Journey Design (historical “next sprint”)
 
-**Next major product sprint:**
+*Historical as the next BUILD sprint. Journey design below remains the Dual Creation foundation. Current active objective is GO-TO-MARKET, not Dual Creation as a BUILD sprint. See the GTM update.*
+
+**Then-next major product sprint:**
 
 > METAPROM DUAL CREATION ARCHITECTURE
 > COMMERCIALS + ADVERTISING IMAGES
@@ -407,6 +1890,8 @@ Do **NOT** turn this into a large technical form.
 
 Director should absorb the complexity.
 
+**August 18–19, 2026:** this destination/intent list is the foundation for **destination-aware production** (Amazon, Mercado Libre, Shopify/ecommerce, Real Estate, social). Future commercial packs are roadmap only and must **not** be implemented before launch. See GTM §7.
+
 ### 10. Director as Commercial Advisor
 
 Director should also become responsible for product/package discovery.
@@ -424,11 +1909,13 @@ Director should act as a helpful seller/advisor, **not** an aggressive popup sys
 
 The `/planes` page remains the canonical package catalog, but Director can surface relevant package options and route users there or initiate the appropriate checkout.
 
-### 11. Next Validation Order
+### 11. Next Validation Order (historical — Test Mode era)
 
-Do **NOT** move Stripe to Live Mode yet.
+*HISTORICAL sequence from the Test Mode era. Do not execute as current work.*
 
-Next:
+Then-current instruction: do **not** move Stripe to Live Mode yet.
+
+Then-next:
 
 1. **A.** Build Dual Creation Architecture
 2. **B.** Complete standalone Advertising Image customer journey
@@ -443,7 +1930,11 @@ Next:
 5. **E.** Final payment/entitlement regression
 6. **F.** Move Stripe to Live Mode
 
-### 12. Live Mode Plan
+**Superseded August 18, 2026:** Stripe Live is enabled. Purchase #34 recovered through `checkout.session.async_payment_succeeded`. Current order is **NEXT SESSION START HERE**.
+
+### 12. Live Mode Plan (historical checklist)
+
+*HISTORICAL plan written before Live enablement. Several items were subsequently executed. Canonical Live webhook URL is now `https://www.metaprom.com/api/payments/webhook`.*
 
 After Test Mode validation is complete:
 
@@ -459,7 +1950,9 @@ After Test Mode validation is complete:
 
 Test and Live credentials must **never** be mixed.
 
-### 13. Current Product Principle
+### 13. Product Principle (historical — Dual Creation era)
+
+*HISTORICAL positioning from the Dual Creation / Test Mode update. Superseded as current commercial definition by the GTM factory positioning: Metaprom is an advertising production platform; the delivered advertising asset is the product; the Director is Production Director.*
 
 Metaprom is evolving from:
 
@@ -477,13 +1970,15 @@ Preserve:
 
 Do not make the user learn the architecture.
 
-### 14. Current Stopping Point
+### 14. Stopping Point (historical — Test Mode era)
 
-**Commercial Stripe V1:**
+*HISTORICAL stopping point. Superseded August 18–19, 2026.*
+
+**Commercial Stripe V1 (then):**
 
 E2E TEST MODE — VERIFIED SUCCESSFULLY ON www.metaprom.com
 
-**Advertising Image infrastructure:**
+**Advertising Image infrastructure (then):**
 
 * generation — available
 * persistence — available
@@ -493,23 +1988,19 @@ E2E TEST MODE — VERIFIED SUCCESSFULLY ON www.metaprom.com
 * idempotent consumption — implemented
 * hard entitlement gate — implemented
 
-**Advertising Image customer journey:**
+**Advertising Image customer journey (then):**
 
 NOT COMPLETE
 
-**Next work:**
+**Then-next work:**
 
 Dual Creation Architecture + Director orchestration.
 
 ---
 
-## Historical Milestones
-
-*The sections below record prior sprint and RC milestones. Where they conflict with **Current State** or **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**, those later sections govern.*
-
 ## MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)
 
-*Historical — RC1 commercial foundation. Superseded by **Current State** and **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)** for project status, Stripe V1 verified state, package pricing, entitlements, and Dual Creation direction.*
+*Historical — RC1 commercial foundation. Superseded by later Stripe V1 Test Mode verification and, for current operating truth, by **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
 ### RC1.4
 
@@ -530,13 +2021,15 @@ Metaprom officially completed the **Infrastructure Phase** and entered product-f
 * Public Commercial Pages
 * Growth Engine Foundation
 * Product Stabilization
-* Share Experience (functional)
+* Share Experience (functional foundation)
 
 ##### Share
 
-The Share Experience is considered **functionally complete**.
+*HISTORICAL RC1.4 completeness. As of August 18–19, 2026, Share is launch-critical P0 requiring final hardening/validation. See **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §13.*
 
-Verified:
+The Share Experience was considered **functionally complete** as an RC1 foundation.
+
+Verified at that time:
 
 * Share button on Preview
 * Share button on Biblioteca
@@ -910,7 +2403,7 @@ That is the new definition of product quality for Metaprom.
 
 ## MASTER UPDATE — RC1.3.5 Product Review (CEO Review) (July 2026)
 
-*Historical — superseded by **MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)** for current RC1 status and active objective. Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for RC1.3.5 product review context, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy.*
+*Historical — superseded by **MASTER UPDATE — RC1.4 — Stripe & Soft Launch (July 2026)** for current RC1 status and active objective. Preview vs Premium **duration and live teaser characteristics** below remain historical/LIVE documentation (~3–5 second teaser). Future Preview architecture, 4-second Veo source / ~1–1.5s customer-facing target (**not live**), and Preview/Premium as a **LAUNCH PRODUCT GATE** are governed by **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Supersedes **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for RC1.3.5 product review context, project stage, product philosophy, Preview vs Premium differentiation, Preview Policy, Growth Engine, Public Landing, Demo Library, waiting experience, video architecture, official workflows, Growth Analytics vision, UX principles, prompt enrichment architecture, checkout scope, end-of-journey experience, Biblioteca capabilities, and acquisition strategy.*
 
 ### Project stage
 
@@ -986,6 +2479,8 @@ The Premium must never feel like a slightly longer Preview.
 
 > The Premium commercial must always feel significantly more valuable than the Preview.
 
+**August 19, 2026:** this rule remains in force and is now a **LAUNCH PRODUCT GATE**. The LIVE product does **not** yet create a sufficiently clear Preview vs Premium gap. Preferred future architecture (Storyboard → short AI Video Preview as proof/WOW → Premium as the finished product) is **APPROVED PRODUCT DIRECTION**, not live. See **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§4, 7, 12.
+
 #### Preview
 
 Purpose:
@@ -994,7 +2489,7 @@ Generate the WOW factor and **acquire new users**.
 
 Characteristics:
 
-* approximately 3–5 seconds
+* approximately 3–5 seconds *(LIVE / historical documented characteristic; future customer-facing AI Video Preview target is approximately 1–1.5 seconds, **not live** — see **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**)*
 * immediate impact
 * teaser
 * shareable
@@ -1008,9 +2503,7 @@ The Preview is **NOT** the product.
 
 The Preview is a **permanent growth asset**.
 
-Its objective is **not** to deliver a video.
-
-Its objective is to **attract new users**.
+Its objective is **not** to deliver a complete commercial. Public sharing still exists to **attract new users**. In-Studio, the future AI Video Preview's additional job is to prove that **this customer's asset** became a living production and to create desire for Premium — without giving the complete commercial away. That in-Studio purpose is **APPROVED PRODUCT DIRECTION**, not a live behavior change.
 
 Every Preview must generate new users.
 
@@ -1271,7 +2764,7 @@ Permanent product principles:
 
 * **Do not explain. Demonstrate.**
 * **The user must never feel they are using AI.**
-* **The Preview does not sell a video. It sells the next user.**
+* **The Preview does not sell a complete commercial.** Public sharing still **sells the next user**. In-Studio, future AI Video Preview = **PROOF + WOW** (not a mini-commercial). Premium = the finished product. Preview/Premium differentiation is a **LAUNCH PRODUCT GATE**. See **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§7, 12, 16.
 * **You take the photo. Metaprom does the rest.**
 
 See **Product Philosophy**.
@@ -1408,6 +2901,8 @@ Official slogan:
 
 ### Current RC1 status
 
+*HISTORICAL RC1 customer-journey status. Current objective: GO-TO-MARKET. See **NEXT SESSION START HERE**.*
+
 The remaining blocker is no longer technical infrastructure.
 
 The remaining work is **Customer Journey completion**.
@@ -1494,7 +2989,7 @@ Metaprom has officially entered **Release Candidate** phase.
 
 ## MASTER UPDATE — July 10, 2026
 
-*Historical — superseded by **MASTER UPDATE — RC1 Customer Journey Progress (July 2026)** for current RC1 status, AI engine stability, checkout priority, schema drift findings, and product positioning.*
+*Historical — superseded for later RC1 status by subsequent July updates, and for current operating truth by **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
 *Supersedes **MASTER UPDATE — July 1, 2026** for current project status, Sprint state, revenue priority, Hero final state, and launch strategy. All prior sections remain as historical record and previously validated decisions remain valid unless explicitly updated here.*
 
@@ -1638,7 +3133,7 @@ Create yours free
 New user
 ```
 
-The Preview is a permanent acquisition channel — not a downloadable file.
+The Preview is a permanent acquisition channel — not a downloadable file. That **LIVE** public-share job remains. Future in-Studio AI Video Preview also has a capability-proof / WOW job that must not give away the complete Premium. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§7, 16.
 
 Sharing is a consequence of pride, not an obligation.
 
@@ -1971,7 +3466,7 @@ See **Product Completion Roadmap (June 2026)**, **Cinematic Reveal**, **Commerci
 
 ## Executive Summary (July 1, 2026)
 
-*Historical — superseded by **MASTER UPDATE — July 10, 2026** for current status, revenue priority, Sprint 3.2 closure, and launch strategy.*
+*Historical — superseded by **MASTER UPDATE — July 10, 2026** for later July status. Current operating truth: **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
 **Metaprom has completed the AI engine and entered Product Polish — the final stretch before Payments and Public Beta.**
 
@@ -2015,7 +3510,7 @@ See **MASTER UPDATE — July 10, 2026**, **MASTER UPDATE — July 1, 2026**, **B
 
 ## Project Vision
 
-Metaprom is a commercial creation platform focused on professional advertising assets for ecommerce sellers, restaurants, real estate, and SMBs — not merely improving product photos or selling AI.
+Metaprom is a commercial creation platform — an **advertising production factory** — focused on professional advertising assets for ecommerce sellers, restaurants, real estate, and SMBs — not merely improving product photos or selling AI tools.
 
 **Final vision:**
 
@@ -2027,7 +3522,7 @@ Core philosophy:
 
 > Customers do not want AI. Customers want content that helps them sell.
 
-> Metaprom does not sell AI. Metaprom sells Creative Direction.
+> Metaprom does not sell AI access. Metaprom sells finished advertising assets, produced through Creative / Production Direction.
 
 Core mission:
 
@@ -2055,7 +3550,7 @@ See **Creative Director**, **Strategic Pivot – Metaprom AI Evolution (June 202
 
 ## Product Completion Roadmap (June 2026)
 
-*Updated July 10, 2026 — see **MASTER UPDATE — July 10, 2026** for Sprint 3.2 closure and Sprint 4 Revenue Sprint status. Earlier priorities below are preserved as historical context.*
+*Updated July 10, 2026 — see **MASTER UPDATE — July 10, 2026** for Sprint 3.2 closure and Sprint 4 Revenue Sprint status. **Current operating objective (August 18–19, 2026):** GO-TO-MARKET — see **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**. Earlier priorities below are preserved as historical context.*
 
 ### Strategic direction
 
@@ -2071,7 +3566,9 @@ Success metric:
 
 > Customers say: *"WOW… I want this commercial."*
 
-### Current priorities (official — June 29, 2026)
+### Current priorities (official — June 29, 2026) — HISTORICAL
+
+*HISTORICAL June 29, 2026 table. Current objective: GO-TO-MARKET. See **NEXT SESSION START HERE**.*
 
 | # | Priority | Status |
 |---|----------|--------|
@@ -2102,9 +3599,11 @@ See **Product Philosophy** for official principles. Summary:
 
 ### Commercial tiers
 
+*HISTORICAL June 2026 tier language. LIVE current teaser remains as shipped. Duration ~3–5 seconds is LIVE/historical documentation. Future customer-facing AI Video Preview target is approximately 1–1.5 seconds (**not live**; 4-second Veo source is a working technical finding). Whether the first preview is free remains **OPEN**. Preferred funnel and Preview Pro are **APPROVED PRODUCT DIRECTION**, not live. Current Commercial price is MXN $180, not $149. See **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**, **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**, and GTM §8.*
+
 **Free (customer acquisition — Preview)**
 
-* 3–5 second teaser video
+* 3–5 second teaser video *(LIVE / historical documented characteristic)*
 * Metaprom watermark
 * Medium quality
 * Delivered via **Cinematic Reveal** — creates trust and WOW, not the full deliverable
@@ -2410,13 +3909,15 @@ Payment architecture must remain **provider-agnostic**. Never couple product arc
 
 Environment: `PAYMENT_PROVIDER=mock` (development). Production provider TBD after Beta validation.
 
+*HISTORICAL June 2026 note. Stripe is the selected production payment platform. Stripe Live is operational as of August 18, 2026. See GTM §§14–16.*
+
 ---
 
 ## Continuity Context (June 2026)
 
-*Handoff summary — consolidates current state, recent discoveries, and immediate next objective.*
+*Handoff summary — consolidates then-current state, recent discoveries, and immediate next objective.*
 
-*Updated July 1, 2026 — for current state see **MASTER UPDATE — July 1, 2026** and **Executive Summary (July 1, 2026)**. Content below preserved as June 2026 handoff history.*
+*HISTORICAL June/July 2026 handoff. Current operating truth: **Current State**, **NEXT SESSION START HERE**, and **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
 ### Project State
 
@@ -2509,7 +4010,9 @@ See **Infrastructure & Operations**.
 
 ### Immediate Next Objective
 
-**Complete the commercial MVP and prepare for Beta** — not more AI experimentation.
+*HISTORICAL June 2026 execution order. Current execution order: **NEXT SESSION START HERE**.*
+
+**Then:** Complete the commercial MVP and prepare for Beta — not more AI experimentation.
 
 Active execution order:
 
@@ -3765,7 +5268,7 @@ See **Official Video Workflows** and **Video Generation — Validated (June 2026
 
 | Workflow | Model | Purpose |
 |----------|-------|---------|
-| Preview | Veo Lite | Customer acquisition — WOW and sharing |
+| Preview | Veo Lite | **LIVE:** customer acquisition — WOW and sharing. Current teaser/model path unchanged. **APPROVED DIRECTION:** in-Studio AI Video Preview is **PROOF + WOW**, not a shortened Premium. Working finding for the currently relevant **Veo 3.1 Fast** path: 4s generation minimum; customer-facing target ~1–1.5s (**not live**; does not change this LIVE row). Production-account cost **unverified**. Preview Pro / Storyboard **not live**. Preview/Premium differentiation = **LAUNCH PRODUCT GATE**. |
 | Premium | Veo Fast | Paid complete commercial |
 | Enterprise | Enterprise model | High-volume or enterprise tier |
 
@@ -3807,7 +5310,7 @@ Current state: Biblioteca stores images only; video POC is isolated at `/video-t
 
 Biblioteca is **not** a file browser. It is a **Commercial Portfolio** centralized inside Studio.
 
-Each project visually tells one transformation story:
+Each project visually tells one transformation story (**LIVE** current portfolio storytelling):
 
 ```
 Original Photo
@@ -3820,6 +5323,8 @@ HD Commercial
 ```
 
 **The transformation itself is the product.**
+
+**APPROVED PRODUCT DIRECTION (not live — do not implement from this record):** preferred future funnel is PHOTO / CUSTOMER ASSET → CREATIVE DIRECTOR → STORYBOARD / CREATIVE APPROVAL → SHORT AI VIDEO PREVIEW → PREMIUM COMMERCIAL → BIBLIOTECA → DOWNLOAD / SHARE. Deterministic Motion Preview is **REJECTED** as a funnel stage. Whether the future first AI Video Preview remains a free teaser is **OPEN**. Preview/Premium differentiation is a **LAUNCH PRODUCT GATE**. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§4–8, 11 and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
 
 ### Persistence
 
@@ -3838,13 +5343,13 @@ See **Customer Experience (July 1, 2026)** and **Demo Library**.
 
 ## Public Landing Philosophy
 
-**Status:** Active product definition — applies to every public Preview URL.
+**Status:** Active product definition for public Preview URLs, **reconciled August 18–19, 2026**.
 
-The public landing does **NOT** explain AI.
+The public Preview page does **NOT** explain AI models.
 
-It sells through **demonstration**.
+It sells through **demonstration**, and — as of GTM — the **marketing site / FAQ** must also make the category difference explicit: **GENERAR NO ES PRODUCIR.** Visual premium/minimalism may remain; commercial communication must become substantially clearer. See GTM §5.
 
-Visual order:
+Visual order on the public Preview page:
 
 1. Video
 2. Created with Metaprom
@@ -3853,11 +5358,11 @@ Visual order:
 
 First, create emotion.
 
-Then, explain.
+Then, explain the category (factory vs tool) — not the model stack.
 
-The landing must never communicate "AI platform." It must communicate "look what was created."
+The landing must never communicate "AI platform." It must communicate "look what was created" **and** that Metaprom delivers finished advertising, not generations.
 
-See **Future Landing Philosophy**, **Growth Engine**, and **Preview Policy**.
+See **Future Landing Philosophy**, **Growth Engine**, **Preview Policy**, and **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §§5 and 13.
 
 ---
 
@@ -3893,17 +5398,19 @@ See **Biblioteca — Commercial Portfolio (July 1, 2026)** and **Growth Engine**
 
 ## Preview Policy
 
-**Status:** Active product definition — permanent rules for every Preview asset.
+**Status:** **LIVE** permanent rules for current Preview assets remain in force. Future Preview architecture, duration/trim, Preview Pro, first-preview commercial model, and Preview/Premium **LAUNCH PRODUCT GATE**: **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Where they conflict, those updates govern **future direction**. Current Studio teaser/preview behavior is **unchanged**. The short 1–1.5s Preview is **not** live.
 
 The Preview is **NOT** the product.
 
-The Preview is a **permanent growth asset**.
+The Preview is a **permanent growth asset** (public share / acquisition) **and**, in future in-Studio architecture, proof that the customer's own asset became a living professional production.
 
-Its objective is **not** to deliver a video.
+Its objective is **not** to deliver the complete commercial.
 
-Its objective is to **attract new users**.
+Public-share objective remains: **attract new users**.
 
-Permanent rules:
+In-Studio future objective: create genuine video WOW and desire for Premium without giving the complete narrative away. **APPROVED PRODUCT DIRECTION**, not live.
+
+Permanent **LIVE** rules:
 
 * Never downloadable
 * Lives exclusively inside Metaprom
@@ -3912,25 +5419,27 @@ Permanent rules:
 * Unlimited sharing
 * Every Preview must generate new users
 
-Characteristics:
+**LIVE / historical documented characteristics:**
 
-* approximately 3–5 seconds
+* approximately 3–5 seconds *(LIVE / historical documented characteristic; future customer-facing AI Video Preview target is approximately 1–1.5 seconds from a 4-second Veo source — **not live**; do not implement duration/trim changes from this record)*
 * immediate impact
 * teaser
 * shareable
 * Metaprom watermark
 
-The Premium commercial must always feel significantly more valuable than the Preview.
+The Premium commercial must always feel significantly more valuable than the Preview. **August 19, 2026 finding:** LIVE Preview and Premium are not yet differentiated enough in perceived value. Closing that gap is future architecture.
 
 Premium requests the maximum officially supported Veo clip duration and preserves the customer's selected aspect ratio. Video Extension and clip chaining remain backlog only.
 
-See **Premium Generation**, **Preview vs Premium**, **Growth Engine**, and **Public Landing Philosophy**.
+Do **not** treat Storyboard, Preview Pro, Motion Preview, or project-credit accounting as live Preview Policy.
+
+See **Premium Generation**, **Preview vs Premium**, **Growth Engine**, **Public Landing Philosophy**, and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**.
 
 ---
 
 ## Growth Analytics (Future Vision)
 
-**Status:** Future product architecture — part of the Growth Engine vision. No implementation prescribed here.
+**Status:** Future product architecture plus **pre-launch P0 instrumentation** for Share. Historical vision list below is preserved. Required Share launch events are specified in GTM §13 and are **not** claimed as already complete.
 
 The Growth Engine requires measurement. The following metrics form part of the product vision:
 
@@ -3944,9 +5453,11 @@ The Growth Engine requires measurement. The following metrics form part of the p
 * Conversions
 * Watch Completion %
 
+**Share launch instrumentation (required, not claimed complete):** `share_created`, `share_opened`, `share_to_signup`, `share_to_creation`, `share_to_purchase`.
+
 These metrics connect Preview sharing to new user acquisition and conversion.
 
-See **Growth Engine** and **Preview Policy**.
+See **Growth Engine**, **Preview Policy**, and **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §13.
 
 ---
 
@@ -3993,29 +5504,29 @@ See **Hero V2 Rendering Investigation — Complete (July 8, 2026)**.
 
 ## Premium Generation
 
-Preview remains **lightweight** — a teaser, not the deliverable.
+Preview remains **lightweight** — a teaser, not the deliverable. **LIVE** current Preview/Teaser behavior is unchanged.
+
+Customers purchase a **result**: a finished professional commercial they are satisfied with — not seconds, not one generation, not retries. Duration targets are internal objectives only. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§1–2, 12.
 
 Premium requests the **maximum officially supported Veo clip duration** and **preserves the customer's selected aspect ratio**.
 
-Customers purchase a complete commercial, not seconds. Duration targets are internal objectives only.
-
 Future Premium roadmap items — **Video Extension** and **clip chaining** — remain backlog only.
 
-The Premium commercial must always feel significantly more valuable than the Preview.
+The Premium commercial must always feel significantly more valuable than the Preview. Future architecture must widen that gap (AI Video Preview as proof/WOW; Premium as complete deliverable with Commercial Fidelity). That gap work is **not live**.
 
-See **Preview Policy**, **Preview vs Premium**, and **Creative Director**.
+See **Preview Policy**, **Preview vs Premium**, **Creative Director**, and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**.
 
 ---
 
 ## Creative Director
 
-**Status:** Independent product — one of Metaprom's primary competitive advantages. No longer experimental.
+**Status:** Independent product — one of Metaprom's primary competitive advantages. No longer experimental. As of August 18–19, 2026, understood as **DIRECTOR DE PRODUCCIÓN / PRODUCTION DIRECTOR**, not merely “chat with our AI.”
 
-The Director is expected to become the **primary intelligent interface and commercial orchestrator** across the platform. Future product decisions should prioritize protecting the Director experience.
+The Director is expected to remain the **primary intelligent interface and production orchestrator** across the platform. Future product decisions should prioritize protecting the Director experience. The customer still buys the **finished advertising asset**; the Director coordinates the factory.
 
-Approved August 2026 direction: Director routes user intent into the correct Dual Creation journey — **Commercial** or **Advertising Image** — and may act as a helpful package advisor without exposing internal engines. See **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+Approved August 2026 Dual Creation direction remains: Director routes user intent into the correct journey — **Commercial** or **Advertising Image** — and may act as a helpful package advisor without exposing internal engines. Historical design record: **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**. Current role: **Production Director** coordinating the advertising factory. See **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §6.
 
-The Creative Director is:
+The Creative Director / Production Director is:
 
 * Senior Creative Director
 * Marketing Expert
@@ -4023,7 +5534,7 @@ The Creative Director is:
 * Creative Strategist
 * Commercial orchestrator (intent routing + package discovery)
 
-The Director accompanies the customer throughout creation, improves **commercial quality**, and should feel like an experienced creative agency. The Director is integrated after Preview and Premium generation — not merely a prompt, but an independent product with personality, principles, behavior, ownership, acceptance criteria, and roadmap.
+The Director accompanies the customer throughout creation, improves **commercial quality**, and should feel like an experienced creative agency. **LIVE:** the Director is integrated after Preview and Premium generation. **APPROVED PRODUCT DIRECTION (not live):** preferred future funnel places Director + Storyboard / creative approval **before** expensive AI video generation. Do not implement Storyboard from this record. The Director is not merely a prompt, but an independent product with personality, principles, behavior, ownership, acceptance criteria, and roadmap.
 
 Official product principles governing the Director are defined in **Product Philosophy**.
 
@@ -4111,24 +5622,28 @@ Extends **Product principles (non-negotiable)** and **Product Philosophy** — s
 
 ## Long-Term Positioning
 
-**Status:** Canonical positioning — supersedes "AI Creative Studio" and "image enhancement" framing where they conflict.
+**Status:** Canonical long-term positioning, **reconciled August 18–19, 2026** with factory / production definition. Supersedes "AI Creative Studio" and "image enhancement" framing where they conflict. Current commercial definition: **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §2.
 
 Metaprom is **not**:
 
 * an AI company
 * an image enhancement tool
 * a video generation tool
+* primarily an AI generation tool
 
 Metaprom **is**:
 
-> a **commercial creation platform** powered by a world-class Creative Director
+> an **AI-powered advertising production platform / advertising factory** — a commercial creation platform powered by a Production Director
 
 **Product promise:**
 
 > You focus on your business.
-> Metaprom creates your commercial.
+> Metaprom produces your advertising.
 
-**Final vision:** See **Project Vision**. The Director should become the face of Metaprom.
+> The customer explains what they need.
+> Metaprom handles the production complexity.
+
+**Final vision:** See **Project Vision**. The Director should become the face of Metaprom as Production Director. What the customer buys is the delivered advertising asset.
 
 **Operational corollary:**
 
@@ -4140,7 +5655,7 @@ Metaprom **is**:
 
 Customers invest time in **describing the commercial**, not in producing a better source photo. Metaprom owns photography cleanup, enhancement, lighting, composition, and commercial creation.
 
-See **Project Vision**, **Creative Director**, and **Strategic Pivot – Metaprom AI Evolution (June 2026)**.
+See **Project Vision**, **Creative Director**, **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**, and **Strategic Pivot – Metaprom AI Evolution (June 2026)**.
 
 ---
 
@@ -4156,7 +5671,7 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Core Principles
 
-1. Adoption before monetization.
+1. Adoption before monetization. *(Historical founding principle. As of August 18–19, 2026 the operating loop is BUILD → SELL → OBSERVE → IMPROVE toward a minimum commercially launchable product.)*
 2. Focus on solving real business problems.
 3. Continuously evaluate tools that dramatically increase productivity.
 4. Preserve project knowledge inside the repository.
@@ -4167,11 +5682,11 @@ Requires separate economics, compliance, and UX design. Document for long-term e
 
 ## Product Philosophy
 
-See also: **Creative Director**, **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
+See also: **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**, **Creative Director**, **NO BARRIERS. NO NONSENSE.**, **UX Discoveries (June 28, 2026)**, **Cinematic Reveal**, **Target Customer (June 2026 Update)**, **Customer Experience (July 1, 2026)**, and **Biblioteca — Commercial Portfolio (July 1, 2026)**.
 
 ### Official Product Principles
 
-1. Metaprom does not sell AI. Metaprom sells **Creative Direction**. **The Director is the product.** The customer should remember the Creative Director — not the AI, not the prompt, not the underlying model.
+1. Metaprom does not sell AI access. Metaprom does **not** sell generations. Metaprom sells **results** — finished advertising assets the customer is satisfied with, produced through Creative / Production Direction. **METAPROM DOES NOT SELL GENERATIONS. METAPROM SELLS RESULTS. / METAPROM NO VENDE GENERACIONES. VENDE RESULTADOS.** **The delivered advertising asset is the product.** The Director is the customer's production interface and a primary competitive advantage — not a generator the customer operates. Historical Product Phase language (“The Director is the product”) remains useful history; it is not what the customer buys. Canonical expansion: **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**.
 
 2. The customer owns the marketing message. The Creative Director owns **creative execution**.
 
@@ -4193,13 +5708,13 @@ See also: **Creative Director**, **NO BARRIERS. NO NONSENSE.**, **UX Discoveries
 
 ### Core principles
 
-* The customer buys **results**, not AI.
+* The customer buys **results** — a finished professional commercial they are satisfied with — **not generations**, not attempts, not compute, not an AI lottery ticket. Internal retries, repair, regeneration, Commercial Rescue, and escalation are Metaprom production concerns. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**.
 * Never expose prompts, models, or technical concepts.
 * AI adapts to the customer; the customer never adapts to AI.
 * Every screen must reduce friction.
 * **Product Experience First.**
 * **The WOW stays inside Metaprom.**
-* Metaprom sells **transformation and creative direction**, not AI. AI is enabling technology, not the product.
+* Metaprom sells **transformation, production, and finished advertising**, not AI tools. AI is enabling technology / factory machinery, not the product.
 
 ### Supporting principles
 
@@ -4211,6 +5726,7 @@ See also: **Creative Director**, **NO BARRIERS. NO NONSENSE.**, **UX Discoveries
 * Library is automatic — no file management.
 * Checkout sells the commercial, not the payment.
 * Simplicity is a competitive advantage.
+* **Correction vs Exploration:** corrections (Metaprom failed to execute approved direction) are part of delivering the purchased product and must not be monetized as Preview Pro. Exploration (customer wants a materially different creative direction) may use optional paid previews. **Not live as a billing system.** See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §3.
 
 Principle:
 
@@ -4232,7 +5748,7 @@ Internal philosophy:
 
 * **Do not explain. Demonstrate.**
 * **The user must never feel they are using AI.**
-* **The Preview does not sell a video. It sells the next user.**
+* **The Preview does not sell a complete commercial.** Public sharing still **sells the next user**. In-Studio, future AI Video Preview = **PROOF + WOW** (not a mini-commercial). Premium = the finished product. Preview/Premium differentiation is a **LAUNCH PRODUCT GATE**. See **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** and **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§7, 12, 16.
 * **You take the photo. Metaprom does the rest.**
 
 These principles apply to every customer-facing surface — Studio, Biblioteca, Public Landing, Demo Library, waiting experiences, and Creative Director conversations.
@@ -4247,7 +5763,7 @@ See **Milestone — First Real Commercial Generated (June 28, 2026)** and **Cine
 * Intent classification enriches the experience but never blocks creation.
 * Saving is invisible — the customer never loses work.
 * The customer should never adapt to the AI; the AI adapts to the customer.
-* The objective is believable commercials, not animated photos.
+* The objective is believable commercials, not animated photos. **August 19, 2026:** this is why deterministic Motion Preview (zoom/pan of a still) was **REJECTED** as a funnel stage. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §6.
 * Commercial Image → Commercial Video: the generated image is the visual foundation for the commercial.
 * The WOW moment happens inside Metaprom via **Cinematic Reveal** — before the purchase decision.
 
@@ -4257,17 +5773,27 @@ Customers care far more about business outcomes than about the underlying AI tec
 
 ## Product Backlog (RC2)
 
-**Status:** Active backlog priorities for Product Phase development.
+**Status:** Strategic product initiatives. **Active objective as of August 18–19, 2026 is GO-TO-MARKET**, not Dual Creation as a BUILD sprint. See **NEXT SESSION START HERE**.
 
 Discovered issues during testing are registered in `RC1_PRODUCT_BACKLOG.md`. The items below are strategic product initiatives.
 
-### ACTIVE NEXT SPRINT
+### ACTIVE NEXT OBJECTIVE (August 18–19, 2026)
+
+**Go-to-Market — minimum commercially launchable Metaprom.**
+
+No new feature without launch justification. Launch lanes: Product / Operations / Market. Public launch planning target: **September 7, 2026**. Canonical detail: **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.
+
+Storyboard, Preview Pro, Motion Preview, refunds, Preview duration/trim changes, and Preview prompt work are **not** next work. They are documented product direction / a rejected experiment / a **LAUNCH PRODUCT GATE** (Preview/Premium differentiation) in **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Do not implement them because they are documented. **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM checklist.
+
+### FOUNDATION (no longer the next BUILD sprint)
 
 **Dual Creation Architecture — Commercials + Advertising Images**
 
-One intelligent Director entry point with separate Commercial and Advertising Image journeys. Advertising Image route must terminate as an image product. Complete standalone Advertising Image E2E before Stripe Live Mode. Canonical detail: **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+Implemented as the current dual-product foundation: one intelligent Director entry point with separate Commercial and Advertising Image journeys. Advertising Image route must terminate as an image product. Historical sprint record: **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**. Unknown-customer E2E remains a launch-readiness audit item.
 
 ### HIGH
+
+*Not automatically P0. Classify against the GTM launch-readiness framework before pulling into the pre-launch critical path.*
 
 **Creative Director Certification Suite**
 
@@ -4290,6 +5816,8 @@ Also: Promotion Engine, Coupon Engine, Founder Credits, Persistent Creative Dire
 Future Director versions should verify mandatory customer commercial elements actually appear in the generated commercial — website visible, phone visible, CTA visible, slogan visible, logo visible. Verification occurs after generation.
 
 Also: Premium Video Extension, clip chaining, Story Planner, multi-scene generation.
+
+**Storyboard / Preview Pro (August 19, 2026):** **APPROVED PRODUCT DIRECTION**, not a launch-checklist item and **not** automatically launch-blocking. Storyboard is creative approval before expensive video generation — **not** a replacement for video WOW. Preview Pro is optional **exploration** (not correction); paid Preview Pro amounts should credit toward the same project's Premium Commercial. Exact name, price, model/duration, and accounting remain **OPEN**. Deterministic Motion Preview is **REJECTED**. Preview/Premium differentiation is a **LAUNCH PRODUCT GATE**. Do **not** implement from this backlog. Historical **Story Planner** is not the Storyboard decision. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** and **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**.
 
 ### LOW
 
@@ -4333,21 +5861,23 @@ UX philosophy: guided experience like Uber, not cockpit complexity. Metaprom nav
 
 ## Revenue Strategy (July 10, 2026)
 
-**Status:** Current company objective — Stripe V1 Commercial E2E verified in Test Mode (August 2026). Live Mode not yet enabled.
+**Status:** HISTORICAL company-objective language from July/August Test Mode era, **reconciled August 18–19, 2026**. Current objective is GO-TO-MARKET: SELL → OBSERVE → IMPROVE at MXN $180 Commercial for initial market validation. Live Mode is enabled. See **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.
 
-Revenue is now the company's primary objective.
+Revenue remains a primary company objective.
 
 Previous objective:
 
 > Finish the product.
 
-Current objective:
+July 10 objective:
 
 > Generate revenue.
 
-The **Revenue Sprint** begins after Sprint 3.2.
+The **Revenue Sprint** began after Sprint 3.2.
 
-**August 2026 update:** Commercial Stripe V1 package checkout reached successful real-domain Test Mode E2E on www.metaprom.com (1 Commercial — MXN $180). Advertising Image packages and entitlements exist; standalone Advertising Image journey and Dual Creation Architecture must complete before Live Mode. See **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**.
+**August 2026 Test Mode milestone (historical):** Commercial Stripe V1 package checkout reached successful real-domain Test Mode E2E on www.metaprom.com (1 Commercial — MXN $180).
+
+**August 18, 2026 (current):** Stripe Live operational. Webhook 307 incident RESOLVED. Purchase #34 async $99 Advertising Images recovered through normal webhook flow. Purchase #35 $180 Commercial previously fulfilled via return/polling and must remain idempotent.
 
 Stripe is selected as the payment platform after commercial evaluation and after considering previous experience with chargebacks and payment providers.
 
@@ -4406,7 +5936,7 @@ Marketing is no longer considered traditional advertising.
 
 Growth is based on **demonstration** and **curiosity**.
 
-The Preview is a permanent acquisition channel — not a downloadable file.
+The Preview is a permanent acquisition channel — not a downloadable file. That **LIVE** growth job remains. Future in-Studio AI Video Preview also has a capability-proof / WOW job that must not give away the complete Premium. See **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** §§7, 16.
 
 Official acquisition flow:
 
@@ -4440,21 +5970,22 @@ See **Public Landing Philosophy**, **Demo Library**, and **Growth Analytics (Fut
 
 ## Marketing Philosophy (July 10, 2026)
 
-**Status:** Current external communication rule.
+**Status:** External communication rule, **reconciled August 18–19, 2026**.
 
-Never market AI.
+Never market AI models.
 
-Never educate users about AI.
-
-Never require users to understand prompts.
+Never require users to understand prompts, tokens, or model choice.
 
 Never compete on models.
 
-Never explain — **demonstrate**.
+Never explain generation technology — **demonstrate production results**.
+
+**GTM addition:** do educate the **category difference** — generation vs production, tool vs factory, DIY vs Metaprom does the production — clearly enough to answer “why pay if AI can be free?” without teaching the customer to become an AI operator. See GTM §§3–5.
 
 Compete on:
 
 * results
+* finished advertising assets
 * premium perception
 * simplicity
 * transformation stories (origin → commercial)
@@ -4463,7 +5994,7 @@ Compete on:
 
 ## Launch Strategy (July 10, 2026)
 
-**Status:** Current launch positioning.
+**Status:** HISTORICAL launch positioning (July 10, 2026). Current calendar, lanes, and P0/P1/P2 framework: **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** §§17–19. Public launch planning target: **September 7, 2026**.
 
 Do **NOT** position Metaprom as:
 
@@ -4523,6 +6054,8 @@ Current focus (June 28, 2026 — Product Experience First):
 
 ## Current Product Status
 
+*HISTORICAL June 2026 status table. Current operating truth: **Current State** and **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
+
 ### Completed (AI Engine — Phase 1)
 
 * OpenAI integration — commercial image generation
@@ -4572,7 +6105,7 @@ The following are **no longer primary sprint goals** — preserved for historica
 
 ## Roadmap
 
-Structured view of product progress (June 2026). **Product Experience First** — see **Executive Summary** and **Product Completion Roadmap (June 2026)**.
+Structured view of product progress (June 2026). **HISTORICAL tables.** Current operating objective: GO-TO-MARKET — see **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**. **Product Experience First** — see **Executive Summary** and **Product Completion Roadmap (June 2026)**.
 
 ### Completed — AI Engine (Phase 1)
 
@@ -4601,7 +6134,9 @@ Structured view of product progress (June 2026). **Product Experience First** �
 | Product Experience pivot documented | June 28, 2026 |
 | Reliability Sprint (`lib/enhancement.ts`) | **June 29, 2026** |
 
-### Current priorities (official — June 29, 2026)
+### Current priorities (official — June 29, 2026) — HISTORICAL
+
+*HISTORICAL June 29, 2026 Roadmap table. Current objective: GO-TO-MARKET. See **NEXT SESSION START HERE**.*
 
 | # | Priority | Status |
 |---|----------|--------|
@@ -4636,6 +6171,8 @@ Structured view of product progress (June 2026). **Product Experience First** �
 ---
 
 ## Current Architecture
+
+*Infrastructure snapshot. Customer journey below is the historical Commercial-centric path. Current dual-product foundation is Dual Creation (Commercial + Advertising Image) coordinated by the Production Director. Current operating objective: GO-TO-MARKET. See **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**.*
 
 ### Commercial product journey
 
@@ -5906,7 +7443,7 @@ Core engineering lesson:
 
 ### Sprint 3.2 Closure
 
-Current project status (July 10, 2026):
+Then-current project status (July 10, 2026):
 
 1. Hero V2 production baseline approved.
 2. Hero branch pushed successfully.
@@ -5915,3 +7452,5 @@ Current project status (July 10, 2026):
 5. Sprint 3.2 officially closed.
 
 ---
+
+**Current operating handoff:** see **NEXT SESSION START HERE** at the top of this document (GO-TO-MARKET transition, August 18–19, 2026). Product philosophy + Preview architecture + duration/launch-gate decisions of August 19, 2026 are documented; do **not** implement Storyboard, Preview Pro, Motion Preview, refunds, duration/trim, or Preview prompts from those records. Do not restart from Sprint 3.2, Dual Creation as the next BUILD sprint, or Stripe Test Mode. **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM launch checklist.

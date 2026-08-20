@@ -43,6 +43,8 @@ const PUBLIC_SUPPORT_FILES = [
   "components/legal/LegalLinks.tsx",
   "components/legal/SupportFormLink.tsx",
   "components/legal/LegalPage.tsx",
+  "components/legal/LegalDocument.tsx",
+  "lib/legal/policies.ts",
   "app/privacidad/page.tsx",
   "app/terminos/page.tsx",
   "app/pagos-reembolsos/page.tsx",
@@ -120,6 +122,36 @@ test("all seven platform marks ship as local SVG files", () => {
   ]) {
     assert.ok(statSync(join(ROOT, file)).size > 200, file);
   }
+});
+
+test("GTM #5.2 FAQ states Metaprom AI bears Premium production risk", () => {
+  const esItem = es.faq.items.find((item) => item.id === "generation-not-right");
+  const enItem = en.faq.items.find((item) => item.id === "generation-not-right");
+
+  assert.equal(
+    esItem?.question,
+    "¿Y si la generación de IA sale mal, como pasa tantas veces?",
+  );
+  assert.equal(
+    esItem?.answer,
+    "No es motivo de preocupación. Metaprom AI no te vende una generación de IA ni te deja con el resultado que haya salido.\n\nTú estás comprando un Comercial Premium terminado. La IA es sólo una parte de nuestro proceso de producción. Si una generación no funciona, seguimos trabajando hasta entregarte un comercial a tu satisfacción dentro del alcance del servicio contratado.\n\nY si no podemos lograrlo, te devolvemos tu dinero.",
+  );
+  assert.equal(
+    enItem?.question,
+    "What if the AI generation goes wrong, like it often does?",
+  );
+  assert.equal(
+    enItem?.answer,
+    "That's not something you need to worry about. Metaprom AI doesn't sell you an AI generation or leave you with whatever result happens to come out.\n\nYou're purchasing a finished Premium Commercial. AI is only one part of our production process. If a generation doesn't work, we keep working until we deliver a commercial you're satisfied with, within the scope of the service you purchased.\n\nAnd if we can't deliver it, we'll refund your money.",
+  );
+
+  assert.match(esItem?.answer ?? "", /Comercial Premium terminado/);
+  assert.match(esItem?.answer ?? "", /te devolvemos tu dinero/);
+  assert.doesNotMatch(esItem?.answer ?? "", /no necesariamente es el producto terminado/);
+  assert.match(enItem?.answer ?? "", /finished Premium Commercial/);
+  assert.match(enItem?.answer ?? "", /refund your money/);
+  assert.doesNotMatch(enItem?.answer ?? "", /not necessarily the finished product/);
+  assert.match(readRepo("components/landing/LandingFaq.tsx"), /split\("\\n\\n"\)/);
 });
 
 test("GTM #5.1 video posters remain on landing video cards", () => {

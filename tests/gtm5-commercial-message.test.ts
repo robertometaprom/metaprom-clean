@@ -311,7 +311,7 @@ test("GTM #5 AI vs Metaprom AI distinguishes generation from finished advertisin
   assert.doesNotMatch(en.aiVs.body + en.aiVs.process, /bad AI|useless|garbage/);
 });
 
-test("GTM #5 FAQ has seven localized items without extra legal promises", () => {
+test("GTM #5 FAQ has seven localized items and the Premium production-risk guarantee", () => {
   assert.deepEqual(
     es.faq.items.map((item) => item.id),
     [...GTM5_FAQ_IDS],
@@ -337,10 +337,30 @@ test("GTM #5 FAQ has seven localized items without extra legal promises", () => 
     "What am I buying when I purchase a Premium Commercial?",
   );
 
+  const esGuarantee = es.faq.items.find((item) => item.id === "generation-not-right");
+  const enGuarantee = en.faq.items.find((item) => item.id === "generation-not-right");
+  assert.equal(
+    esGuarantee?.question,
+    "¿Y si la generación de IA sale mal, como pasa tantas veces?",
+  );
+  assert.equal(
+    esGuarantee?.answer,
+    "No es motivo de preocupación. Metaprom AI no te vende una generación de IA ni te deja con el resultado que haya salido.\n\nTú estás comprando un Comercial Premium terminado. La IA es sólo una parte de nuestro proceso de producción. Si una generación no funciona, seguimos trabajando hasta entregarte un comercial a tu satisfacción dentro del alcance del servicio contratado.\n\nY si no podemos lograrlo, te devolvemos tu dinero.",
+  );
+  assert.equal(
+    enGuarantee?.question,
+    "What if the AI generation goes wrong, like it often does?",
+  );
+  assert.equal(
+    enGuarantee?.answer,
+    "That's not something you need to worry about. Metaprom AI doesn't sell you an AI generation or leave you with whatever result happens to come out.\n\nYou're purchasing a finished Premium Commercial. AI is only one part of our production process. If a generation doesn't work, we keep working until we deliver a commercial you're satisfied with, within the scope of the service you purchased.\n\nAnd if we can't deliver it, we'll refund your money.",
+  );
+
   const esFaq = JSON.stringify(es.faq);
   const enFaq = JSON.stringify(en.faq);
   assert.doesNotMatch(esFaq, /ilimitad|reembolso incondicional|propiedad intelectual|licencia exclusiva/i);
   assert.doesNotMatch(enFaq, /unlimited|unconditional refund|ownership|license/i);
+  assert.match(readRepo("components/landing/LandingFaq.tsx"), /split\("\\n\\n"\)/);
 });
 
 test("GTM #5 customer-facing copy uses Metaprom AI and stays bilingual without leakage", () => {

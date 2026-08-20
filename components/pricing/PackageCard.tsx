@@ -1,6 +1,7 @@
 import PackagePurchaseButton from "@/components/pricing/PackagePurchaseButton";
 import type { PackagePurchasability, PricingPackage } from "@/lib/pricing";
 import { formatPriceMxn, PRICING_PAGE_COPY } from "@/lib/pricing";
+import type { Locale } from "@/lib/i18n";
 
 export type PackageCardView = {
   package: PricingPackage;
@@ -8,6 +9,7 @@ export type PackageCardView = {
   displayPriceFormatted: string;
   unitPriceFormatted: string;
   savingsAmountFormatted: string | null;
+  locale: Locale;
 };
 
 type PackageCardProps = {
@@ -91,6 +93,7 @@ export default function PackageCard({ view }: PackageCardProps) {
         productKey={pkg.id}
         label={ctaLabel}
         enabled={enabled}
+        locale={view.locale}
       />
     </article>
   );
@@ -99,7 +102,7 @@ export default function PackageCard({ view }: PackageCardProps) {
 export function buildPackageCardView(
   pkg: PricingPackage,
   purchasability: PackagePurchasability,
-  locale: "en" | "es" = "es",
+  locale: Locale = "es",
 ): PackageCardView {
   return {
     package: pkg,
@@ -110,5 +113,6 @@ export function buildPackageCardView(
       pkg.savingsAmount == null
         ? null
         : formatPriceMxn(pkg.savingsAmount, locale),
+    locale,
   };
 }

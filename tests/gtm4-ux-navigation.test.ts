@@ -120,6 +120,9 @@ test("landing, studio, login, and planes expose Planes and locale switching", ()
   assert.match(planes, /LocaleSwitcher/);
   assert.match(localeRoute, /LOCALE_COOKIE_NAME/);
   assert.match(localeRoute, /getSafeInternalPath/);
+  const middleware = readRepo("middleware.ts");
+  assert.match(middleware, /isLocaleSwitch/);
+  assert.match(middleware, /\/api\/locale/);
 });
 
 test("protected credit and purchase routes keep login redirect intent", () => {

@@ -16,9 +16,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = await updateSession(request);
+  const isLocaleSwitch = request.nextUrl.pathname === "/api/locale";
   const localeCookie = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
 
-  if (localeCookie !== "en" && localeCookie !== "es") {
+  if (
+    !isLocaleSwitch &&
+    localeCookie !== "en" &&
+    localeCookie !== "es"
+  ) {
     const locale = detectLocale(request.headers.get("accept-language"));
     response.cookies.set(LOCALE_COOKIE_NAME, locale, {
       path: "/",

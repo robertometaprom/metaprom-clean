@@ -2,7 +2,6 @@ import Link from "next/link";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { Locale, Messages } from "@/lib/i18n";
 import LegalLinks from "@/components/legal/LegalLinks";
-import { SUPPORT_PATH } from "@/lib/support/public";
 
 type FooterProps = {
   labels: Messages["footer"];
@@ -30,12 +29,6 @@ export default function Footer({ labels, brand, locale, legal }: FooterProps) {
             className="text-sm text-white/55 transition hover:text-white"
           >
             {labels.planes}
-          </Link>
-          <Link
-            href={SUPPORT_PATH}
-            className="text-sm text-white/55 transition hover:text-white"
-          >
-            {labels.support}
           </Link>
           <LegalLinks
             locale={locale}

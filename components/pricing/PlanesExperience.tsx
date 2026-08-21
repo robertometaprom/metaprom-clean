@@ -3,6 +3,7 @@ import PackageCard, {
   buildPackageCardView,
   type PackageCardView,
 } from "@/components/pricing/PackageCard";
+import PaymentMethods from "@/components/pricing/PaymentMethods";
 import PricingFaq from "@/components/pricing/PricingFaq";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
@@ -17,6 +18,7 @@ type PlanesExperienceProps = {
   createLabel: string;
   locale: Locale;
   legal: Messages["legalNav"];
+  showOxxoPay: boolean;
   categories: Array<{
     meta: PricingCategoryMeta;
     packages: PackageCardView[];
@@ -29,6 +31,7 @@ export default function PlanesExperience({
   createLabel,
   locale,
   legal,
+  showOxxoPay,
   categories,
 }: PlanesExperienceProps) {
   const pricingFaq = getPricingFaq(locale);
@@ -109,27 +112,7 @@ export default function PlanesExperience({
           {PRICING_PAGE_COPY.neverExpireNote}
         </p>
 
-        <section
-          aria-labelledby="payment-methods"
-          className="mt-14 border-t border-white/10 pt-10 md:mt-20"
-        >
-          <h2
-            id="payment-methods"
-            className="text-xl font-semibold tracking-tight text-[#F5F5F0] md:text-2xl"
-          >
-            {PRICING_PAGE_COPY.paymentMethods.title}
-          </h2>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {PRICING_PAGE_COPY.paymentMethods.methods.map((method) => (
-              <li
-                key={method}
-                className="border border-white/10 bg-white/[0.02] px-4 py-3.5 text-sm text-white/65"
-              >
-                {method}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <PaymentMethods showOxxoPay={showOxxoPay} />
 
         <div className="mt-14 md:mt-20">
           <PricingFaq title={pricingFaq.title} items={pricingFaq.items} />

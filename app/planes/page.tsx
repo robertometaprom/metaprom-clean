@@ -3,6 +3,7 @@ import PlanesExperience, {
   buildPackageCardView,
 } from "@/components/pricing/PlanesExperience";
 import { getLocale, getMessages } from "@/lib/i18n";
+import { isMexicoRequestMarket } from "@/lib/market";
 import {
   getActivePricingCategories,
   getAllPackagePurchasability,
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 export default async function PlanesPage() {
   const locale = await getLocale();
   const messages = await getMessages(locale);
+  const showOxxoPay = await isMexicoRequestMarket();
   const purchasability = getAllPackagePurchasability(PRICING_PACKAGES);
 
   const categories = getActivePricingCategories().map((meta) => ({
@@ -35,6 +37,7 @@ export default async function PlanesPage() {
       createLabel={messages.nav.create}
       locale={locale}
       legal={messages.legalNav}
+      showOxxoPay={showOxxoPay}
       categories={categories}
     />
   );

@@ -96,7 +96,8 @@ test("public Support UX never exposes internal or outbound mailboxes", () => {
   assert.match(readRepo("lib/support/config.ts"), /RESEND_API_KEY/);
   assert.match(readRepo("lib/support/config.ts"), /RESEND_EMAIL_DOMAIN/);
   assert.equal(SUPPORT_INTERNAL_RECIPIENT, "robertometaprom@gmail.com");
-  assert.match(readRepo("components/landing/Footer.tsx"), /SUPPORT_PATH/);
+  assert.match(readRepo("components/landing/Footer.tsx"), /LegalLinks/);
+  assert.match(readRepo("components/legal/LegalLinks.tsx"), /SUPPORT_PATH/);
   assert.match(readRepo("lib/support/public.ts"), /\/soporte/);
   assert.match(readRepo("app/soporte/SupportForm.tsx"), /SUPPORT_HONEYPOT_FIELD/);
 });

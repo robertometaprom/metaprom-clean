@@ -49,7 +49,7 @@ export default async function Home() {
 
         <ImageUseCases copy={content.imageUseCases} />
 
-        <RealEstateUseCase copy={content.realEstate} />
+        <RealEstateUseCase copy={content.realEstate} locale={content.locale} />
 
         <VideoUseCases copy={content.videoUseCases} />
 

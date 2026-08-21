@@ -120,12 +120,7 @@ export const PRICING_PAGE_COPY = {
     "Una imagen publicitaria corresponde a una pieza publicitaria terminada o a un formato.",
   paymentMethods: {
     title: "Formas de pago",
-    methods: [
-      "💳 Visa",
-      "💳 Mastercard",
-      "🏪 OXXO",
-      "🔒 Pagos seguros mediante Stripe",
-    ],
+    stripeLabel: "🔒 Pagos seguros mediante Stripe",
   },
   footerCta: {
     title: "¿No sabes qué paquete elegir?",

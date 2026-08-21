@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LandingContent } from "@/lib/i18n";
-import CommercialVideo from "@/components/landing/CommercialVideo";
+import CommercialVideo, {
+  commercialRevealAfter,
+  playCommercialVideo,
+} from "@/components/landing/CommercialVideo";
 
 type CinemaStageProps = {
   copy: LandingContent["cinema"];
   videos: LandingContent["showcase"];
 };
 
-const FADE_MS = 1800;
 const MIN_HOLD_MS = 7000;
 
 export default function CinemaStage({
@@ -19,31 +21,120 @@ export default function CinemaStage({
 }: CinemaStageProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const stageRef = useRef<HTMLElement>(null);
+  const activeIndexRef = useRef(0);
+  const inViewRef = useRef(true);
   const transitioningRef = useRef(false);
-
-  const advance = useCallback(() => {
-    if (videos.length <= 1 || transitioningRef.current) return;
-
-    transitioningRef.current = true;
-    setActiveIndex((current) => (current + 1) % videos.length);
-
-    window.setTimeout(() => {
-      transitioningRef.current = false;
-    }, FADE_MS);
-  }, [videos.length]);
+  const settleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    videoRefs.current.forEach((video, index) => {
-      if (!video) return;
-
-      if (index === activeIndex) {
-        video.currentTime = 0;
-        void video.play();
-      } else {
-        video.pause();
-      }
-    });
+    activeIndexRef.current = activeIndex;
   }, [activeIndex]);
+
+  const pauseInactive = useCallback((keepIndex: number) => {
+    videoRefs.current.forEach((video, index) => {
+      if (!video || index === keepIndex) return;
+      video.pause();
+    });
+  }, []);
+
+  const playActive = useCallback((index: number) => {
+    const video = videoRefs.current[index];
+    if (!video || !inViewRef.current) return;
+    playCommercialVideo(video);
+  }, []);
+
+  const advance = useCallback(() => {
+    if (videos.length <= 1 || transitioningRef.current || !inViewRef.current) {
+      return;
+    }
+
+    const current = activeIndexRef.current;
+    const next = (current + 1) % videos.length;
+    const nextVideo = videoRefs.current[next];
+    if (!nextVideo) return;
+
+    transitioningRef.current = true;
+    const revealAfter = commercialRevealAfter(videos[next]?.commercialVideo ?? "");
+
+    if (nextVideo.currentTime > 0.05) {
+      nextVideo.currentTime = 0;
+    }
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      if (nextVideo.paused || nextVideo.readyState < 2) return;
+      if (nextVideo.currentTime < revealAfter) return;
+      if (
+        nextVideo.parentElement?.getAttribute("data-commercial-ready") !==
+        "true"
+      ) {
+        return;
+      }
+
+      settled = true;
+      nextVideo.removeEventListener("playing", finish);
+      nextVideo.removeEventListener("timeupdate", finish);
+      pauseInactive(next);
+      setActiveIndex(next);
+      transitioningRef.current = false;
+    };
+
+    nextVideo.addEventListener("playing", finish);
+    nextVideo.addEventListener("timeupdate", finish);
+    playCommercialVideo(nextVideo);
+
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+    }
+    settleTimerRef.current = window.setTimeout(() => {
+      nextVideo.removeEventListener("playing", finish);
+      nextVideo.removeEventListener("timeupdate", finish);
+      settleTimerRef.current = null;
+      if (!settled) {
+        transitioningRef.current = false;
+      }
+    }, 4000);
+  }, [pauseInactive, videos]);
+
+  useEffect(() => {
+    return () => {
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inViewRef.current = entry.isIntersecting;
+        if (entry.isIntersecting) {
+          playActive(activeIndexRef.current);
+        } else {
+          videoRefs.current.forEach((video) => video?.pause());
+        }
+      },
+      { threshold: 0.25 },
+    );
+
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [playActive]);
+
+  useEffect(() => {
+    if (!inViewRef.current) {
+      pauseInactive(-1);
+      return;
+    }
+
+    playActive(activeIndex);
+    pauseInactive(activeIndex);
+  }, [activeIndex, pauseInactive, playActive]);
 
   useEffect(() => {
     if (videos.length <= 1) return;
@@ -62,7 +153,7 @@ export default function CinemaStage({
   }, [activeIndex, advance, videos.length]);
 
   return (
-    <section className="relative min-h-screen bg-black">
+    <section ref={stageRef} className="relative min-h-screen bg-black">
       <div className="absolute inset-0">
         {videos.map((item, index) => (
           <CommercialVideo
@@ -72,7 +163,6 @@ export default function CinemaStage({
             }}
             src={item.commercialVideo}
             poster={item.commercialPoster}
-            autoPlay={index === 0}
             muted
             loop={videos.length === 1}
             playsInline
@@ -84,17 +174,17 @@ export default function CinemaStage({
                   : "none"
             }
             fullBleed
-            className="absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out"
+            className="absolute inset-0 h-full w-full object-cover"
             style={{
               opacity: index === activeIndex ? 1 : 0,
-              transitionDuration: `${FADE_MS}ms`,
+              zIndex: index === activeIndex ? 1 : 0,
               filter: "brightness(1.32) contrast(1.03) saturate(1.10)",
             }}
           />
         ))}
         {/* Soft readability wash — open at the top so Hero continues into the nav */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 z-[2]"
           style={{
             background: [
               "linear-gradient(to right, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.08) 38%, rgba(0,0,0,0) 70%)",

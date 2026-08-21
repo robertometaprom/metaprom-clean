@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import type { LandingContent } from "@/lib/i18n";
 import PortfolioImage from "@/components/landing/PortfolioImage";
 import CommercialVideo from "@/components/landing/CommercialVideo";
@@ -19,27 +18,6 @@ function FlowDivider() {
 }
 
 export default function TheReveal({ item, labels }: TheRevealProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          void video.play();
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: 0.4 },
-    );
-
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section id="reveal" className="mx-auto max-w-7xl px-6 py-32 md:py-48">
       <div>
@@ -81,13 +59,13 @@ export default function TheReveal({ item, labels }: TheRevealProps) {
         </p>
         <div className="mt-6 overflow-hidden rounded-sm bg-white/[0.02]">
           <CommercialVideo
-            ref={videoRef}
             src={item.commercialVideo}
             poster={item.commercialPoster}
             muted
             loop
             playsInline
             preload="none"
+            playInView
             className="aspect-[4/5] w-full object-cover md:aspect-[16/9]"
           />
         </div>

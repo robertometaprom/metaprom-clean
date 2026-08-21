@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { LandingContent } from "@/lib/i18n";
 import PortfolioImage from "@/components/landing/PortfolioImage";
@@ -17,7 +17,6 @@ function TestimonialCard({
 }: {
   item: LandingContent["testimonials"]["items"][number];
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [ownerPhotoFailed, setOwnerPhotoFailed] = useState(false);
   const hasQuote = item.quote.trim().length > 0;
   const hasOwnerDetails =
@@ -37,25 +36,8 @@ function TestimonialCard({
 
   if (!hasQuote) return null;
 
-  const handleEnter = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    void video.play();
-  };
-
-  const handleLeave = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.pause();
-    video.currentTime = 0;
-  };
-
   return (
-    <article
-      className="grid gap-10 border-t border-white/10 py-16 md:grid-cols-[240px_1fr] md:gap-16 md:py-24"
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-    >
+    <article className="grid gap-10 border-t border-white/10 py-16 md:grid-cols-[240px_1fr] md:gap-16 md:py-24">
       <div className="space-y-8">
         <div className="relative h-20 w-20 overflow-hidden rounded-full bg-white/5">
           {ownerPhotoFailed ? (
@@ -112,7 +94,6 @@ function TestimonialCard({
         </div>
         <div className="overflow-hidden rounded-sm bg-white/[0.02]">
           <CommercialVideo
-            ref={videoRef}
             src={item.commercialVideo}
             poster={item.commercialPoster}
             muted
@@ -120,6 +101,7 @@ function TestimonialCard({
             playsInline
             preload="metadata"
             lazyLoad
+            playInView
             className="aspect-[4/5] h-full w-full object-cover"
           />
         </div>

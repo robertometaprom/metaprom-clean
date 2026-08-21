@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import type { LandingContent } from "@/lib/i18n";
 import PortfolioImage from "@/components/landing/PortfolioImage";
 import CommercialVideo from "@/components/landing/CommercialVideo";
@@ -26,27 +25,8 @@ function ShowcaseCard({
   item: LandingContent["showcase"][number];
   labels: LandingContent["showcaseLabels"];
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const handleEnter = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    void video.play();
-  };
-
-  const handleLeave = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.pause();
-    video.currentTime = 0;
-  };
-
   return (
-    <article
-      className="overflow-hidden rounded-sm border border-white/10 bg-white/[0.02]"
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-    >
+    <article className="overflow-hidden rounded-sm border border-white/10 bg-white/[0.02]">
       <div className="border-b border-white/10 px-6 py-8 md:px-10 md:py-10">
         <p className="text-xs uppercase tracking-[0.25em] text-white/40">
           {item.description}
@@ -91,7 +71,6 @@ function ShowcaseCard({
           </div>
           <div className="mt-3 overflow-hidden">
             <CommercialVideo
-              ref={videoRef}
               src={item.commercialVideo}
               poster={item.commercialPoster}
               muted
@@ -99,6 +78,7 @@ function ShowcaseCard({
               playsInline
               preload="metadata"
               lazyLoad
+              playInView
               className="aspect-[3/4] h-full w-full object-cover"
             />
           </div>

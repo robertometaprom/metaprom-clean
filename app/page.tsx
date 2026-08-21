@@ -47,7 +47,10 @@ export default async function Home() {
 
         <SimpleSteps productFlow={content.productFlow} />
 
-        <ImageUseCases copy={content.imageUseCases} />
+        <ImageUseCases
+          copy={content.imageUseCases}
+          locale={content.locale}
+        />
 
         <RealEstateUseCase copy={content.realEstate} locale={content.locale} />
 

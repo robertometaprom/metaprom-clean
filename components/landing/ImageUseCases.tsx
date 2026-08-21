@@ -1,16 +1,31 @@
+import Image from "next/image";
 import {
   GTM5_FEATURED_IMAGE_CHANNEL_IDS,
   GTM5_IMAGE_CHANNEL_IDS,
 } from "@/lib/gtm5";
-import type { LandingContent } from "@/lib/i18n";
+import type { LandingContent, Locale } from "@/lib/i18n";
 import { IMAGE_CHANNEL_MARKS } from "@/lib/platform-marks";
 import PlatformMark from "@/components/landing/PlatformMark";
 
+const PRODUCT_TRANSFORMATION = {
+  es: {
+    src: "/ecommerce/product-before-after.png",
+    alt: "Transformación de una foto casual de producto en una imagen profesional lista para marketplaces y tiendas en línea.",
+  },
+  en: {
+    src: "/ecommerce/product-before-after-en.png",
+    alt: "Transformation of a casual product photo into a professional image ready for marketplaces and online stores.",
+  },
+} as const;
+const PRODUCT_TRANSFORMATION_WIDTH = 1536;
+const PRODUCT_TRANSFORMATION_HEIGHT = 1024;
+
 type ImageUseCasesProps = {
   copy: LandingContent["imageUseCases"];
+  locale: Locale;
 };
 
-export default function ImageUseCases({ copy }: ImageUseCasesProps) {
+export default function ImageUseCases({ copy, locale }: ImageUseCasesProps) {
   const featuredIds = new Set<string>(GTM5_FEATURED_IMAGE_CHANNEL_IDS);
   const featured = GTM5_FEATURED_IMAGE_CHANNEL_IDS.map((id) => ({
     id,
@@ -70,6 +85,24 @@ export default function ImageUseCases({ copy }: ImageUseCasesProps) {
             </li>
           ))}
         </ul>
+
+        <figure className="mx-auto mt-12 w-full min-w-0 max-w-full md:mt-16">
+          <Image
+            src={PRODUCT_TRANSFORMATION[locale].src}
+            alt={PRODUCT_TRANSFORMATION[locale].alt}
+            width={PRODUCT_TRANSFORMATION_WIDTH}
+            height={PRODUCT_TRANSFORMATION_HEIGHT}
+            sizes="(max-width: 768px) calc(100vw - 3rem), 1152px"
+            unoptimized
+            className="mx-auto h-auto w-full max-w-full object-contain"
+            style={{
+              width: "100%",
+              height: "auto",
+              objectFit: "contain",
+              objectPosition: "center",
+            }}
+          />
+        </figure>
 
         <div className="mt-12 max-w-xl space-y-2 md:mt-16">
           <p className="text-base leading-relaxed text-white/65 md:text-lg">

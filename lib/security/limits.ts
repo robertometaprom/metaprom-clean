@@ -94,6 +94,4 @@ export const MIN_SUPPORT_NAME_LENGTH = 2;
 
 export const MAX_SUPPORT_MESSAGE_LENGTH = 2_000;
 
-export const MIN_SUPPORT_MESSAGE_LENGTH = 10;
-
 export const MAX_SUPPORT_JSON_BYTES = 16 * 1024;

@@ -14,10 +14,15 @@ import {
   createMemoryCostControlStore,
   installCostControlStoreForTests,
 } from "../lib/security/cost-control.ts";
-import { SUPPORT_RATE_LIMIT } from "../lib/security/limits.ts";
+import {
+  MAX_SUPPORT_MESSAGE_LENGTH,
+  SUPPORT_RATE_LIMIT,
+} from "../lib/security/limits.ts";
 import { SUPPORT_INTERNAL_RECIPIENT } from "../lib/support/config.ts";
 import { installSupportMailerForTests } from "../lib/support/mailer.ts";
 import {
+  isValidSupportMessage,
+  normalizeSupportMessage,
   parseSupportRequestBody,
   SUPPORT_CATEGORY_IDS,
   SUPPORT_HONEYPOT_FIELD,
@@ -172,7 +177,6 @@ test("server-side Support validation rejects bad payloads and accepts a complete
   assert.equal(parseSupportRequestBody("x").ok, false);
   assert.equal(parseSupportRequestBody(validBody({ email: "not-an-email" })).ok, false);
   assert.equal(parseSupportRequestBody(validBody({ name: "A" })).ok, false);
-  assert.equal(parseSupportRequestBody(validBody({ message: "short" })).ok, false);
   assert.equal(parseSupportRequestBody(validBody({ category: "billing" })).ok, false);
   assert.equal(parseSupportRequestBody(validBody({ locale: "fr" })).ok, false);
   assert.equal(parseSupportRequestBody(validBody({ requestId: "abc" })).ok, false);
@@ -196,6 +200,65 @@ test("server-side Support validation rejects bad payloads and accepts a complete
     assert.equal(valid.payload.email, "ana@example.com");
     assert.equal(valid.payload.category, "payments");
   }
+});
+
+test("Support message is optional: empty, whitespace, 1 char, and short text are valid; over 2000 is not", () => {
+  assert.equal(normalizeSupportMessage(""), "");
+  assert.equal(normalizeSupportMessage("   \n\t  "), "");
+  assert.equal(normalizeSupportMessage("A"), "A");
+  assert.equal(normalizeSupportMessage("Prueba"), "Prueba");
+  assert.equal(isValidSupportMessage(""), true);
+  assert.equal(isValidSupportMessage("A"), true);
+  assert.equal(isValidSupportMessage("Prueba"), true);
+  assert.equal(isValidSupportMessage("x".repeat(MAX_SUPPORT_MESSAGE_LENGTH)), true);
+  assert.equal(isValidSupportMessage("x".repeat(MAX_SUPPORT_MESSAGE_LENGTH + 1)), false);
+
+  const empty = parseSupportRequestBody(validBody({ message: "" }));
+  assert.equal(empty.ok, true);
+  if (empty.ok && !empty.honeypot) assert.equal(empty.payload.message, "");
+
+  const whitespace = parseSupportRequestBody(validBody({ message: "   \n\t  " }));
+  assert.equal(whitespace.ok, true);
+  if (whitespace.ok && !whitespace.honeypot) {
+    assert.equal(whitespace.payload.message, "");
+  }
+
+  const oneChar = parseSupportRequestBody(validBody({ message: "A" }));
+  assert.equal(oneChar.ok, true);
+  if (oneChar.ok && !oneChar.honeypot) assert.equal(oneChar.payload.message, "A");
+
+  for (const message of ["Ayuda", "Error", "No carga", "Prueba"]) {
+    const parsed = parseSupportRequestBody(validBody({ message }));
+    assert.equal(parsed.ok, true, message);
+  }
+
+  const tooLong = parseSupportRequestBody(
+    validBody({ message: "x".repeat(MAX_SUPPORT_MESSAGE_LENGTH + 1) }),
+  );
+  assert.equal(tooLong.ok, false);
+
+  const atMax = parseSupportRequestBody(
+    validBody({ message: "x".repeat(MAX_SUPPORT_MESSAGE_LENGTH) }),
+  );
+  assert.equal(atMax.ok, true);
+});
+
+test("client and server Support message validation stay consistent and have no minimum", () => {
+  const form = readRepo("app/soporte/SupportForm.tsx");
+  const shared = readRepo("lib/support/public.ts");
+  const limits = readRepo("lib/security/limits.ts");
+
+  assert.match(form, /normalizeSupportMessage/);
+  assert.match(form, /isValidSupportMessage/);
+  assert.doesNotMatch(form, /MIN_SUPPORT_MESSAGE_LENGTH/);
+  assert.doesNotMatch(form, /trimmedMessage\.length\s*[<>]=?/);
+  assert.doesNotMatch(form, /name="message"[\s\S]*required/);
+
+  assert.match(shared, /normalizeSupportMessage/);
+  assert.match(shared, /isValidSupportMessage/);
+  assert.doesNotMatch(shared, /MIN_SUPPORT_MESSAGE_LENGTH/);
+  assert.doesNotMatch(shared, /message\.length < /);
+  assert.doesNotMatch(limits, /MIN_SUPPORT_MESSAGE_LENGTH/);
 });
 
 let sends = 0;
@@ -296,3 +359,64 @@ test("Support uses GTM #3 durable cost-control and fail-closed rate limiting", a
   assert.equal(json.code, "rate_limited");
   assert.doesNotMatch(JSON.stringify(json), LEAK_PATTERN);
 });
+
+test("Support API accepts empty, whitespace, 1-character, and Prueba messages", async () => {
+  type Sent = { message: string };
+  const delivered: Sent[] = [];
+  installSupportMailerForTests({
+    async send(input) {
+      sends += 1;
+      delivered.push({ message: input.message });
+      return { ok: true };
+    },
+  });
+
+  const cases = [
+    { requestId: "33333333-3333-4333-8333-333333333301", email: "empty@example.com", message: "" },
+    { requestId: "33333333-3333-4333-8333-333333333302", email: "spaces@example.com", message: "   \n\t  " },
+    { requestId: "33333333-3333-4333-8333-333333333303", email: "one@example.com", message: "A" },
+    { requestId: "33333333-3333-4333-8333-333333333304", email: "prueba@example.com", message: "Prueba" },
+  ];
+
+  for (const item of cases) {
+    const response = await post(validBody(item), "203.0.113.40");
+    assert.equal(response.status, 200, item.email);
+    assert.equal((await response.json()).ok, true, item.email);
+  }
+
+  assert.equal(sends, 4);
+  assert.deepEqual(
+    delivered.map((item) => item.message),
+    ["", "", "A", "Prueba"],
+  );
+
+  const tooLong = await post(
+    validBody({
+      requestId: "33333333-3333-4333-8333-333333333305",
+      email: "toolong@example.com",
+      message: "x".repeat(MAX_SUPPORT_MESSAGE_LENGTH + 1),
+    }),
+    "203.0.113.40",
+  );
+  assert.equal(tooLong.status, 400);
+  assert.equal((await tooLong.json()).ok, false);
+  assert.equal(sends, 4);
+});
+
+test("Support antiabuse is unchanged", () => {
+  const route = readRepo("app/api/support/route.ts");
+  const form = readRepo("app/soporte/SupportForm.tsx");
+  const shared = readRepo("lib/support/public.ts");
+
+  assert.match(form, /SUPPORT_HONEYPOT_FIELD/);
+  assert.match(shared, /SUPPORT_HONEYPOT_FIELD/);
+  assert.match(route, /enforceSupportCostControl/);
+  assert.match(route, /claimIdempotencyLock/);
+  assert.match(route, /supportDuplicateFingerprint/);
+  assert.match(route, /getSupportMailer\(\)\.send/);
+  assert.doesNotMatch(route, /checkRateLimit\(/);
+  assert.equal(SUPPORT_RATE_LIMIT, 5);
+  assert.equal(MAX_SUPPORT_MESSAGE_LENGTH, 2_000);
+  assert.equal(SUPPORT_HONEYPOT_FIELD, "website");
+});
+

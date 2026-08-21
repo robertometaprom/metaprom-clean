@@ -5,7 +5,6 @@ import type { Locale, Messages } from "@/lib/i18n";
 import {
   MAX_SUPPORT_MESSAGE_LENGTH,
   MAX_SUPPORT_NAME_LENGTH,
-  MIN_SUPPORT_MESSAGE_LENGTH,
   MIN_SUPPORT_NAME_LENGTH,
 } from "@/lib/security/limits";
 import {
@@ -14,6 +13,8 @@ import {
   SUPPORT_HONEYPOT_FIELD,
   isSupportCategoryId,
   isValidSupportEmail,
+  isValidSupportMessage,
+  normalizeSupportMessage,
 } from "@/lib/support/public";
 
 type SupportFormProps = {
@@ -52,14 +53,13 @@ export default function SupportForm({ locale, copy }: SupportFormProps) {
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
-    const trimmedMessage = message.trim();
+    const trimmedMessage = normalizeSupportMessage(message);
     const valid =
       trimmedName.length >= MIN_SUPPORT_NAME_LENGTH &&
       trimmedName.length <= MAX_SUPPORT_NAME_LENGTH &&
       isValidSupportEmail(trimmedEmail) &&
       isSupportCategoryId(category) &&
-      trimmedMessage.length >= MIN_SUPPORT_MESSAGE_LENGTH &&
-      trimmedMessage.length <= MAX_SUPPORT_MESSAGE_LENGTH;
+      isValidSupportMessage(trimmedMessage);
 
     if (!valid) {
       setStatus("invalid");
@@ -169,7 +169,6 @@ export default function SupportForm({ locale, copy }: SupportFormProps) {
         {copy.message}
         <textarea
           name="message"
-          required
           rows={6}
           maxLength={MAX_SUPPORT_MESSAGE_LENGTH}
           value={message}

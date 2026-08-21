@@ -2,7 +2,6 @@ import type { Locale } from "@/lib/i18n";
 import {
   MAX_SUPPORT_MESSAGE_LENGTH,
   MAX_SUPPORT_NAME_LENGTH,
-  MIN_SUPPORT_MESSAGE_LENGTH,
   MIN_SUPPORT_NAME_LENGTH,
 } from "@/lib/security/limits";
 
@@ -59,6 +58,16 @@ export function isValidSupportEmail(email: string): boolean {
   return EMAIL_RE.test(email);
 }
 
+/** Optional Support message: trim whitespace; empty is allowed. */
+export function normalizeSupportMessage(value: string): string {
+  return value.trim();
+}
+
+/** Optional Support message: 0–2000 characters after normalize. No minimum. */
+export function isValidSupportMessage(normalizedMessage: string): boolean {
+  return normalizedMessage.length <= MAX_SUPPORT_MESSAGE_LENGTH;
+}
+
 export function parseSupportRequestBody(body: unknown): SupportParseResult {
   if (!isPlainObject(body)) return { ok: false };
 
@@ -70,16 +79,24 @@ export function parseSupportRequestBody(body: unknown): SupportParseResult {
   const name = readTrimmedString(body.name);
   const email = readTrimmedString(body.email)?.toLowerCase() ?? null;
   const category = readTrimmedString(body.category);
-  const message = readTrimmedString(body.message);
   const localeRaw = readTrimmedString(body.locale);
   const requestId = readTrimmedString(body.requestId);
+
+  if (
+    body.message !== undefined &&
+    body.message !== null &&
+    typeof body.message !== "string"
+  ) {
+    return { ok: false };
+  }
+  const message =
+    typeof body.message === "string" ? normalizeSupportMessage(body.message) : "";
 
   if (!name || name.length < MIN_SUPPORT_NAME_LENGTH) return { ok: false };
   if (name.length > MAX_SUPPORT_NAME_LENGTH) return { ok: false };
   if (!email || !isValidSupportEmail(email)) return { ok: false };
   if (!category || !isSupportCategoryId(category)) return { ok: false };
-  if (!message || message.length < MIN_SUPPORT_MESSAGE_LENGTH) return { ok: false };
-  if (message.length > MAX_SUPPORT_MESSAGE_LENGTH) return { ok: false };
+  if (!isValidSupportMessage(message)) return { ok: false };
   if (localeRaw !== "es" && localeRaw !== "en") return { ok: false };
   if (!requestId || !REQUEST_ID_RE.test(requestId)) return { ok: false };
 

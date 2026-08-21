@@ -26,7 +26,7 @@ export const PAYMENT_MARKS: Record<PaymentMarkId, PaymentMarkAsset> = {
       display: "block",
       width: "auto",
       height: "auto",
-      maxHeight: 62,
+      maxHeight: 78,
       maxWidth: "86%",
       minHeight: 0,
       minWidth: 0,

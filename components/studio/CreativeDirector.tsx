@@ -11,6 +11,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import { usePreviewViewedAnalytics } from "@/components/analytics/use-preview-viewed";
 import StudioHero from "@/components/studio/StudioHero";
 import StudioAtmosphere from "@/components/studio/StudioAtmosphere";
 import StudioIndustryExamples from "@/components/studio/StudioIndustryExamples";
@@ -311,6 +312,18 @@ export default function CreativeDirector({
   const [reviewVisualMock, setReviewVisualMock] = useState(() =>
     isUx4aReviewMockRequest(),
   );
+  const [analyticsRunId, setAnalyticsRunId] = useState<string | null>(null);
+
+  usePreviewViewedAnalytics({
+    phase,
+    videoUrl,
+    premiumImage,
+    assetId: checkoutAssetId,
+    shareSlug,
+    creationMode,
+    runId: analyticsRunId,
+    skip: reviewVisualMock,
+  });
 
   const previewUrlRef = useRef<string | null>(null);
   const sourcePreviewUrlsRef = useRef<string[]>([]);
@@ -1523,6 +1536,8 @@ export default function CreativeDirector({
     }
 
     const isAdvertising = mode === "advertising_image";
+    const analyticsRunIdForCreate = crypto.randomUUID();
+    setAnalyticsRunId(analyticsRunIdForCreate);
 
     // Advertising Image: auth gate BEFORE provider. Director/prompt stay free.
     if (isAdvertising && !isAuthenticated) {
@@ -1579,6 +1594,7 @@ export default function CreativeDirector({
           customerIntent,
           productMode: product.mode,
           imageIntent: imageIntentRef.current ?? undefined,
+          creationRunId: analyticsRunIdForCreate,
           onStep: (step, message) => {
             setCreationPreparing(false);
             setCreationStep(step);
@@ -1636,6 +1652,7 @@ export default function CreativeDirector({
         requiredNarrativeBeats: requiredNarrativeBeatsRef.current,
         productMode: product.mode,
         destination: destinationRef.current,
+        creationRunId: analyticsRunIdForCreate,
         onStep: (step, message) => {
           setCreationPreparing(false);
           setCreationStep(step);

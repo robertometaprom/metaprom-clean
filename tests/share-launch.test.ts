@@ -310,6 +310,7 @@ test("Share P1 source contracts: public resolver, events, image proxy, CTA", () 
 
   assert.match(events, /share_created/);
   assert.match(events, /share_opened/);
+  assert.match(events, /share_cta_clicked/);
   assert.match(events, /\/api\/growth\/events/);
   assert.doesNotMatch(events, /no-op until analytics PR/);
 
@@ -318,9 +319,11 @@ test("Share P1 source contracts: public resolver, events, image proxy, CTA", () 
   assert.doesNotMatch(persist, /share_to_signup/);
 
   assert.match(shareHook, /eventType: "share_created"/);
+  assert.match(shareHook, /appendShareChannelParam/);
   assert.match(shareHook, /buildSmsShareUrl/);
   assert.match(beacon, /eventType: "share_opened"/);
   assert.match(beacon, /sessionStorage/);
+  assert.match(readRepo("components/public/PublicCommercialCta.tsx"), /share_cta_clicked/);
 
   const ogImage = withAppUrl("https://metaprom.com", () =>
     buildPublicPreviewImageUrl(SLUG),

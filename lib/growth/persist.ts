@@ -1,5 +1,7 @@
 import "server-only";
 
+import { lookupShareOwner } from "@/lib/analytics/persist";
+import { isVisitorId } from "@/lib/analytics/ids";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { GrowthEventInsert } from "@/lib/growth/schema";
 import { isPersistedShareEventType } from "@/lib/growth/share-events";
@@ -57,11 +59,23 @@ export async function persistShareGrowthEvent(
       return false;
     }
 
+    const metadata: Record<string, unknown> = { ...(row.metadata ?? {}) };
+    if (!store && row.event_type === "share_created") {
+      const owner = await lookupShareOwner(row.share_slug);
+      if (owner?.assetId) {
+        metadata.asset_id = owner.assetId;
+      }
+      if (owner?.creatorUserId) {
+        metadata.creator_user_id = owner.creatorUserId;
+      }
+    }
+
     const { error } = await client.from("growth_events").insert({
       share_slug: row.share_slug,
       event_type: row.event_type,
-      metadata: row.metadata ?? {},
-      visitor_id: row.visitor_id ?? null,
+      metadata,
+      visitor_id:
+        row.visitor_id && isVisitorId(row.visitor_id) ? row.visitor_id : null,
     });
 
     if (error) {

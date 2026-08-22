@@ -1,3 +1,4 @@
+import { applyFirstPartyAnalyticsCookies } from "@/lib/analytics/cookies";
 import {
   detectLocale,
   LOCALE_COOKIE_MAX_AGE,
@@ -31,6 +32,8 @@ export async function middleware(request: NextRequest) {
       sameSite: "lax",
     });
   }
+
+  applyFirstPartyAnalyticsCookies(request, response);
 
   return response;
 }

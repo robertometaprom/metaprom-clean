@@ -32,6 +32,7 @@ import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
 } from "@/lib/studio-prompts";
+import { appendCreationRunId } from "@/lib/analytics/creation-run";
 import { createClient } from "@/lib/supabase/client";
 
 export type CreationStep = "image" | "video" | "done";
@@ -61,6 +62,7 @@ export type CreateCommercialInput = {
   productMode: Mode;
   destination?: StudioDestination | null;
   onStep?: (step: CreationStep, message: string) => void;
+  creationRunId?: string;
 };
 
 export type CreateCommercialResult = {
@@ -89,6 +91,7 @@ export type CreateAdvertisingImageInput = {
    */
   imageIntent?: ImageIntent;
   onStep?: (step: CreationStep, message: string) => void;
+  creationRunId?: string;
 };
 
 export type CreateAdvertisingImageResult = {
@@ -338,6 +341,7 @@ export async function createCommercialAssets(
 
   input.onStep?.("image", "Preparando tu escena comercial...");
 
+  const runId = input.creationRunId ?? crypto.randomUUID();
   const formData = new FormData();
   formData.append("image", input.file);
   formData.append("mode", "custom");
@@ -348,6 +352,7 @@ export async function createCommercialAssets(
       JSON.stringify(toDestinationGenerationPayload(destination).destination),
     );
   }
+  appendCreationRunId(formData, runId);
 
   const response = await fetch("/api/enhancement", {
     method: "POST",
@@ -383,6 +388,7 @@ export async function createCommercialAssets(
       JSON.stringify(toDestinationGenerationPayload(destination).destination),
     );
   }
+  appendCreationRunId(videoForm, runId);
 
   const videoResponse = await fetch("/api/video", {
     method: "POST",
@@ -467,6 +473,7 @@ export async function createAdvertisingImage(
   formData.append("aiInstructions", built.aiInstructions);
   // Marks this request for server-side Advertising Image auth/credit gate.
   formData.append(ADVERTISING_IMAGE_PURPOSE_FIELD, ADVERTISING_IMAGE_PURPOSE_VALUE);
+  appendCreationRunId(formData, input.creationRunId ?? crypto.randomUUID());
 
   const response = await fetch("/api/enhancement", {
     method: "POST",

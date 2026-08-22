@@ -1,3 +1,5 @@
+import { analyticsChannelFromShareAction, normalizeShareChannel } from "@/lib/analytics/channel";
+import { isVisitorId } from "@/lib/analytics/ids";
 import { isValidShareSlug } from "@/lib/preview/share-slug";
 import type { GrowthEventInsert } from "@/lib/growth/schema";
 import type { GrowthEventType } from "@/lib/growth/events";
@@ -5,18 +7,29 @@ import type { GrowthEventType } from "@/lib/growth/events";
 export const PERSISTED_SHARE_EVENT_TYPES = [
   "share_created",
   "share_opened",
+  "share_cta_clicked",
 ] as const;
 
 export type PersistedShareEventType = (typeof PERSISTED_SHARE_EVENT_TYPES)[number];
 
 const ALLOWED_METADATA_KEYS = new Set(["channel", "surface", "asset_type", "device"]);
+const ALLOWED_SURFACES = new Set([
+  "menu",
+  "review_cta",
+  "desktop_qr",
+  "handoff",
+  "public_page",
+]);
+const ALLOWED_ASSET_TYPES = new Set(["commercial", "advertising_image"]);
 const MAX_METADATA_VALUE_LENGTH = 64;
 
 export function isPersistedShareEventType(
   value: unknown,
 ): value is PersistedShareEventType {
   return (
-    value === "share_created" || value === "share_opened"
+    value === "share_created" ||
+    value === "share_opened" ||
+    value === "share_cta_clicked"
   );
 }
 
@@ -38,6 +51,27 @@ function sanitizeMetadata(metadata: unknown): Record<string, unknown> {
     if (!trimmed || trimmed.length > MAX_METADATA_VALUE_LENGTH) {
       continue;
     }
+
+    if (key === "channel") {
+      const channel =
+        normalizeShareChannel(trimmed) ??
+        (trimmed === "native" || trimmed === "desktop_qr_handoff"
+          ? analyticsChannelFromShareAction(trimmed)
+          : null);
+      if (channel) {
+        sanitized.channel = channel;
+      }
+      continue;
+    }
+
+    if (key === "surface" && !ALLOWED_SURFACES.has(trimmed)) {
+      continue;
+    }
+
+    if (key === "asset_type" && !ALLOWED_ASSET_TYPES.has(trimmed)) {
+      continue;
+    }
+
     sanitized[key] = trimmed;
   }
 
@@ -45,8 +79,8 @@ function sanitizeMetadata(metadata: unknown): Record<string, unknown> {
 }
 
 /**
- * Accept only the Share P1 events from the public client.
- * Rejects signup/funnel types so `share_to_signup` cannot be faked here.
+ * Accept only Share P1 events from the public client.
+ * Rejects signup/funnel types so `signup_completed` / purchase cannot be faked here.
  */
 export function parseShareEventRequest(body: unknown): GrowthEventInsert | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -66,10 +100,17 @@ export function parseShareEventRequest(body: unknown): GrowthEventInsert | null 
     return null;
   }
 
+  const visitorRaw =
+    typeof record.visitor_id === "string"
+      ? record.visitor_id
+      : typeof record.visitorId === "string"
+        ? record.visitorId
+        : null;
+
   return {
     share_slug: shareSlug,
     event_type: eventType as GrowthEventType,
     metadata: sanitizeMetadata(record.metadata),
-    visitor_id: null,
+    visitor_id: isVisitorId(visitorRaw) ? visitorRaw : null,
   };
 }

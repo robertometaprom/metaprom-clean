@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
 import { consumeCommercialForAsset } from "@/lib/entitlements/consume-commercial";
 import type { PricingPackage } from "@/lib/pricing";
+import { recordPremiumActivated, recordPurchaseCompleted } from "@/lib/analytics/record";
 
 import {
   isCommercialWorkflowAsset,
@@ -276,6 +277,18 @@ async function fulfillPackageEntitlements(
     },
   });
 
+  if (grant) {
+    try {
+      await recordPremiumActivated({
+        userId: purchase.user_id,
+        purchaseId: purchase.id,
+        productId: pkg.id,
+      });
+    } catch (analyticsError) {
+      console.error("premium_activated analytics failed:", analyticsError);
+    }
+  }
+
   const assetId = boundAssetId(purchase);
 
   // Consume is idempotent per asset. Retry even when grant.granted is false so
@@ -335,6 +348,18 @@ export async function persistPaymentResult(
   if (purchase.status === "completed") {
     if (result.status === "completed") {
       await fulfillPackageEntitlements(supabase, purchase, pkg);
+      try {
+        await recordPurchaseCompleted({
+          userId: purchase.user_id,
+          purchaseId: purchase.id,
+          productId: purchase.product_id,
+          amountMxn: pkg?.displayPrice,
+          currency: pkg ? "MXN" : undefined,
+          sessionId: result.sessionId,
+        });
+      } catch (analyticsError) {
+        console.error("purchase_completed analytics failed:", analyticsError);
+      }
     }
     return purchase;
   }
@@ -386,6 +411,18 @@ export async function persistPaymentResult(
 
   if (result.status === "completed") {
     await fulfillPackageEntitlements(supabase, nextPurchase, pkg);
+    try {
+      await recordPurchaseCompleted({
+        userId: nextPurchase.user_id,
+        purchaseId: nextPurchase.id,
+        productId: nextPurchase.product_id,
+        amountMxn: pkg?.displayPrice,
+        currency: pkg ? "MXN" : undefined,
+        sessionId: result.sessionId,
+      });
+    } catch (analyticsError) {
+      console.error("purchase_completed analytics failed:", analyticsError);
+    }
   }
 
   return nextPurchase;

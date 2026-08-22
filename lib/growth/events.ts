@@ -1,3 +1,4 @@
+import { getOrCreateVisitorId } from "@/lib/analytics/browser";
 import type { GrowthEventInsert } from "@/lib/growth/schema";
 
 export type GrowthEventType =
@@ -8,6 +9,7 @@ export type GrowthEventType =
   | "share_copy"
   | "share_created"
   | "share_opened"
+  | "share_cta_clicked"
   | "cta_click"
   | "registration"
   | "conversion"
@@ -44,11 +46,15 @@ export function toGrowthEventInsert(event: GrowthEvent): GrowthEventInsert {
  * existing `growth_events` table. Failures never block sharing UX.
  */
 export async function trackGrowthEvent(event: GrowthEvent): Promise<void> {
-  const row = toGrowthEventInsert(event);
-
   if (typeof window === "undefined") {
     return;
   }
+
+  const visitorId = getOrCreateVisitorId();
+  const row = {
+    ...toGrowthEventInsert(event),
+    visitor_id: visitorId,
+  };
 
   try {
     await fetch("/api/growth/events", {

@@ -13,7 +13,7 @@ export default function PrivacidadPage() {
       eyebrow="Información legal"
       title="Aviso de Privacidad"
       description="Este aviso describe los datos que trata Metaprom AI, para qué los utiliza y cómo puedes ejercer tus derechos en México."
-      updated="13 de agosto de 2026"
+      updated="21 de agosto de 2026"
     >
       <LegalSection title="1. Responsable">
         <p>
@@ -33,7 +33,7 @@ export default function PrivacidadPage() {
           <li>Datos transaccionales, como producto, importe, moneda, estado, referencia y registros necesarios para acreditar y conciliar pagos. Stripe procesa los datos completos de tarjeta; Metaprom AI no declara almacenarlos.</li>
           <li>Datos técnicos, de uso y seguridad, como dirección IP, dispositivo, navegador, eventos de diagnóstico, registros de solicitudes, sesión e incidentes.</li>
           <li>Comunicaciones que envíes a soporte y el seguimiento de la resolución.</li>
-          <li>Cookies estrictamente necesarias para sesión, seguridad y preferencia de idioma. Si incorporamos analítica o publicidad basada en cookies que requiera información o consentimiento adicional, actualizaremos la interfaz y este aviso antes de activarla.</li>
+          <li>Cookies estrictamente necesarias para sesión, seguridad y preferencia de idioma, y cookies de medición de primer partido de Metaprom AI: un identificador anónimo de visitante (180 días) y una atribución de origen/Share (30 días). Estos identificadores son aleatorios, no contienen nombre, correo, teléfono ni contenido privado, y no se usan para publicidad de terceros. No incorporamos GA4, Google Tag Manager ni píxeles de Meta o TikTok. Si más adelante usáramos analítica o publicidad de terceros que requiera consentimiento adicional, actualizaremos la interfaz y este aviso antes de activarla.</li>
         </ul>
       </LegalSection>
 
@@ -44,6 +44,7 @@ export default function PrivacidadPage() {
           <li>Procesar, confirmar y conciliar pagos; administrar paquetes, saldos y consumo; prevenir duplicidades y fraude.</li>
           <li>Prestar soporte, corregir errores, atender reembolsos y conservar evidencia de las solicitudes.</li>
           <li>Proteger cuentas, investigar abuso, mantener la disponibilidad y diagnosticar fallas.</li>
+          <li>Medir el embudo del producto y la atribución de Shares de Metaprom AI con identificadores seudónimos de primer partido, sin acceder a conversaciones, contactos o mensajes de WhatsApp.</li>
           <li>Cumplir obligaciones legales y hacer valer nuestras condiciones.</li>
         </ul>
       </LegalSection>

@@ -1,3 +1,9 @@
+import { readVisitorIdFromRequest } from "@/lib/analytics/cookies";
+import { readCreationRunId } from "@/lib/analytics/creation-run";
+import {
+  recordCreationCompleted,
+  recordCreationStarted,
+} from "@/lib/analytics/record";
 import { mapCreationError } from "@/lib/creation-errors";
 import {
   logDestinationGenerationDebug,
@@ -135,6 +141,19 @@ export async function POST(req: Request) {
       );
     }
 
+    const runId = readCreationRunId(formData);
+    const visitorId = readVisitorIdFromRequest(req);
+    try {
+      await recordCreationStarted({
+        runId,
+        userId,
+        visitorId,
+        mode: "commercial",
+      });
+    } catch (analyticsError) {
+      console.error("creation_started analytics failed:", analyticsError);
+    }
+
     const generation = await generateCommercialVideo({
       workflow,
       prompt,
@@ -159,6 +178,19 @@ export async function POST(req: Request) {
         provider: "vertex-veo",
       },
     });
+
+    if (generation.buffer.length > 0) {
+      try {
+        await recordCreationCompleted({
+          runId,
+          userId,
+          visitorId,
+          mode: "commercial",
+        });
+      } catch (analyticsError) {
+        console.error("creation_completed analytics failed:", analyticsError);
+      }
+    }
 
     return new Response(new Uint8Array(generation.buffer), {
       status: 200,

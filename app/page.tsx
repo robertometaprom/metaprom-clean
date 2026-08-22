@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import LandingVisitBeacon from "@/components/analytics/LandingVisitBeacon";
 import Navbar from "@/components/Navbar";
 import AiVsMetaprom from "@/components/landing/AiVsMetaprom";
 import CinemaStage from "@/components/landing/CinemaStage";
@@ -28,6 +29,7 @@ export default async function Home() {
 
   return (
     <>
+      <LandingVisitBeacon />
       <Navbar labels={content.nav} locale={content.locale} />
       <main className="overflow-x-hidden bg-black text-[#F5F5F0]">
         <CinemaStage

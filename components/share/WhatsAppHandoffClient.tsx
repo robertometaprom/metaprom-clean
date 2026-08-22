@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { appendShareChannelParam } from "@/lib/analytics/channel";
 import { trackGrowthEvent } from "@/lib/growth/events";
 import { getClientLocale } from "@/lib/share/content";
 import type { PublicPreviewKind } from "@/lib/preview/types";
@@ -34,7 +35,10 @@ export default function WhatsAppHandoffClient({
 
     const run = async () => {
       const locale = getClientLocale();
-      const publicPreviewUrl = buildPublicPreviewUrl(shareSlug);
+      const publicPreviewUrl = appendShareChannelParam(
+        buildPublicPreviewUrl(shareSlug),
+        "whatsapp",
+      );
 
       let assetType: PublicPreviewKind = "commercial";
       try {
@@ -52,15 +56,28 @@ export default function WhatsAppHandoffClient({
         // Fall back to commercial copy if preview lookup fails.
       }
 
-      await trackGrowthEvent({
-        shareSlug,
-        eventType: "share_created",
-        metadata: {
-          channel: "whatsapp",
-          surface: "handoff",
-          asset_type: assetType,
-        },
-      });
+      const handoffKey = `mp.share_created.handoff.${shareSlug}`;
+      let alreadyTracked = false;
+      try {
+        alreadyTracked = Boolean(sessionStorage.getItem(handoffKey));
+        if (!alreadyTracked) {
+          sessionStorage.setItem(handoffKey, "1");
+        }
+      } catch {
+        // Private mode.
+      }
+
+      if (!alreadyTracked) {
+        await trackGrowthEvent({
+          shareSlug,
+          eventType: "share_created",
+          metadata: {
+            channel: "whatsapp",
+            surface: "handoff",
+            asset_type: assetType,
+          },
+        });
+      }
 
       if (cancelled) return;
 

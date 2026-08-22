@@ -23,7 +23,8 @@
     "test:gtm52": "tsx --tsconfig tests/tsconfig.gtm52.json --test --test-concurrency=1 tests/gtm52-support.test.ts",
     "test:gtm53": "tsx --test tests/gtm53-premium-guarantee.test.ts",
     "test:checkout-integrity": "tsx --test tests/checkout-integrity.test.ts",
-    "test:antiabuse": "tsx --tsconfig tests/tsconfig.antiabuse.json --test tests/antiabuse-cost-control.test.ts"
+    "test:antiabuse": "tsx --tsconfig tests/tsconfig.antiabuse.json --test tests/antiabuse-cost-control.test.ts",
+    "test:analytics": "tsx --test tests/analytics-funnel.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

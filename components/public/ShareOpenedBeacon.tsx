@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { readShareChannelFromSearchParams } from "@/lib/analytics/channel";
 import { trackGrowthEvent } from "@/lib/growth/events";
 import type { PublicPreviewKind } from "@/lib/preview/types";
 
@@ -38,6 +39,11 @@ export default function ShareOpenedBeacon({
       // Private mode: ref still prevents remount duplicates.
     }
 
+    const channel =
+      typeof window === "undefined"
+        ? null
+        : readShareChannelFromSearchParams(new URLSearchParams(window.location.search));
+
     sentRef.current = true;
     void trackGrowthEvent({
       shareSlug,
@@ -45,6 +51,7 @@ export default function ShareOpenedBeacon({
       metadata: {
         asset_type: assetType,
         surface: "public_page",
+        ...(channel ? { channel } : {}),
       },
     });
   }, [assetType, shareSlug]);

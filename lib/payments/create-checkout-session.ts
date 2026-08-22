@@ -8,6 +8,7 @@ import {
 } from "@/lib/pricing";
 
 import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
+import { recordCheckoutStarted, recordPremiumActivated, recordPurchaseCompleted } from "@/lib/analytics/record";
 import { ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL } from "@/lib/entitlements/flags";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -206,6 +207,22 @@ export async function createCheckoutSession(
     });
   }
 
+  try {
+    if (session.sessionId) {
+      await recordCheckoutStarted({
+        userId: input.userId,
+        purchaseId: purchase.id,
+        productId: pkg.id,
+        amountMxn: pkg.displayPrice,
+        currency: "MXN",
+        sessionId: session.sessionId,
+        assetId,
+      });
+    }
+  } catch (analyticsError) {
+    console.error("checkout_started analytics failed:", analyticsError);
+  }
+
   // Mock/instant card completion grants immediately; Stripe path grants via webhook.
   // Grants require service_role EXECUTE — never use the caller/auth cookie client.
   if (session.status === "completed") {
@@ -215,6 +232,23 @@ export async function createCheckoutSession(
       productId: pkg.id,
       metadata: { instantCompletion: true },
     });
+    try {
+      await recordPurchaseCompleted({
+        userId: input.userId,
+        purchaseId: purchase.id,
+        productId: pkg.id,
+        amountMxn: pkg.displayPrice,
+        currency: "MXN",
+        sessionId: session.sessionId,
+      });
+      await recordPremiumActivated({
+        userId: input.userId,
+        purchaseId: purchase.id,
+        productId: pkg.id,
+      });
+    } catch (analyticsError) {
+      console.error("purchase/premium analytics failed:", analyticsError);
+    }
   }
 
   return {

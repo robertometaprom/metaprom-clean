@@ -64,7 +64,11 @@ export default function PublicCommercialPage({
               ? labels.imageTransformationLine
               : labels.transformationLine}
           </p>
-          <PublicCommercialCta label={labels.ctaLabel} href={labels.ctaHref} />
+          <PublicCommercialCta
+            label={labels.ctaLabel}
+            href={labels.ctaHref}
+            shareSlug={preview.shareSlug}
+          />
         </section>
 
         <div className="mt-10">

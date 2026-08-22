@@ -4,6 +4,8 @@ import {
   readSetCookieHeaders,
   type PreparedCookieMeta,
 } from "@/lib/auth/oauth-callback-diagnostics";
+import { readAcquisitionFromCookies, readVisitorIdFromCookies } from "@/lib/analytics/cookies";
+import { recordSignupCompleted } from "@/lib/analytics/record";
 import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -131,6 +133,22 @@ export async function GET(request: NextRequest) {
   });
 
   if (!error) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await recordSignupCompleted({
+          userId: user.id,
+          createdAt: user.created_at,
+          visitorId: readVisitorIdFromCookies(request.cookies),
+          acquisition: readAcquisitionFromCookies(request.cookies),
+        });
+      }
+    } catch (analyticsError) {
+      console.error("signup analytics failed:", analyticsError);
+    }
+
     return response;
   }
 

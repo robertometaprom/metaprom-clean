@@ -2,6 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { Locale } from "@/lib/i18n";
+import {
+  analyticsChannelFromShareAction,
+  appendShareChannelParam,
+  type ShareChannel,
+} from "@/lib/analytics/channel";
 import { trackGrowthEvent } from "@/lib/growth/events";
 import type { PublicPreviewKind } from "@/lib/preview/types";
 import { getClientLocale, getShareCommercialContent } from "@/lib/share/content";
@@ -98,16 +103,22 @@ export function useShareCommercial({
     [assetType],
   );
 
+  const urlForChannel = useCallback(
+    (channel: ShareChannel) => appendShareChannelParam(publicPreviewUrl, channel),
+    [publicPreviewUrl],
+  );
+
   const trackShareCreated = useCallback(
     async (
       action: ShareCommercialAction | "desktop_qr_handoff",
       surface?: ShareGrowthSurface,
     ) => {
+      const channel = analyticsChannelFromShareAction(action);
       await trackGrowthEvent({
         shareSlug,
         eventType: "share_created",
         metadata: {
-          channel: action,
+          channel,
           ...assetTypeMetadata,
           ...(surface ? { surface } : {}),
         },
@@ -131,13 +142,13 @@ export function useShareCommercial({
     async (surface: ShareGrowthSurface = "menu") => {
       await trackShareCreated("whatsapp", surface);
       const url = buildWhatsAppShareUrl({
-        publicPreviewUrl,
+        publicPreviewUrl: urlForChannel("whatsapp"),
         locale,
         assetType,
       });
       openShareDestination(url);
     },
-    [assetType, locale, publicPreviewUrl, trackShareCreated],
+    [assetType, locale, trackShareCreated, urlForChannel],
   );
 
   const shareSms = useCallback(
@@ -145,17 +156,17 @@ export function useShareCommercial({
       await trackShareCreated("sms", surface);
       openShareDestination(
         buildSmsShareUrl({
-          publicPreviewUrl,
+          publicPreviewUrl: urlForChannel("sms"),
           assetType,
         }),
       );
     },
-    [assetType, publicPreviewUrl, trackShareCreated],
+    [assetType, trackShareCreated, urlForChannel],
   );
 
   const copyLink = useCallback(
     async (surface: ShareGrowthSurface = "menu") => {
-      const copied = await copyTextToClipboard(publicPreviewUrl);
+      const copied = await copyTextToClipboard(urlForChannel("copy_link"));
       setCopyState(copied ? "success" : "error");
 
       if (copied) {
@@ -165,7 +176,7 @@ export function useShareCommercial({
       window.setTimeout(() => setCopyState("idle"), 2000);
       return copied;
     },
-    [publicPreviewUrl, trackShareCreated],
+    [trackShareCreated, urlForChannel],
   );
 
   const shareNative = useCallback(async () => {
@@ -178,8 +189,9 @@ export function useShareCommercial({
       return "whatsapp" as const;
     }
 
+    const channeledUrl = urlForChannel("native_share");
     const message = buildWhatsAppShareMessage({
-      publicPreviewUrl,
+      publicPreviewUrl: channeledUrl,
       locale,
       assetType,
     });
@@ -188,7 +200,7 @@ export function useShareCommercial({
       await navigator.share({
         title: "Metaprom",
         text: message.split("\n")[0],
-        url: publicPreviewUrl,
+        url: channeledUrl,
       });
       await trackShareCreated("native", "review_cta");
       return "native" as const;
@@ -208,10 +220,10 @@ export function useShareCommercial({
   }, [
     assetType,
     locale,
-    publicPreviewUrl,
     shareSms,
     shareWhatsApp,
     trackShareCreated,
+    urlForChannel,
   ]);
 
   const sharePrimary = useCallback(async () => {
@@ -244,15 +256,16 @@ export function useShareCommercial({
       }
 
       await trackShareCreated(providerId);
+      const channel = analyticsChannelFromShareAction(providerId);
       openShareDestination(
         provider.buildActionUrl({
-          publicPreviewUrl,
+          publicPreviewUrl: urlForChannel(channel),
           locale,
           assetType,
         }),
       );
     },
-    [assetType, copyLink, locale, publicPreviewUrl, trackShareCreated],
+    [assetType, copyLink, locale, trackShareCreated, urlForChannel],
   );
 
   return {

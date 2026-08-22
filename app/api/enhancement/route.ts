@@ -1,4 +1,10 @@
 import sharp from "sharp";
+import { readVisitorIdFromRequest } from "@/lib/analytics/cookies";
+import { readCreationRunId } from "@/lib/analytics/creation-run";
+import {
+  recordCreationCompleted,
+  recordCreationStarted,
+} from "@/lib/analytics/record";
 import { mapCreationError } from "@/lib/creation-errors";
 import {
   logDestinationGenerationDebug,
@@ -142,6 +148,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const runId = readCreationRunId(formData);
+    const creationMode = advertisingUserId
+      ? "advertising_image"
+      : "commercial";
+    const visitorId = readVisitorIdFromRequest(req);
+    try {
+      await recordCreationStarted({
+        runId,
+        userId,
+        visitorId,
+        mode: creationMode,
+      });
+    } catch (analyticsError) {
+      console.error("creation_started analytics failed:", analyticsError);
+    }
+
     const result = await generateEnhancedImage({
       normalizedJpegBuffer: normalizedBuffer,
       mode,
@@ -163,6 +185,19 @@ export async function POST(req: Request) {
           : null,
       },
     });
+
+    if (advertisingUserId && result.imageBase64) {
+      try {
+        await recordCreationCompleted({
+          runId,
+          userId,
+          visitorId,
+          mode: "advertising_image",
+        });
+      } catch (analyticsError) {
+        console.error("creation_completed analytics failed:", analyticsError);
+      }
+    }
 
     return Response.json({
       image: `data:image/png;base64,${result.imageBase64}`,

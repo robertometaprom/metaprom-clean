@@ -47,6 +47,7 @@ next-env.d.ts
 
 # local diagnostics / probe artifacts
 .checkpoints/
+/tmp/
 tmp-*
 _diag-*.txt
 scripts/output/

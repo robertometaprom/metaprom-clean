@@ -23,6 +23,13 @@ import {
   normalizeShareChannel,
   shareChannelQueryValue,
 } from "../lib/analytics/channel.ts";
+import type { User } from "@supabase/supabase-js";
+import {
+  persistFunnelEventUnlessAdmin,
+  persistShareEventUnlessAdmin,
+  shouldSkipAnalyticsForUser,
+  shouldSkipAuthenticatedAdminAnalytics,
+} from "../lib/analytics/internal-traffic.ts";
 import {
   funnelIdempotencyKey,
   isClientFunnelEventType,
@@ -31,6 +38,7 @@ import {
 } from "../lib/analytics/events.ts";
 import { generateVisitorId, isVisitorId } from "../lib/analytics/ids.ts";
 import {
+  FUNNEL_METADATA_KEYS,
   metadataContainsProhibitedData,
   sanitizeFunnelMetadata,
 } from "../lib/analytics/sanitize.ts";
@@ -476,4 +484,173 @@ test("migration is additive, RLS locked, and does not touch Stripe or config.tom
   assert.match(migration, /generation integer/);
   assert.doesNotMatch(migration, /drop table/);
   assert.doesNotMatch(migration, /\bpurchases\b/);
+});
+
+function analyticsUser(input: Partial<User>): User {
+  return {
+    id: "user",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: "",
+    ...input,
+  } as User;
+}
+
+const ADMIN_USER = analyticsUser({
+  id: USER_C,
+  app_metadata: { role: "admin" },
+});
+const CUSTOMER_USER = analyticsUser({
+  id: USER_A,
+  email: "customer@example.com",
+});
+
+test("authenticated admin funnel and Share events are not persisted; everyone else is fail-open", async () => {
+  assert.equal(shouldSkipAnalyticsForUser(null), false);
+  assert.equal(shouldSkipAnalyticsForUser(undefined), false);
+  assert.equal(shouldSkipAnalyticsForUser(CUSTOMER_USER), false);
+  assert.equal(shouldSkipAnalyticsForUser(ADMIN_USER), true);
+
+  const landingInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      landingInserts.push("landing_visit");
+      return "inserted";
+    }, { user: ADMIN_USER }),
+    "skipped",
+  );
+  assert.deepEqual(landingInserts, []);
+
+  const creationInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      creationInserts.push("creation_started");
+      return "inserted";
+    }, { user: ADMIN_USER }),
+    "skipped",
+  );
+  assert.deepEqual(creationInserts, []);
+
+  const previewInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      previewInserts.push("preview_viewed");
+      return "inserted";
+    }, { user: ADMIN_USER }),
+    "skipped",
+  );
+  assert.deepEqual(previewInserts, []);
+
+  const shareInserts: string[] = [];
+  assert.equal(
+    await persistShareEventUnlessAdmin(async () => {
+      shareInserts.push("share_opened");
+      return true;
+    }, { user: ADMIN_USER }),
+    "skipped",
+  );
+  assert.deepEqual(shareInserts, []);
+
+  const customerInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      customerInserts.push("landing_visit");
+      return "inserted";
+    }, { user: CUSTOMER_USER }),
+    "inserted",
+  );
+  assert.deepEqual(customerInserts, ["landing_visit"]);
+
+  const anonymousInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      anonymousInserts.push("share_opened");
+      return "inserted";
+    }, { user: null }),
+    "inserted",
+  );
+  assert.deepEqual(anonymousInserts, ["share_opened"]);
+
+  const loggedOutShare: string[] = [];
+  assert.equal(
+    await persistShareEventUnlessAdmin(async () => {
+      loggedOutShare.push("share_opened");
+      return true;
+    }, { user: null }),
+    true,
+  );
+  assert.deepEqual(loggedOutShare, ["share_opened"]);
+
+  const failedLookupInserts: string[] = [];
+  assert.equal(
+    await persistFunnelEventUnlessAdmin(async () => {
+      failedLookupInserts.push("landing_visit");
+      return "inserted";
+    }, {
+      getUser: async () => {
+        throw new Error("auth unavailable");
+      },
+    }),
+    "inserted",
+  );
+  assert.deepEqual(failedLookupInserts, ["landing_visit"]);
+
+  assert.equal(await shouldSkipAuthenticatedAdminAnalytics(), false);
+  assert.equal(
+    await shouldSkipAuthenticatedAdminAnalytics({
+      getUser: async () => {
+        throw new Error("auth unavailable");
+      },
+    }),
+    false,
+  );
+});
+
+test("admin analytics skip does not wrap checkout/premium business writes and adds no PII", () => {
+  const persist = readRepo("lib/analytics/persist.ts");
+  const growthPersist = readRepo("lib/growth/persist.ts");
+  const record = readRepo("lib/analytics/record.ts");
+  const checkout = readRepo("lib/payments/create-checkout-session.ts");
+  const payments = readRepo("lib/payments/persistence.ts");
+  const video = readRepo("app/api/video/route.ts");
+  const enhancement = readRepo("app/api/enhancement/route.ts");
+  const clientEvents = readRepo("app/api/analytics/client-events/route.ts");
+  const growthEvents = readRepo("app/api/growth/events/route.ts");
+  const attribution = readRepo("lib/analytics/attribution.ts");
+  const cookies = readRepo("lib/analytics/cookies.ts");
+  const internal = readRepo("lib/analytics/internal-traffic.ts");
+
+  assert.match(persist, /persistFunnelEventUnlessAdmin/);
+  assert.match(persist, /getAnalyticsSessionUser/);
+  assert.match(growthPersist, /persistShareEventUnlessAdmin/);
+  assert.match(growthPersist, /getAnalyticsSessionUser/);
+  assert.match(record, /insertFunnelEvent/);
+  assert.match(clientEvents, /recordLandingVisit/);
+  assert.match(clientEvents, /recordPreviewViewed/);
+  assert.match(growthEvents, /persistShareGrowthEvent/);
+
+  const checkoutBody = checkout.slice(checkout.indexOf("const admin = createAdminClient"));
+  assert.match(checkoutBody, /from\("purchases"\)[\s\S]*insert/);
+  assert.ok(
+    checkoutBody.indexOf('.from("purchases")') <
+      checkoutBody.indexOf("recordCheckoutStarted"),
+  );
+  assert.match(checkout, /grantPackageEntitlementFromPurchase[\s\S]*recordPurchaseCompleted/);
+  assert.match(checkout, /recordCheckoutStarted[\s\S]*catch \(analyticsError\)/);
+  assert.match(payments, /grantPackageEntitlementFromPurchase[\s\S]*recordPremiumActivated/);
+  assert.match(payments, /recordPurchaseCompleted[\s\S]*catch \(analyticsError\)/);
+  assert.match(video, /recordCreationStarted[\s\S]*generateCommercialVideo/);
+  assert.match(enhancement, /recordCreationStarted/);
+
+  assert.doesNotMatch(internal, /fingerprint|x-forwarded-for|admin_email|METAPROM_ADMIN/i);
+  assert.doesNotMatch(persist, /fingerprint|x-forwarded-for|is_internal/i);
+  assert.doesNotMatch(FUNNEL_METADATA_KEYS.has("email") ? "email" : "", /email/);
+  assert.equal(FUNNEL_METADATA_KEYS.has("email"), false);
+  assert.equal(FUNNEL_METADATA_KEYS.has("is_admin"), false);
+  assert.equal(FUNNEL_METADATA_KEYS.has("admin"), false);
+
+  assert.match(attribution, /utm_source/);
+  assert.match(cookies, /applyFirstPartyAnalyticsCookies/);
+  assert.doesNotMatch(internal, /origin_kind|utm_source|referrer_host/);
 });

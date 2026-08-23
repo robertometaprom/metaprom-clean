@@ -317,6 +317,7 @@ test("Share P1 source contracts: public resolver, events, image proxy, CTA", () 
 
   assert.match(persist, /growth_events/);
   assert.match(persist, /isPersistedShareEventType/);
+  assert.match(persist, /persistShareEventUnlessAdmin/);
   assert.doesNotMatch(persist, /share_to_signup/);
 
   assert.match(shareHook, /eventType: "share_created"/);

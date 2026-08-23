@@ -20,7 +20,7 @@ import { sanitizeFunnelMetadata } from "@/lib/analytics/sanitize";
 async function safeInsert(
   row: FunnelEventInsert,
   store?: FunnelStore,
-): Promise<"inserted" | "duplicate" | "failed"> {
+): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   return insertFunnelEvent(
     {
       ...row,
@@ -35,7 +35,7 @@ export async function recordLandingVisit(input: {
   sessionKey: string;
   acquisition: AcquisitionState | null;
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isVisitorId(input.visitorId) || !input.sessionKey) {
     return "failed";
   }
@@ -132,7 +132,7 @@ export async function recordCreationStarted(input: {
   visitorId?: string | null;
   mode: "commercial" | "advertising_image";
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isUuid(input.runId)) {
     return "failed";
   }
@@ -166,7 +166,7 @@ export async function recordCreationCompleted(input: {
   mode: "commercial" | "advertising_image";
   assetId?: string | null;
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isUuid(input.runId)) {
     return "failed";
   }
@@ -203,7 +203,7 @@ export async function recordCheckoutStarted(input: {
   sessionId: string;
   assetId?: string | null;
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isUuid(input.userId) || !input.sessionId || !input.productId) {
     return "failed";
   }
@@ -242,7 +242,7 @@ export async function recordPurchaseCompleted(input: {
   currency?: string;
   sessionId?: string | null;
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isUuid(input.userId) || input.purchaseId == null) {
     return "failed";
   }
@@ -276,7 +276,7 @@ export async function recordPremiumActivated(input: {
   purchaseId: string | number;
   productId: string;
   store?: FunnelStore;
-}): Promise<"inserted" | "duplicate" | "failed"> {
+}): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
   if (!isUuid(input.userId)) {
     return "failed";
   }

@@ -1,13 +1,16 @@
 import "server-only";
 
+import type { User } from "@supabase/supabase-js";
 import { isValidShareSlug } from "@/lib/preview/share-slug";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { AcquisitionState } from "@/lib/analytics/attribution";
 import { normalizeShareChannel } from "@/lib/analytics/channel";
 import type {
   FunnelEventInsert,
   UserAttributionInsert,
 } from "@/lib/analytics/events";
+import { persistFunnelEventUnlessAdmin } from "@/lib/analytics/internal-traffic";
 import { isUuid, isVisitorId } from "@/lib/analytics/ids";
 import { sanitizeFunnelMetadata } from "@/lib/analytics/sanitize";
 
@@ -114,39 +117,53 @@ export async function lookupShareOwner(
   }
 }
 
+export async function getAnalyticsSessionUser(): Promise<User | null> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function insertFunnelEvent(
   row: FunnelEventInsert,
   store?: FunnelStore,
-): Promise<"inserted" | "duplicate" | "failed"> {
-  try {
-    const client = store ?? tryAdminClient();
-    if (!client) {
+): Promise<"inserted" | "duplicate" | "failed" | "skipped"> {
+  return persistFunnelEventUnlessAdmin(async () => {
+    try {
+      const client = store ?? tryAdminClient();
+      if (!client) {
+        return "failed";
+      }
+      const { error } = await client.from("funnel_events").insert({
+        event_type: row.event_type,
+        visitor_id: row.visitor_id && isVisitorId(row.visitor_id) ? row.visitor_id : null,
+        user_id: row.user_id && isUuid(row.user_id) ? row.user_id : null,
+        share_slug:
+          row.share_slug && isValidShareSlug(row.share_slug) ? row.share_slug : null,
+        idempotency_key: row.idempotency_key,
+        metadata: sanitizeFunnelMetadata(row.metadata),
+      });
+
+      if (isUniqueViolation(error)) {
+        return "duplicate";
+      }
+
+      if (error) {
+        console.error("funnel_events insert failed:", error.message);
+        return "failed";
+      }
+
+      return "inserted";
+    } catch (error) {
+      console.error("funnel_events persist failed:", error);
       return "failed";
     }
-    const { error } = await client.from("funnel_events").insert({
-      event_type: row.event_type,
-      visitor_id: row.visitor_id && isVisitorId(row.visitor_id) ? row.visitor_id : null,
-      user_id: row.user_id && isUuid(row.user_id) ? row.user_id : null,
-      share_slug:
-        row.share_slug && isValidShareSlug(row.share_slug) ? row.share_slug : null,
-      idempotency_key: row.idempotency_key,
-      metadata: sanitizeFunnelMetadata(row.metadata),
-    });
-
-    if (isUniqueViolation(error)) {
-      return "duplicate";
-    }
-
-    if (error) {
-      console.error("funnel_events insert failed:", error.message);
-      return "failed";
-    }
-
-    return "inserted";
-  } catch (error) {
-    console.error("funnel_events persist failed:", error);
-    return "failed";
-  }
+  }, { getUser: getAnalyticsSessionUser });
 }
 
 export async function insertUserAttribution(

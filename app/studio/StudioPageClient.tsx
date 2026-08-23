@@ -17,12 +17,14 @@ type StudioPageClientProps = {
   paymentProviderDisplay: PaymentProviderDisplayMetadata;
   locale: Locale;
   nav: Messages["nav"];
+  showAnalyticsNav?: boolean;
 };
 
 export default function StudioPageClient({
   paymentProviderDisplay,
   locale,
   nav,
+  showAnalyticsNav = false,
 }: StudioPageClientProps) {
   const { user: authUser, ready: authReady } = useStudioAuth();
   const [isWelcome, setIsWelcome] = useState(true);
@@ -76,6 +78,7 @@ export default function StudioPageClient({
       authUser={authUser}
       locale={locale}
       nav={nav}
+      showAnalyticsNav={showAnalyticsNav}
     >
       <CreativeDirector
         paymentProviderDisplay={paymentProviderDisplay}

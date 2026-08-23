@@ -24,3 +24,8 @@ export function analyticsAuthRedirect(
   if (access === "denied") return ANALYTICS_DENIED_PATH;
   return null;
 }
+
+/** Convenience only. Server `analyticsAuthRedirect` remains authoritative. */
+export function canSeeAnalyticsNav(user: User | null | undefined): boolean {
+  return resolveAnalyticsAccess(user) === "allowed";
+}

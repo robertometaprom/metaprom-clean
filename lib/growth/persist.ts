@@ -1,6 +1,10 @@
 import "server-only";
 
-import { lookupShareOwner } from "@/lib/analytics/persist";
+import {
+  getAnalyticsSessionUser,
+  lookupShareOwner,
+} from "@/lib/analytics/persist";
+import { persistShareEventUnlessAdmin } from "@/lib/analytics/internal-traffic";
 import { isVisitorId } from "@/lib/analytics/ids";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { GrowthEventInsert } from "@/lib/growth/schema";
@@ -42,50 +46,54 @@ export async function persistShareGrowthEvent(
     return false;
   }
 
-  try {
-    const client = store ?? (createAdminClient() as unknown as ShareEventsStore);
-    const { data, error: lookupError } = await client
-      .from("assets")
-      .select("share_slug")
-      .eq("share_slug", row.share_slug)
-      .maybeSingle();
+  const persisted = await persistShareEventUnlessAdmin(async () => {
+    try {
+      const client = store ?? (createAdminClient() as unknown as ShareEventsStore);
+      const { data, error: lookupError } = await client
+        .from("assets")
+        .select("share_slug")
+        .eq("share_slug", row.share_slug)
+        .maybeSingle();
 
-    if (lookupError) {
-      console.error("growth_events slug lookup failed:", lookupError.message);
-      return false;
-    }
-
-    if (!data) {
-      return false;
-    }
-
-    const metadata: Record<string, unknown> = { ...(row.metadata ?? {}) };
-    if (!store && row.event_type === "share_created") {
-      const owner = await lookupShareOwner(row.share_slug);
-      if (owner?.assetId) {
-        metadata.asset_id = owner.assetId;
+      if (lookupError) {
+        console.error("growth_events slug lookup failed:", lookupError.message);
+        return false;
       }
-      if (owner?.creatorUserId) {
-        metadata.creator_user_id = owner.creatorUserId;
+
+      if (!data) {
+        return false;
       }
-    }
 
-    const { error } = await client.from("growth_events").insert({
-      share_slug: row.share_slug,
-      event_type: row.event_type,
-      metadata,
-      visitor_id:
-        row.visitor_id && isVisitorId(row.visitor_id) ? row.visitor_id : null,
-    });
+      const metadata: Record<string, unknown> = { ...(row.metadata ?? {}) };
+      if (!store && row.event_type === "share_created") {
+        const owner = await lookupShareOwner(row.share_slug);
+        if (owner?.assetId) {
+          metadata.asset_id = owner.assetId;
+        }
+        if (owner?.creatorUserId) {
+          metadata.creator_user_id = owner.creatorUserId;
+        }
+      }
 
-    if (error) {
-      console.error("growth_events insert failed:", error.message);
+      const { error } = await client.from("growth_events").insert({
+        share_slug: row.share_slug,
+        event_type: row.event_type,
+        metadata,
+        visitor_id:
+          row.visitor_id && isVisitorId(row.visitor_id) ? row.visitor_id : null,
+      });
+
+      if (error) {
+        console.error("growth_events insert failed:", error.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("growth_events persist failed:", error);
       return false;
     }
+  }, { getUser: getAnalyticsSessionUser });
 
-    return true;
-  } catch (error) {
-    console.error("growth_events persist failed:", error);
-    return false;
-  }
+  return persisted === "skipped" ? true : persisted;
 }

@@ -455,7 +455,10 @@ export default function InternalAnalyticsDashboard({
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <section className="rounded-xl border border-white/10 bg-black/35 p-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">Primary funnel</p>
-            <h2 className="mt-1 text-lg font-semibold">Where people drop</h2>
+            <h2 className="mt-1 text-lg font-semibold">Conversion Funnel</h2>
+            <p className="mt-1 text-xs text-white/40">
+              Visitors → Signups → Creators → Shares → Premium
+            </p>
             <div className="mt-4">
               <FunnelView steps={data.funnel} leakTo={leakTo} />
             </div>

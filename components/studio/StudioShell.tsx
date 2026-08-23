@@ -17,6 +17,7 @@ type StudioShellProps = {
   authUser?: User | null;
   locale: Locale;
   nav: Messages["nav"];
+  showAnalyticsNav?: boolean;
 };
 
 function getStudioDisplayName(
@@ -83,6 +84,7 @@ export default function StudioShell({
   authUser,
   locale,
   nav,
+  showAnalyticsNav = false,
 }: StudioShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = getStudioDisplayName(authUser, nav.account);
@@ -185,6 +187,15 @@ export default function StudioShell({
                       >
                         {nav.credits}
                       </Link>
+                      {showAnalyticsNav ? (
+                        <Link
+                          href="/analytics"
+                          className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Analytics
+                        </Link>
+                      ) : null}
                       <Link
                         href="/planes"
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"

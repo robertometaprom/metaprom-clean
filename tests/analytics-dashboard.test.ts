@@ -14,6 +14,7 @@ import {
   ANALYTICS_DENIED_PATH,
   ANALYTICS_LOGIN_PATH,
   analyticsAuthRedirect,
+  canSeeAnalyticsNav,
   resolveAnalyticsAccess,
 } from "../lib/analytics/dashboard-access.ts";
 import {
@@ -242,6 +243,9 @@ test("anonymous users are sent to login and ordinary users are denied", () => {
   const admin = user({ id: ADMIN_ID, app_metadata: { role: "admin" } });
   assert.equal(resolveAnalyticsAccess(admin), "allowed");
   assert.equal(analyticsAuthRedirect(admin), null);
+  assert.equal(canSeeAnalyticsNav(null), false);
+  assert.equal(canSeeAnalyticsNav(customer), false);
+  assert.equal(canSeeAnalyticsNav(admin), true);
 
   process.env.METAPROM_ADMIN_USER_IDS = previousIds;
   process.env.METAPROM_ADMIN_EMAILS = previousEmails;
@@ -267,6 +271,20 @@ test("analytics route uses the existing admin gate and does not expose service r
   assert.doesNotMatch(nav, /\/analytics/);
   assert.doesNotMatch(footer, /\/analytics/);
   assert.doesNotMatch(page, /gtag|GTM-|facebook\.net|pixel|tiktok/i);
+
+  const studioPage = readRepo("app/studio/page.tsx");
+  const studioClient = readRepo("app/studio/StudioPageClient.tsx");
+  const shell = readRepo("components/studio/StudioShell.tsx");
+  const authButton = readRepo("components/AuthButton.tsx");
+  assert.match(studioPage, /canSeeAnalyticsNav/);
+  assert.match(studioPage, /showAnalyticsNav/);
+  assert.match(studioClient, /showAnalyticsNav/);
+  assert.match(shell, /showAnalyticsNav \? \(/);
+  assert.match(shell, /href="\/analytics"/);
+  assert.match(shell, />\s*Analytics\s*</);
+  assert.doesNotMatch(authButton, /\/analytics/);
+  assert.doesNotMatch(shell, /METAPROM_ADMIN_EMAILS|METAPROM_ADMIN_USER_IDS/);
+  assert.doesNotMatch(studioClient, /METAPROM_ADMIN_EMAILS|METAPROM_ADMIN_USER_IDS/);
 });
 
 test("period parser defaults to last 7 days and range filter excludes older rows", () => {
@@ -745,6 +763,31 @@ function reviewLikeDashboard() {
     ],
   });
 }
+
+test("Conversion Funnel heading is display-only and funnel math is unchanged", () => {
+  const ui = readRepo("components/analytics/InternalAnalyticsDashboard.tsx");
+  const aggregate = readRepo("lib/analytics/dashboard-aggregate.ts");
+  assert.match(ui, />Conversion Funnel</);
+  assert.match(ui, /Visitors → Signups → Creators → Shares → Premium/);
+  assert.doesNotMatch(ui, /Where people drop/);
+  assert.doesNotMatch(aggregate, /Conversion Funnel|Where people drop/);
+
+  const dashboard = reviewLikeDashboard();
+  assert.equal(dashboard.funnel.find((step) => step.id === "visitors")?.count, 4);
+  assert.equal(dashboard.funnel.find((step) => step.id === "signups")?.count, 0);
+  assert.equal(dashboard.kpis.kFactor, dashboard.kFactor.k);
+  if (dashboard.biggestOpportunity.status === "ok") {
+    assert.equal(dashboard.biggestOpportunity.label, "VISIT → SIGNUP");
+  }
+
+  const html = renderToStaticMarkup(
+    createElement(InternalAnalyticsDashboard, { data: dashboard }),
+  );
+  assert.match(html, /Conversion Funnel/);
+  assert.match(html, /Visitors → Signups → Creators → Shares → Premium/);
+  assert.match(html, /Biggest opportunity|VISIT → SIGNUP/i);
+  assert.match(html, /Viral coefficient/);
+});
 
 test("KPI unavailable text is not semantically truncated", () => {
   const ui = readRepo("components/analytics/InternalAnalyticsDashboard.tsx");

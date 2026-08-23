@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import LegalLinks from "@/components/legal/LegalLinks";
 import PackagePurchaseStatus from "@/components/pricing/PackagePurchaseStatus";
 import MetapromLogo from "@/components/studio/MetapromLogo";
+import { getLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -32,6 +34,7 @@ export default async function PlanesCompraPage({ searchParams }: CompraPageProps
 
   const sessionId = params.session_id?.trim() ?? null;
   const paymentHint = params.payment?.trim() ?? null;
+  const locale = await getLocale();
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black text-[#F5F5F0]">
@@ -60,6 +63,15 @@ export default async function PlanesCompraPage({ searchParams }: CompraPageProps
           paymentHint={paymentHint}
         />
       </main>
+
+      <footer className="relative z-10 border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
+          <LegalLinks
+            locale={locale}
+            className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/40"
+          />
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import LegalPage, { LegalSection } from "@/components/legal/LegalPage";
+import SupportEmailLink from "@/components/legal/SupportEmailLink";
 import SupportFormLink from "@/components/legal/SupportFormLink";
 import type { Locale } from "@/lib/i18n";
 import type { LegalBlock, LegalPolicyCopy } from "@/lib/legal/policies";
@@ -19,6 +20,16 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
       <p>
         {block.before}
         <SupportFormLink>{block.link}</SupportFormLink>
+        {block.after}
+      </p>
+    );
+  }
+
+  if (block.type === "p-email") {
+    return (
+      <p>
+        {block.before}
+        <SupportEmailLink />
         {block.after}
       </p>
     );

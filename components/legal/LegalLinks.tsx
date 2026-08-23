@@ -8,7 +8,7 @@ type LegalLinksProps = {
   labels?: Messages["legalNav"];
 };
 
-const DEFAULT_LABELS: Record<Locale, Messages["legalNav"]> = {
+export const LEGAL_NAV_LABELS: Record<Locale, Messages["legalNav"]> = {
   es: {
     aria: "Información legal",
     terms: "Términos",
@@ -30,7 +30,7 @@ export default function LegalLinks({
   locale = "es",
   labels,
 }: LegalLinksProps) {
-  const copy = labels ?? DEFAULT_LABELS[locale];
+  const copy = labels ?? LEGAL_NAV_LABELS[locale];
 
   return (
     <nav aria-label={copy.aria} className={className}>

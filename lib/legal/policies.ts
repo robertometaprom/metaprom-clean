@@ -3,6 +3,7 @@ import type { Locale } from "@/lib/i18n";
 export type LegalBlock =
   | { type: "p"; text: string }
   | { type: "p-support"; before: string; link: string; after: string }
+  | { type: "p-email"; before: string; after: string }
   | { type: "ul"; items: readonly string[] };
 
 export type LegalSectionCopy = {
@@ -301,7 +302,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
     title: "Términos y Condiciones",
     description:
       "Estas condiciones explican de forma directa cómo funciona Metaprom AI, qué puedes esperar del servicio y qué necesitamos de ti para crear contenido de manera responsable.",
-    updated: "20 de agosto de 2026",
+    updated: "22 de agosto de 2026",
     ...LEGAL_CHROME.es,
     sections: [
       {
@@ -340,6 +341,14 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
             type: "p",
             text: "Declaras que cuentas con derechos, licencias y permisos suficientes para subirlo y procesarlo, incluidos los permisos necesarios respecto de marcas y personas identificables, su imagen, voz o datos, cuando correspondan. No debes subir material ilegal, engañoso, abusivo, invasivo de privacidad o que infrinja derechos de terceros.",
           },
+          {
+            type: "p",
+            text: "No debes subir fotografías, imágenes, voz, datos personales ni otro contenido identificable de menores de edad para generación u otro uso en el servicio.",
+          },
+          {
+            type: "p",
+            text: "Al subir material, otorgas a Metaprom AI una licencia limitada, no exclusiva y revocable en la medida que permita la operación del servicio, únicamente para procesar ese material y producir los resultados que solicites, incluidos almacenamiento, generación, entrega y las funciones de Share que tú actives.",
+          },
         ],
       },
       {
@@ -366,7 +375,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         blocks: [
           {
             type: "p",
-            text: "Respecto de los resultados pagados que te entreguemos, recibes una autorización amplia para usarlos con fines personales y comerciales. Ese uso permanece sujeto a los derechos de terceros, a la ley aplicable y a las limitaciones propias del contenido generado con inteligencia artificial.",
+            text: "Respecto de los resultados pagados que te entreguemos, recibes una autorización amplia para usarlos con fines personales y comerciales. Ese uso permanece sujeto a los derechos de terceros, a la ley aplicable y a las limitaciones propias del contenido generado con inteligencia artificial. El resultado generado con inteligencia artificial puede no ser único.",
           },
           {
             type: "p",
@@ -404,7 +413,26 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "7. Uso aceptable y suspensión",
+        title: "7. Share",
+        blocks: [
+          {
+            type: "p",
+            text: "Cuando usas Share, se crea una URL pública. Quien tenga esa URL puede ver la presentación compartida. La presentación pública de Share no expone de forma intencional el correo de tu cuenta ni tu identidad como titular.",
+          },
+          {
+            type: "p",
+            text: "Las interacciones con una página Share pueden medirse con analítica de primer partido de Metaprom AI. No debes compartir contenido que no estés autorizado a publicar. Las páginas públicas de Share están configuradas para no ser indexadas por buscadores.",
+          },
+          {
+            type: "p-email",
+            before:
+              "Si necesitas ayuda con contenido compartido, escribe a ",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "8. Uso aceptable y suspensión",
         blocks: [
           {
             type: "p",
@@ -413,7 +441,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "8. Proveedores, disponibilidad y cambios",
+        title: "9. Proveedores, disponibilidad y cambios",
         blocks: [
           {
             type: "p",
@@ -426,7 +454,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "9. Responsabilidad y derechos del consumidor",
+        title: "10. Responsabilidad y derechos del consumidor",
         blocks: [
           {
             type: "p",
@@ -435,7 +463,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "10. Soporte y ley aplicable",
+        title: "11. Soporte y ley aplicable",
         blocks: [
           {
             type: "p-support",
@@ -458,7 +486,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
     title: "Terms and Conditions",
     description:
       "These terms explain in plain language how Metaprom AI works, what you can expect from the service, and what we need from you to create content responsibly.",
-    updated: "August 20, 2026",
+    updated: "August 22, 2026",
     ...LEGAL_CHROME.en,
     sections: [
       {
@@ -497,6 +525,14 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
             type: "p",
             text: "You represent that you have sufficient rights, licenses, and permissions to upload and process it, including any required permissions for trademarks and identifiable people, their image, voice, or data, when applicable. You must not upload material that is illegal, deceptive, abusive, invasive of privacy, or that infringes third-party rights.",
           },
+          {
+            type: "p",
+            text: "You must not upload photographs, images, voice, personal data, or other identifiable content of minors for generation or any other use in the service.",
+          },
+          {
+            type: "p",
+            text: "By uploading material, you grant Metaprom AI a limited, non-exclusive license, revocable to the extent the operation of the service allows, solely to process that material and produce the results you request, including storage, generation, delivery, and any Share functions you enable.",
+          },
         ],
       },
       {
@@ -523,7 +559,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         blocks: [
           {
             type: "p",
-            text: "For paid results we deliver to you, you receive a broad authorization to use them for personal and commercial purposes. That use remains subject to third-party rights, applicable law, and the limitations of AI-generated content.",
+            text: "For paid results we deliver to you, you receive a broad authorization to use them for personal and commercial purposes. That use remains subject to third-party rights, applicable law, and the limitations of AI-generated content. AI-generated output may not be unique.",
           },
           {
             type: "p",
@@ -561,7 +597,25 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "7. Acceptable use and suspension",
+        title: "7. Share",
+        blocks: [
+          {
+            type: "p",
+            text: "When you use Share, a public URL is created. Anyone with that URL can view the shared presentation. The public Share presentation does not intentionally expose your account email or your identity as the owner.",
+          },
+          {
+            type: "p",
+            text: "Interactions with a Share page may be measured with Metaprom AI first-party analytics. You should not Share content you are not authorized to publish. Public Share pages are configured not to be indexed by search engines.",
+          },
+          {
+            type: "p-email",
+            before: "If you need help with shared content, write to ",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "8. Acceptable use and suspension",
         blocks: [
           {
             type: "p",
@@ -570,7 +624,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "8. Providers, availability, and changes",
+        title: "9. Providers, availability, and changes",
         blocks: [
           {
             type: "p",
@@ -583,7 +637,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "9. Liability and consumer rights",
+        title: "10. Liability and consumer rights",
         blocks: [
           {
             type: "p",
@@ -592,7 +646,7 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
         ],
       },
       {
-        title: "10. Support and governing law",
+        title: "11. Support and governing law",
         blocks: [
           {
             type: "p-support",
@@ -603,6 +657,337 @@ export const TERMS_POLICY: Record<Locale, LegalPolicyCopy> = {
           {
             type: "p",
             text: "These terms are interpreted under the laws applicable in Mexico, without preventing a consumer from going to the competent authorities or forums that correspond to them.",
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
+  es: {
+    metaTitle: "Aviso de Privacidad — Metaprom AI",
+    metaDescription: "Aviso de privacidad de Metaprom AI para México.",
+    eyebrow: "Información legal",
+    title: "Aviso de Privacidad",
+    description:
+      "Este aviso describe los datos que trata Metaprom AI, para qué los utiliza y cómo puedes ejercer tus derechos en México.",
+    updated: "22 de agosto de 2026",
+    ...LEGAL_CHROME.es,
+    sections: [
+      {
+        title: "1. Responsable",
+        blocks: [
+          {
+            type: "p",
+            text: "El responsable del tratamiento de los datos personales es Metaprom AI.",
+          },
+          {
+            type: "p-email",
+            before:
+              "Puedes dirigir preguntas y solicitudes de privacidad a ",
+            after: ".",
+          },
+          {
+            type: "p-support",
+            before: "También puedes usar el ",
+            link: "formulario de Soporte",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "2. Datos que tratamos",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Datos de autenticación, cuenta y sesión: nombre o identificador visible, correo electrónico e identificador de usuario que proporciona el inicio de sesión con Google, y las cookies o el almacenamiento necesarios para mantener tu sesión.",
+              "Contenido que subes y resultados generados: fotografías, logotipos, textos, videos y otros archivos, así como las imágenes, videos y demás resultados que produce el servicio y la información del proyecto.",
+              "Prompts e instrucciones: el texto que escribes al Director, instrucciones creativas y demás indicaciones usadas para generar contenido.",
+              "Metadatos de pago y facturación: producto, importe, moneda, estado, referencia y registros necesarios para acreditar y conciliar pagos. Stripe procesa los datos completos de tarjeta; Metaprom AI no declara almacenarlos.",
+              "Identificadores de visitante y adquisición de primer partido: un identificador aleatorio de visitante y una atribución de origen o Share. Estos identificadores no contienen nombre, correo, teléfono ni el contenido de tus prompts.",
+              "Referrer y atribución UTM: host de referencia y parámetros UTM cuando llegan con la visita.",
+              "Eventos de Share: que se creó o abrió una URL compartida, el canal cuando está disponible y el identificador público del Share, sin el correo de la cuenta ni la identidad del titular.",
+              "Comunicaciones de soporte: el nombre, correo, categoría y mensaje que envías, y el seguimiento de la resolución.",
+              "Preferencia de idioma: una cookie de primer partido para recordar el idioma de la interfaz.",
+            ],
+          },
+          {
+            type: "p",
+            text: "La dirección IP puede procesarse de forma efímera, a nivel de solicitud, para seguridad, límites de uso y prevención de abuso. En algunos controles antiabuso conservamos un identificador derivado (un resumen criptográfico), no la IP en texto claro. No almacenamos de forma durable la IP cruda, ni un perfil de dispositivo o navegador, como parte de la analítica de Metaprom AI.",
+          },
+        ],
+      },
+      {
+        title: "3. Finalidades",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Crear y administrar tu cuenta, autenticarte y mantener tu sesión.",
+              "Recibir instrucciones y archivos; generar, guardar, mostrar, entregar y, si tú lo activas, compartir los resultados que solicites.",
+              "Procesar, confirmar y conciliar pagos; administrar paquetes, saldos y consumo; prevenir duplicidades y fraude.",
+              "Prestar soporte, corregir errores, atender reembolsos y conservar evidencia de las solicitudes.",
+              "Proteger cuentas, investigar abuso, mantener la disponibilidad y diagnosticar fallas.",
+              "Medir el uso del producto y la atribución de visitas y Shares con analítica de primer partido de Metaprom AI.",
+              "Cumplir obligaciones legales y hacer valer nuestras condiciones.",
+            ],
+          },
+        ],
+      },
+      {
+        title: "4. Medición de primer partido",
+        blocks: [
+          {
+            type: "p",
+            text: "Metaprom AI utiliza medición y atribución de primer partido. Usamos una cookie de visitante (mp_vid, 180 días) con un identificador aleatorio y una cookie de adquisición (mp_acq, 30 días) para recordar el origen de la visita y el primer Share abierto, incluidos referrer y UTM cuando existen. También usamos almacenamiento de sesión necesario para autenticación y una cookie de idioma.",
+          },
+          {
+            type: "p",
+            text: "Esta medición no accede a conversaciones, contactos o mensajes de WhatsApp. No usamos GA4, Google Tag Manager, Meta Pixel ni TikTok Pixel. Los datos de Facebook Business Suite no forman parte de la analítica de Metaprom AI.",
+          },
+        ],
+      },
+      {
+        title: "5. Share",
+        blocks: [
+          {
+            type: "p",
+            text: "Cuando usas Share, se crea una URL pública. Quien tenga esa URL puede ver la presentación compartida. Esa presentación no expone de forma intencional el correo de tu cuenta ni tu identidad como titular. Las interacciones con la página pueden medirse con la analítica de primer partido descrita arriba. No debes compartir contenido que no estés autorizado a publicar. Las páginas públicas de Share están configuradas para no ser indexadas por buscadores.",
+          },
+          {
+            type: "p-email",
+            before:
+              "Si necesitas ayuda con contenido compartido, escribe a ",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "6. Finalidad promocional de previews gratuitos",
+        blocks: [
+          {
+            type: "p",
+            text: "Los previews gratuitos pueden usarse para demostrar, promover y comercializar Metaprom AI en sitios web, redes sociales, presentaciones y publicidad, conforme a la autorización prevista en los Términos. Este uso está sujeto a los derechos de privacidad, imagen y personalidad y a los consentimientos legalmente necesarios.",
+          },
+          {
+            type: "p-support",
+            before:
+              "Puedes solicitar la revisión o limitación de un uso promocional a través del ",
+            link: "formulario de Soporte",
+            after:
+              ". Evaluaremos la solicitud de buena fe y aplicaremos las restricciones legales que correspondan.",
+          },
+        ],
+      },
+      {
+        title: "7. Encargados y transferencias",
+        blocks: [
+          {
+            type: "p",
+            text: "Podemos encargar tratamiento a categorías de proveedores que apoyan autenticación, alojamiento y almacenamiento, bases de datos, generación de contenido con inteligencia artificial, procesamiento de pagos, entrega de correo de soporte y seguridad.",
+          },
+          {
+            type: "p",
+            text: "En el servicio, Google se usa para iniciar sesión y Stripe para procesar pagos. Algunos proveedores pueden operar fuera de México. Procuramos compartir únicamente lo necesario. También podremos comunicar información cuando la ley lo exija, para proteger derechos o atender a una autoridad competente.",
+          },
+        ],
+      },
+      {
+        title: "8. Conservación",
+        blocks: [
+          {
+            type: "p",
+            text: "Conservamos la cuenta, los proyectos, los saldos y el contenido necesario para prestar el servicio mientras la cuenta exista o mientras haga falta para cumplir obligaciones, resolver disputas o proteger la seguridad. Los identificadores de visitante duran hasta 180 días y la atribución de origen o Share hasta 30 días. Algunos controles antiabuso conservan un identificador derivado por hasta 30 días. Las comunicaciones de soporte se conservan el tiempo necesario para atenderlas.",
+          },
+        ],
+      },
+      {
+        title: "9. Derechos ARCO, revocación y limitación",
+        blocks: [
+          {
+            type: "p-email",
+            before:
+              "Puedes solicitar acceso, rectificación, cancelación u oposición al tratamiento de tus datos, revocar un consentimiento cuando proceda o pedir la limitación de su uso o divulgación. Escribe a ",
+            after:
+              " o usa el formulario de Soporte, con tu nombre, el correo asociado a la cuenta, el derecho que deseas ejercer, una descripción clara de los datos y la información necesaria para acreditar tu identidad y localizar tu cuenta.",
+          },
+          {
+            type: "p",
+            text: "Responderemos dentro de los plazos y bajo las condiciones de la legislación mexicana aplicable. Podremos pedir información adicional para verificar identidad y representación. Algunas solicitudes pueden no proceder cuando exista una obligación legal de conservar información o cuando la excepción esté prevista por ley; explicaremos el motivo.",
+          },
+        ],
+      },
+      {
+        title: "10. Cambios al aviso",
+        blocks: [
+          {
+            type: "p",
+            text: "Publicaremos aquí las modificaciones y la fecha de actualización. Si el cambio es material o la ley requiere otro aviso o consentimiento, lo comunicaremos por un medio apropiado antes de aplicar el nuevo tratamiento.",
+          },
+        ],
+      },
+    ],
+  },
+  en: {
+    metaTitle: "Privacy Notice — Metaprom AI",
+    metaDescription: "Metaprom AI privacy notice for Mexico.",
+    eyebrow: "Legal information",
+    title: "Privacy Notice",
+    description:
+      "This notice describes the data Metaprom AI processes, why it is used, and how you can exercise your rights in Mexico.",
+    updated: "August 22, 2026",
+    ...LEGAL_CHROME.en,
+    sections: [
+      {
+        title: "1. Controller",
+        blocks: [
+          {
+            type: "p",
+            text: "The controller of personal data is Metaprom AI.",
+          },
+          {
+            type: "p-email",
+            before: "You can send privacy questions and requests to ",
+            after: ".",
+          },
+          {
+            type: "p-support",
+            before: "You can also use the ",
+            link: "Support form",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "2. Data we process",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Authentication, account, and session data: visible name or identifier, email address, and user identifier provided by Google sign-in, and the cookies or storage needed to keep your session.",
+              "Uploaded content and generated results: photographs, logos, text, videos, and other files, as well as the images, videos, and other outputs the service produces and project information.",
+              "Prompts and instructions: text you write to Director, creative instructions, and other directions used to generate content.",
+              "Payment and billing metadata: product, amount, currency, status, reference, and records needed to credit and reconcile payments. Stripe processes full card data; Metaprom AI does not claim to store it.",
+              "First-party visitor and acquisition identifiers: a random visitor identifier and an origin or Share attribution. These identifiers do not contain your name, email, phone number, or prompt content.",
+              "Referrer and UTM attribution: referring host and UTM parameters when they arrive with the visit.",
+              "Share events: that a shared URL was created or opened, the channel when available, and the public Share identifier, without the account email or owner identity.",
+              "Support communications: the name, email, category, and message you send, and follow-up of the resolution.",
+              "Language preference: a first-party cookie to remember the interface language.",
+            ],
+          },
+          {
+            type: "p",
+            text: "IP addresses may be processed ephemerally, at request level, for security, usage limits, and abuse prevention. For some anti-abuse controls we keep a derived identifier (a cryptographic digest), not the raw IP. We do not durably store raw IP, or a device or browser profile, as part of Metaprom AI analytics.",
+          },
+        ],
+      },
+      {
+        title: "3. Purposes",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Create and administer your account, authenticate you, and keep your session.",
+              "Receive instructions and files; generate, save, display, deliver, and, if you enable it, share the results you request.",
+              "Process, confirm, and reconcile payments; administer packages, balances, and consumption; prevent duplicates and fraud.",
+              "Provide support, correct errors, handle refunds, and keep evidence of requests.",
+              "Protect accounts, investigate abuse, maintain availability, and diagnose failures.",
+              "Measure product use and the attribution of visits and Shares with Metaprom AI first-party analytics.",
+              "Comply with legal obligations and enforce our terms.",
+            ],
+          },
+        ],
+      },
+      {
+        title: "4. First-party measurement",
+        blocks: [
+          {
+            type: "p",
+            text: "Metaprom AI uses first-party measurement and attribution. We use a visitor cookie (mp_vid, 180 days) with a random identifier and an acquisition cookie (mp_acq, 30 days) to remember visit origin and the first Share opened, including referrer and UTM when present. We also use session storage needed for authentication and a language cookie.",
+          },
+          {
+            type: "p",
+            text: "This measurement does not access WhatsApp conversations, contacts, or messages. We do not use GA4, Google Tag Manager, Meta Pixel, or TikTok Pixel. Facebook Business Suite data is not part of Metaprom AI analytics.",
+          },
+        ],
+      },
+      {
+        title: "5. Share",
+        blocks: [
+          {
+            type: "p",
+            text: "When you use Share, a public URL is created. Anyone with that URL can view the shared presentation. That presentation does not intentionally expose your account email or your identity as the owner. Interactions with the page may be measured with the first-party analytics described above. You should not Share content you are not authorized to publish. Public Share pages are configured not to be indexed by search engines.",
+          },
+          {
+            type: "p-email",
+            before: "If you need help with shared content, write to ",
+            after: ".",
+          },
+        ],
+      },
+      {
+        title: "6. Promotional use of free previews",
+        blocks: [
+          {
+            type: "p",
+            text: "Free previews may be used to demonstrate, promote, and market Metaprom AI on websites, social networks, presentations, and advertising, under the authorization in the Terms. This use remains subject to applicable privacy, image, and personality rights and to consents required by law.",
+          },
+          {
+            type: "p-support",
+            before:
+              "You can request review or limitation of a promotional use through the ",
+            link: "Support form",
+            after:
+              ". We will review the request in good faith and apply the legal restrictions that apply.",
+          },
+        ],
+      },
+      {
+        title: "7. Processors and transfers",
+        blocks: [
+          {
+            type: "p",
+            text: "We may engage categories of providers that support authentication, hosting and storage, databases, AI content generation, payment processing, support-email delivery, and security.",
+          },
+          {
+            type: "p",
+            text: "In the service, Google is used for sign-in and Stripe is used to process payments. Some providers may operate outside Mexico. We aim to share only what is necessary. We may also disclose information when the law requires it, to protect rights, or to respond to a competent authority.",
+          },
+        ],
+      },
+      {
+        title: "8. Retention",
+        blocks: [
+          {
+            type: "p",
+            text: "We keep the account, projects, balances, and content needed to provide the service while the account exists or as needed to meet obligations, resolve disputes, or protect security. Visitor identifiers last up to 180 days and origin or Share attribution up to 30 days. Some anti-abuse controls keep a derived identifier for up to 30 days. Support communications are kept as long as needed to handle them.",
+          },
+        ],
+      },
+      {
+        title: "9. ARCO rights, revocation, and limitation",
+        blocks: [
+          {
+            type: "p-email",
+            before:
+              "You may request access, rectification, cancellation, or objection to the processing of your data, revoke a consent when applicable, or ask that its use or disclosure be limited. Write to ",
+            after:
+              " or use the Support form, with your name, the email associated with the account, the right you want to exercise, a clear description of the data, and the information needed to verify your identity and locate your account.",
+          },
+          {
+            type: "p",
+            text: "We will respond within the timelines and under the conditions of applicable Mexican law. We may ask for additional information to verify identity and representation. Some requests may not proceed when there is a legal duty to retain information or when an exception is provided by law; we will explain the reason.",
+          },
+        ],
+      },
+      {
+        title: "10. Changes to this notice",
+        blocks: [
+          {
+            type: "p",
+            text: "We will publish changes here with the update date. If a change is material or the law requires another notice or consent, we will communicate it by an appropriate means before applying the new processing.",
           },
         ],
       },

@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import CommercialVideo from "@/components/landing/CommercialVideo";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import LegalNotice from "@/components/legal/LegalNotice";
 import ExperienceShell from "@/components/experience/ExperienceShell";
 import {
   AccentButton,
@@ -786,7 +787,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
           <StepLayout
             eyebrow="Desbloquear HD"
             title="Comercial completo"
-            subtitle="10–15 segundos en HD, sin marca de agua, listo para publicar."
+            subtitle="Hasta 8 segundos en HD, sin marca de agua, listo para publicar."
           >
             <ExperiencePanel className="space-y-6">
               {videoUrl && (
@@ -834,6 +835,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
               >
                 {checkoutLoading ? "Procesando..." : "Desbloquear comercial HD"}
               </AccentButton>
+              <LegalNotice kind="checkout" />
               {checkoutMessage && (
                 <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-sm text-white/65">
                   {checkoutMessage}

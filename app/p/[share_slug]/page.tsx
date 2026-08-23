@@ -40,12 +40,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: result.preview.title,
     description: result.preview.description,
+    robots: { index: false, follow: false },
     alternates: { canonical: result.preview.publicUrl },
     openGraph: {
       title: result.preview.title,
       description: result.preview.description,
       url: result.preview.publicUrl,
-      siteName: "Metaprom",
+      siteName: "Metaprom AI",
       type: "website",
       ...(ogImageUrl
         ? {
@@ -109,5 +110,11 @@ export default async function PublicPreviewRoute({ params }: PageProps) {
     );
   }
 
-  return <PublicCommercialPage preview={result.preview} labels={labels} />;
+  return (
+    <PublicCommercialPage
+      preview={result.preview}
+      labels={labels}
+      locale={locale}
+    />
+  );
 }

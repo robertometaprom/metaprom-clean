@@ -34,7 +34,7 @@ function TestimonialCard({
     };
   }, [item.ownerPhoto]);
 
-  if (!hasQuote) return null;
+  if (!hasOwnerDetails && !hasQuote) return null;
 
   return (
     <article className="grid gap-10 border-t border-white/10 py-16 md:grid-cols-[240px_1fr] md:gap-16 md:py-24">
@@ -70,9 +70,11 @@ function TestimonialCard({
           </div>
         )}
 
-        <blockquote className="text-lg leading-relaxed text-white/70 md:text-xl">
-          &ldquo;{item.quote}&rdquo;
-        </blockquote>
+        {hasQuote ? (
+          <blockquote className="text-lg leading-relaxed text-white/70 md:text-xl">
+            &ldquo;{item.quote}&rdquo;
+          </blockquote>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -111,7 +113,12 @@ function TestimonialCard({
 }
 
 export default function Testimonials({ headline, items }: TestimonialsProps) {
-  const visibleItems = items.filter((item) => item.quote.trim().length > 0);
+  const visibleItems = items.filter(
+    (item) =>
+      item.businessName.trim().length > 0 ||
+      item.city.trim().length > 0 ||
+      item.quote.trim().length > 0,
+  );
 
   if (visibleItems.length === 0) return null;
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import LegalNotice from "@/components/legal/LegalNotice";
 import type { Locale } from "@/lib/i18n";
 
 type PackagePurchaseButtonProps = {
@@ -10,24 +10,6 @@ type PackagePurchaseButtonProps = {
   label: string;
   enabled: boolean;
   locale?: Locale;
-};
-
-const CHECKOUT_LEGAL: Record<
-  Locale,
-  { lead: string; terms: string; and: string; payments: string }
-> = {
-  es: {
-    lead: "Al comprar aceptas los",
-    terms: "Términos",
-    and: "y la",
-    payments: "política de pagos y reembolsos",
-  },
-  en: {
-    lead: "By purchasing you agree to the",
-    terms: "Terms",
-    and: "and the",
-    payments: "payments and refunds policy",
-  },
 };
 
 export default function PackagePurchaseButton({
@@ -110,17 +92,7 @@ export default function PackagePurchaseButton({
         </p>
       ) : null}
       {enabled ? (
-        <p className="mt-3 text-center text-[11px] leading-4 text-white/35">
-          {CHECKOUT_LEGAL[locale].lead}{" "}
-          <Link href="/terminos" className="underline underline-offset-2 hover:text-white">
-            {CHECKOUT_LEGAL[locale].terms}
-          </Link>{" "}
-          {CHECKOUT_LEGAL[locale].and}{" "}
-          <Link href="/pagos-reembolsos" className="underline underline-offset-2 hover:text-white">
-            {CHECKOUT_LEGAL[locale].payments}
-          </Link>
-          .
-        </p>
+        <LegalNotice kind="checkout" locale={locale} className="mt-3" />
       ) : null}
     </div>
   );

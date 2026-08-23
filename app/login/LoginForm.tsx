@@ -51,27 +51,11 @@ export default function LoginForm({ locale, nav, copy }: LoginFormProps) {
             label={copy.google}
             loadingLabel={copy.googleLoading}
             errorLabel={copy.googleError}
+            locale={locale}
           />
 
           <p className="mt-6 text-center text-xs text-white/40">
             {copy.methodNote}
-          </p>
-          <p className="mt-3 text-center text-xs leading-5 text-white/40">
-            {copy.legalLead}{" "}
-            <Link
-              href="/terminos"
-              className="underline underline-offset-2 hover:text-white"
-            >
-              {copy.terms}
-            </Link>{" "}
-            {copy.legalAnd}{" "}
-            <Link
-              href="/privacidad"
-              className="underline underline-offset-2 hover:text-white"
-            >
-              {copy.privacy}
-            </Link>
-            .
           </p>
         </div>
 

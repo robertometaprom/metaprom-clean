@@ -211,27 +211,27 @@
     ]
   },
   "testimonials": {
-    "headline": "Dueños de negocios reales.",
+    "headline": "Ejemplos.",
     "items": {
       "restaurant": {
         "businessName": "Casa Luna",
-        "city": "Guadalajara",
-        "quote": "Subí una foto de mi celular. Al día siguiente tenía un comercial que parecía costar miles."
+        "city": "",
+        "quote": ""
       },
       "coffee": {
         "businessName": "Café Norte",
-        "city": "Monterrey",
-        "quote": "Mis clientes dejaron de hacer scroll. Eso era todo lo que necesitaba."
+        "city": "",
+        "quote": ""
       },
       "flower": {
         "businessName": "Flores del Valle",
-        "city": "CDMX",
-        "quote": "Nunca pensé que mi pequeña tienda se vería tan premium en Instagram."
+        "city": "",
+        "quote": ""
       },
       "living-room": {
         "businessName": "Interior Studio MX",
-        "city": "Querétaro",
-        "quote": "Una foto de una sala se convirtió en nuestro mejor anuncio del año."
+        "city": "",
+        "quote": ""
       }
     }
   },

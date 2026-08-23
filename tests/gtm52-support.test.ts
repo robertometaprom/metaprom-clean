@@ -56,10 +56,16 @@ const PUBLIC_SUPPORT_FILES = [
   "messages/es.json",
   "messages/en.json",
   "lib/support/public.ts",
+  "components/legal/SupportEmailLink.tsx",
+  "components/legal/LegalNotice.tsx",
+  "components/landing/Footer.tsx",
 ];
 
+const PRIVATE_MAILBOX_PATTERN =
+  /robertometaprom@gmail\.com|NEXT_PUBLIC_RESEND|NEXT_PUBLIC_SUPPORT/i;
+
 const LEAK_PATTERN =
-  /robertometaprom@gmail\.com|support@metaprom\.com|NEXT_PUBLIC_RESEND|NEXT_PUBLIC_SUPPORT/i;
+  /robertometaprom@gmail\.com|NEXT_PUBLIC_RESEND|NEXT_PUBLIC_SUPPORT/i;
 
 function validBody(overrides: Record<string, unknown> = {}) {
   return {
@@ -95,15 +101,17 @@ test("Support copy is bilingual and names Metaprom AI", () => {
 test("public Support UX never exposes internal or outbound mailboxes", () => {
   for (const file of PUBLIC_SUPPORT_FILES) {
     const source = readRepo(file);
-    assert.doesNotMatch(source, LEAK_PATTERN, file);
+    assert.doesNotMatch(source, PRIVATE_MAILBOX_PATTERN, file);
   }
   assert.match(readRepo("lib/support/config.ts"), /server-only/);
   assert.match(readRepo("lib/support/config.ts"), /RESEND_API_KEY/);
   assert.match(readRepo("lib/support/config.ts"), /RESEND_EMAIL_DOMAIN/);
   assert.equal(SUPPORT_INTERNAL_RECIPIENT, "robertometaprom@gmail.com");
   assert.match(readRepo("components/landing/Footer.tsx"), /LegalLinks/);
+  assert.match(readRepo("components/landing/Footer.tsx"), /SupportEmailLink/);
   assert.match(readRepo("components/legal/LegalLinks.tsx"), /SUPPORT_PATH/);
   assert.match(readRepo("lib/support/public.ts"), /\/soporte/);
+  assert.match(readRepo("lib/support/public.ts"), /support@metaprom\.com/);
   assert.match(readRepo("app/soporte/SupportForm.tsx"), /SUPPORT_HONEYPOT_FIELD/);
 });
 

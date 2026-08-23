@@ -15,6 +15,7 @@ import {
   canDeliverBibliotecaMedia,
   type BibliotecaMediaAsset,
 } from "../lib/biblioteca-media-gateway.ts";
+import { buildPublicPreviewMetadata } from "../lib/preview/public-preview-metadata.ts";
 import { sanitizePublicPreview } from "../lib/preview/sanitize-public-preview.ts";
 import {
   buildPublicPreviewImagePath,
@@ -329,4 +330,29 @@ test("Share P1 source contracts: public resolver, events, image proxy, CTA", () 
     buildPublicPreviewImageUrl(SLUG),
   );
   assert.equal(ogImage, `https://www.metaprom.com/api/public/${SLUG}/image`);
+});
+
+test("successful Share pages are noindex and do not expose prompt text in metadata", () => {
+  const page = readRepo("app/p/[share_slug]/page.tsx");
+  const robotsBlocks = page.match(/robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/g) ?? [];
+  assert.ok(robotsBlocks.length >= 2, "error and success Share metadata must be noindex");
+
+  const secret = "SECRET_PROMPT_DO_NOT_PUBLISH";
+  const commercial = buildPublicPreviewMetadata({
+    shareSlug: SLUG,
+    locale: "es",
+    kind: "commercial",
+  });
+  const image = buildPublicPreviewMetadata({
+    shareSlug: SLUG,
+    locale: "en",
+    kind: "advertising_image",
+  });
+
+  assert.equal(commercial.title, "Comercial creado con Metaprom AI");
+  assert.equal(image.title, "Image created with Metaprom AI");
+  assert.doesNotMatch(JSON.stringify(commercial), new RegExp(secret));
+  assert.doesNotMatch(JSON.stringify(image), /ai_instructions|customerIntent|prompt/i);
+  assert.doesNotMatch(readRepo("lib/preview/public-preview-metadata.ts"), /customerIntent/);
+  assert.match(readRepo("components/public/PublicCommercialFooter.tsx"), /LegalLinks/);
 });

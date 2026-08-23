@@ -476,3 +476,20 @@ test("GTM #5.1 landing videos ship lightweight posters and do not probe-download
     assert.ok(bytes < 100_000, item.id);
   }
 });
+
+test("landing examples no longer claim real owners or customer results", () => {
+  assert.equal(es.testimonials.headline, "Ejemplos.");
+  assert.equal(en.testimonials.headline, "Examples.");
+  assert.doesNotMatch(es.testimonials.headline, /Dueños de negocios reales/);
+  assert.doesNotMatch(en.testimonials.headline, /Real business owners|fictitious|fictional|testimonials/i);
+
+  const exampleText = JSON.stringify({
+    es: es.testimonials,
+    en: en.testimonials,
+  });
+  assert.doesNotMatch(exampleText, /Guadalajara|Monterrey|CDMX|Querétaro/);
+  assert.doesNotMatch(exampleText, /parecía costar miles|dejaron de hacer scroll|mejor anuncio|best-performing|stopped scrolling/i);
+  assert.doesNotMatch(exampleText, /ROI|%\s*más|sales increase|aumentaron las ventas/i);
+  assert.match(es.testimonials.items.coffee.businessName, /Café Norte/);
+  assert.match(es.testimonials.items.flower.businessName, /Flores del Valle/);
+});

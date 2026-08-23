@@ -406,7 +406,7 @@ export default function CinematicReveal({
                   </span>
                 </h2>
                 <p className="mx-auto max-w-sm text-[15px] leading-relaxed text-white/55">
-                  Desbloquea 10–15 segundos en HD, sin marca de agua — listo para
+                  Desbloquea hasta 8 segundos en HD, sin marca de agua — listo para
                   publicar en cualquier plataforma.
                 </p>
               </div>

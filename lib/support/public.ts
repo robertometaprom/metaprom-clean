@@ -21,6 +21,9 @@ export const SUPPORT_PATH = "/soporte";
 
 export const SUPPORT_API_PATH = "/api/support";
 
+/** Public legal and support mailbox. Do not expose personal addresses. */
+export const PUBLIC_SUPPORT_EMAIL = "support@metaprom.com";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REQUEST_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

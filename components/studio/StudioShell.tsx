@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
+import { LEGAL_NAV_LABELS } from "@/components/legal/LegalLinks";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import { createClient } from "@/lib/supabase/client";
 import type { Locale, Messages } from "@/lib/i18n";
+import { SUPPORT_PATH } from "@/lib/support/public";
 
 type StudioShellProps = {
   children: React.ReactNode;
@@ -84,6 +86,7 @@ export default function StudioShell({
 }: StudioShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = getStudioDisplayName(authUser, nav.account);
+  const legal = LEGAL_NAV_LABELS[locale];
 
   return (
     <div
@@ -223,6 +226,35 @@ export default function StudioShell({
                       </Link>
                     </>
                   )}
+                  <div className="my-1 border-t border-neutral-100" />
+                  <Link
+                    href="/terminos"
+                    className="block px-4 py-2 text-xs text-neutral-500 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {legal.terms}
+                  </Link>
+                  <Link
+                    href="/privacidad"
+                    className="block px-4 py-2 text-xs text-neutral-500 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {legal.privacy}
+                  </Link>
+                  <Link
+                    href="/pagos-reembolsos"
+                    className="block px-4 py-2 text-xs text-neutral-500 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {legal.payments}
+                  </Link>
+                  <Link
+                    href={SUPPORT_PATH}
+                    className="block px-4 py-2 text-xs text-neutral-500 hover:bg-neutral-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {legal.support}
+                  </Link>
                 </div>
               </>
             )}

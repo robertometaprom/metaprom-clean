@@ -122,7 +122,6 @@ export async function getPublicPreview(
 
   const metadata = buildPublicPreviewMetadata({
     shareSlug: resolved.shareSlug,
-    customerIntent: resolved.customerIntent,
     locale: options?.locale,
     kind: resolved.kind,
   });

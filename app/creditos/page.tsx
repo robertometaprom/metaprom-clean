@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import MisCreditos from "@/components/creditos/MisCreditos";
+import LegalLinks from "@/components/legal/LegalLinks";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import { getLocale, getMessages } from "@/lib/i18n";
@@ -59,6 +60,16 @@ export default async function CreditosPage() {
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-14 sm:px-6 md:py-20">
         <MisCreditos copy={messages.credits} />
       </main>
+
+      <footer className="relative z-10 border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6">
+          <LegalLinks
+            locale={locale}
+            labels={messages.legalNav}
+            className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/40"
+          />
+        </div>
+      </footer>
     </div>
   );
 }

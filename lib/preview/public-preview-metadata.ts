@@ -17,44 +17,26 @@ export type PublicPreviewMetadata = {
 
 export type PublicPreviewMetadataInput = {
   shareSlug: string;
-  customerIntent?: string | null;
   posterImageUrl?: string | null;
   locale?: "es" | "en";
   kind?: PublicPreviewKind;
 };
 
 function buildPreviewTitle(
-  customerIntent: string | null | undefined,
   locale: "es" | "en",
   kind: PublicPreviewKind,
 ): string {
-  const trimmed = customerIntent?.trim();
   const isImage = kind === "advertising_image";
-
-  if (trimmed) {
-    const shortened =
-      trimmed.length > 72 ? `${trimmed.slice(0, 69).trimEnd()}...` : trimmed;
-
-    if (isImage) {
-      return locale === "es"
-        ? `${shortened} · Imagen con Metaprom`
-        : `${shortened} · Image by Metaprom`;
-    }
-
-    return locale === "es"
-      ? `${shortened} · Comercial con Metaprom`
-      : `${shortened} · Commercial by Metaprom`;
-  }
 
   if (isImage) {
     return locale === "es"
-      ? "Imagen creada con Metaprom"
-      : "Image created with Metaprom";
+      ? "Imagen creada con Metaprom AI"
+      : "Image created with Metaprom AI";
   }
 
   return locale === "es"
-    ? "Comercial creado con Metaprom"
-    : "Commercial created with Metaprom";
+    ? "Comercial creado con Metaprom AI"
+    : "Commercial created with Metaprom AI";
 }
 
 function buildPreviewDescription(
@@ -85,7 +67,7 @@ export function buildPublicPreviewMetadata(
   return {
     shareSlug,
     publicUrl: buildPublicPreviewUrl(shareSlug),
-    title: buildPreviewTitle(input.customerIntent, locale, kind),
+    title: buildPreviewTitle(locale, kind),
     description: buildPreviewDescription(locale, kind),
     ogImageUrl: input.posterImageUrl ?? null,
     streamPath:

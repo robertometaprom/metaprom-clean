@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LegalNotice from "@/components/legal/LegalNotice";
 import type { PaymentMethod, PaymentProviderId } from "@/lib/payments/types";
 import { formatPriceMxn } from "@/lib/pricing";
 import type { PurchaseHdResult } from "@/lib/studio-creation";
@@ -92,7 +93,7 @@ export default function Checkout({
           {currency === "MXN" ? formatPriceMxn(price, "es") : `${currency} ${price}`}
         </p>
         <p className="text-neutral-500">
-          Video comercial de 10-15 segundos en HD, sin marca de agua, listo para
+          Video comercial de hasta 8 segundos en HD, sin marca de agua, listo para
           publicar.
         </p>
       </div>
@@ -154,6 +155,7 @@ export default function Checkout({
           <p className="text-center text-xs text-neutral-400">
             Pago procesado por {provider.label}
           </p>
+          <LegalNotice kind="checkout" className="text-neutral-400" />
         </div>
       )}
 

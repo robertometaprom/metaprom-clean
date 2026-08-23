@@ -2,6 +2,7 @@ import Link from "next/link";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { Locale, Messages } from "@/lib/i18n";
 import LegalLinks from "@/components/legal/LegalLinks";
+import SupportEmailLink from "@/components/legal/SupportEmailLink";
 
 type FooterProps = {
   labels: Messages["footer"];
@@ -35,6 +36,9 @@ export default function Footer({ labels, brand, locale, legal }: FooterProps) {
             labels={legal}
             className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/40 md:justify-end"
           />
+          <p className="text-sm text-white/40">
+            <SupportEmailLink />
+          </p>
           <p className="text-sm text-white/30">{labels.copyright}</p>
         </div>
       </div>

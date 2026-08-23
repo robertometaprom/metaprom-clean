@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import type { Messages } from "../lib/i18n.ts";
 import {
   PAYMENTS_POLICY,
+  PRIVACY_POLICY,
   TERMS_POLICY,
   type LegalPolicyCopy,
 } from "../lib/legal/policies.ts";
@@ -31,6 +32,9 @@ function flattenPolicy(copy: LegalPolicyCopy): string {
         if (block.type === "p-support") {
           return [`${block.before}${block.link}${block.after}`];
         }
+        if (block.type === "p-email") {
+          return [`${block.before}support@metaprom.com${block.after}`];
+        }
         return [block.text];
       }),
     )
@@ -44,6 +48,8 @@ const paymentsEs = flattenPolicy(PAYMENTS_POLICY.es);
 const paymentsEn = flattenPolicy(PAYMENTS_POLICY.en);
 const termsEs = flattenPolicy(TERMS_POLICY.es);
 const termsEn = flattenPolicy(TERMS_POLICY.en);
+const privacyEs = flattenPolicy(PRIVACY_POLICY.es);
+const privacyEn = flattenPolicy(PRIVACY_POLICY.en);
 const planesEs = JSON.stringify(getPricingFaq("es"));
 const planesEn = JSON.stringify(getPricingFaq("en"));
 
@@ -161,9 +167,11 @@ test("Planes FAQ matches the guarantee without unlimited-revision or discretiona
 
 test("Premium checkout links to aligned legal pages and does not contradict the guarantee", () => {
   const checkout = readRepo("components/pricing/PackagePurchaseButton.tsx");
-  assert.match(checkout, /href="\/terminos"/);
-  assert.match(checkout, /href="\/pagos-reembolsos"/);
-  assert.match(checkout, /CHECKOUT_LEGAL/);
+  const notice = readRepo("components/legal/LegalNotice.tsx");
+  assert.match(checkout, /LegalNotice/);
+  assert.match(notice, /href="\/terminos"/);
+  assert.match(notice, /href="\/privacidad"/);
+  assert.match(notice, /href="\/pagos-reembolsos"/);
   assert.doesNotMatch(checkout, /may refund|might consider|sole discretion|podremos reembolsar/);
   assert.doesNotMatch(checkout, /Stripe Price|STRIPE_PRICE_ID|webhook/);
 });
@@ -210,4 +218,44 @@ test("GTM #5.3 does not change prices, Stripe, or GTM #1–#5.2 payment protecti
   assert.match(readRepo("lib/security/cost-control.ts"), /enforceSupportCostControl/);
   assert.match(readRepo("lib/security/cost-control.ts"), /getCostControlStore/);
   assert.match(readRepo("lib/security/closed-production-surfaces.ts"), /isClosedProductionSurfacePath/);
+});
+
+test("Privacy is bilingual and Terms add Share, minors, and content/output clarity", () => {
+  assert.match(readRepo("app/privacidad/page.tsx"), /PRIVACY_POLICY/);
+  assert.equal(PRIVACY_POLICY.es.title, "Aviso de Privacidad");
+  assert.equal(PRIVACY_POLICY.en.title, "Privacy Notice");
+  assert.match(privacyEs, /Metaprom AI/);
+  assert.match(privacyEs, /support@metaprom\.com/);
+  assert.match(privacyEn, /support@metaprom\.com/);
+  assert.match(privacyEs, /medición y atribución de primer partido/);
+  assert.match(privacyEn, /first-party measurement and attribution/);
+  assert.match(privacyEs, /de forma efímera/);
+  assert.match(privacyEn, /ephemerally/);
+  assert.match(privacyEs, /no ser indexadas/);
+  assert.match(privacyEn, /not to be indexed/);
+  assert.doesNotMatch(privacyEs, /entidad jurídica|domicilio de privacidad deberá|RFC|S\.A\. de C\.V\./);
+  assert.doesNotMatch(privacyEn, /legal entity still needs|to be constituted|tax id/i);
+  assert.doesNotMatch(
+    `${privacyEs}\n${privacyEn}`,
+    /Supabase|Vercel|OpenAI|Vertex|GCS|Resend|Google Cloud Storage/,
+  );
+  assert.doesNotMatch(privacyEn, /[¿¡]|El responsable del tratamiento/);
+
+  assert.match(termsEs, /contenido identificable de menores/);
+  assert.match(termsEn, /identifiable content of minors/);
+  assert.match(termsEs, /licencia limitada/);
+  assert.match(termsEn, /limited, non-exclusive license/);
+  assert.match(termsEs, /puede no ser único/);
+  assert.match(termsEn, /may not be unique/);
+  assert.match(termsEs, /URL pública/);
+  assert.match(termsEn, /public URL is created/);
+  assert.match(termsEs, /no ser indexadas por buscadores/);
+  assert.match(termsEn, /not to be indexed by search engines/);
+  assert.doesNotMatch(
+    `${termsEs}\n${termsEn}\n${privacyEs}\n${privacyEn}`,
+    /no ofrece hoy un control en la aplicación para revocar|does not currently offer an in-app control to revoke or delete/,
+  );
+  assert.match(paymentsEs, /No son suscripciones/);
+  assert.match(paymentsEs, /paquetes prepagados/);
+  assert.match(paymentsEn, /prepaid packages/);
 });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import LegalLinks from "@/components/legal/LegalLinks";
+import SupportEmailLink from "@/components/legal/SupportEmailLink";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import type { Locale } from "@/lib/i18n";
 import { LEGAL_CHROME } from "@/lib/legal/policies";
@@ -94,6 +95,9 @@ export default function LegalPage({
             locale={resolvedLocale}
             className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/45"
           />
+          <p className="mt-3 text-sm text-white/40">
+            <SupportEmailLink />
+          </p>
           <p className="mt-4 text-xs text-white/30">© Metaprom AI</p>
         </div>
       </footer>

@@ -179,6 +179,31 @@ test("C — checkout bind and webhook snapshot disagree on asset_id fail closed"
   assert.match(persistence, /purchase\.asset_id disagrees with Stripe session snapshot/);
 });
 
+test("Studio and Experience checkout expose compact legal links and 8-second duration copy", () => {
+  const studioCheckout = readRepo("components/checkout/Checkout.tsx");
+  const experience = readRepo("components/experience/ExperienceFlow.tsx");
+  const planes = readRepo("components/pricing/PackagePurchaseButton.tsx");
+  const reveal = readRepo("components/studio/CinematicReveal.tsx");
+  const notice = readRepo("components/legal/LegalNotice.tsx");
+  const google = readRepo("components/GoogleSignInButton.tsx");
+
+  assert.match(studioCheckout, /LegalNotice/);
+  assert.match(experience, /LegalNotice/);
+  assert.match(planes, /LegalNotice/);
+  assert.match(notice, /href="\/terminos"/);
+  assert.match(notice, /href="\/privacidad"/);
+  assert.match(notice, /href="\/pagos-reembolsos"/);
+  assert.match(google, /LegalNotice/);
+  assert.match(google, /kind="auth"/);
+
+  assert.match(studioCheckout, /hasta 8 segundos/);
+  assert.match(experience, /Hasta 8 segundos/);
+  assert.match(reveal, /hasta 8 segundos/);
+  assert.doesNotMatch(studioCheckout, /10-15 segundos|10–15 segundos/);
+  assert.doesNotMatch(experience, /10-15 segundos|10–15 segundos/);
+  assert.doesNotMatch(reveal, /10-15 segundos|10–15 segundos/);
+});
+
 test("Stripe Price env names for the eight packages are unchanged", () => {
   assert.deepEqual(
     CANONICAL_PACKAGES.map((pkg) => [

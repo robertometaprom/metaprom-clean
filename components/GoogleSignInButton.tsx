@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import LegalNotice from "@/components/legal/LegalNotice";
 import { createClient } from "@/lib/supabase/client";
+import type { Locale } from "@/lib/i18n";
 
 type GoogleSignInButtonProps = {
   redirectTo?: string;
@@ -9,6 +11,7 @@ type GoogleSignInButtonProps = {
   label?: string;
   loadingLabel?: string;
   errorLabel?: string;
+  locale?: Locale;
 };
 
 export default function GoogleSignInButton({
@@ -17,6 +20,7 @@ export default function GoogleSignInButton({
   label = "Continuar con Google",
   loadingLabel = "Redirigiendo...",
   errorLabel = "No se pudo iniciar sesión con Google.",
+  locale = "es",
 }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +87,7 @@ export default function GoogleSignInButton({
       {error && (
         <p className="mt-3 text-center text-sm text-red-400">{error}</p>
       )}
+      <LegalNotice kind="auth" locale={locale} className="mt-3" />
     </div>
   );
 }

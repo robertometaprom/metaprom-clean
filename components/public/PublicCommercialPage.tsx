@@ -8,11 +8,13 @@ import ShareOpenedBeacon from "@/components/public/ShareOpenedBeacon";
 type PublicCommercialPageProps = {
   preview: PublicPreview;
   labels: PublicCommercialContent;
+  locale?: "es" | "en";
 };
 
 export default function PublicCommercialPage({
   preview,
   labels,
+  locale = "es",
 }: PublicCommercialPageProps) {
   const isAdvertisingImage = preview.kind === "advertising_image";
 
@@ -89,6 +91,7 @@ export default function PublicCommercialPage({
         <PublicCommercialFooter
           brand={labels.footerBrand}
           tagline={labels.footerTagline}
+          locale={locale}
         />
       </div>
     </main>

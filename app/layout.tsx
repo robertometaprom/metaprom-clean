@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Metaprom — Premium marketing for your business",
   description:
     "Premium marketing images and cinematic commercials that transform how customers perceive your business.",
+  verification: {
+    google: "Z4iHqhKoXHK2Mb4W_k3jGQbb4G5Qgnw8TAROyhjLPrU",
+  },
 };
 
 export default async function RootLayout({

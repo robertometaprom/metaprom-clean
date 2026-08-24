@@ -1,6 +1,6 @@
 {
   "nav": {
-    "brand": "Metaprom",
+    "brand": "Metaprom AI",
     "planes": "Plans",
     "planesCta": "View plans and pricing",
     "signIn": "Sign in",
@@ -15,6 +15,27 @@
     "closeMenu": "Close menu",
     "create": "Create",
     "localeLabel": "Language"
+  },
+  "studioSeo": {
+    "metaTitle": "Studio — Metaprom AI",
+    "metaDescription": "Create premium marketing images and cinematic commercials for your business in Studio."
+  },
+  "about": {
+    "metaTitle": "About Metaprom AI",
+    "metaDescription": "Metaprom AI is a creative platform for producing premium marketing materials for businesses. The official website is www.metaprom.com.",
+    "title": "About Metaprom AI",
+    "intro": "Metaprom AI is a creative platform for producing premium marketing materials for businesses.",
+    "officialWebsite": "The official website is",
+    "studio": "Studio brings the product workflow together. In Studio you can create marketing imagery and cinematic commercial content.",
+    "ai": "Artificial intelligence is part of the underlying creative capability that Metaprom AI uses to produce this material.",
+    "studioCta": "Open Studio"
+  },
+  "examples": {
+    "metaTitle": "Examples — Metaprom AI",
+    "metaDescription": "Examples of premium marketing images and cinematic commercials created with Metaprom AI.",
+    "title": "Examples",
+    "lead": "Examples of premium marketing images and cinematic commercials created with Metaprom AI.",
+    "studioCta": "Open Studio"
   },
   "auth": {
     "subtitle": "Sign in and start creating premium content for your business.",

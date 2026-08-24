@@ -41,6 +41,8 @@ test("closed-path matcher does not touch customer or admin production routes", (
   for (const path of [
     "/",
     "/studio",
+    "/examples",
+    "/about",
     "/planes",
     "/biblioteca",
     "/creditos",

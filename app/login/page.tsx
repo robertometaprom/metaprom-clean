@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import LoginForm from "./LoginForm";
 import { getLocale, getMessages } from "@/lib/i18n";
+import { privateNoIndexMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = privateNoIndexMetadata();
 
 export default async function LoginPage() {
   const locale = await getLocale();

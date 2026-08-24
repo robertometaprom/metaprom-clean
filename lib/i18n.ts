@@ -21,6 +21,27 @@ export type Messages = {
     create: string;
     localeLabel: string;
   };
+  studioSeo: {
+    metaTitle: string;
+    metaDescription: string;
+  };
+  about: {
+    metaTitle: string;
+    metaDescription: string;
+    title: string;
+    intro: string;
+    officialWebsite: string;
+    studio: string;
+    ai: string;
+    studioCta: string;
+  };
+  examples: {
+    metaTitle: string;
+    metaDescription: string;
+    title: string;
+    lead: string;
+    studioCta: string;
+  };
   auth: {
     subtitle: string;
     google: string;

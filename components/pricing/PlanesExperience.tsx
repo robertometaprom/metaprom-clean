@@ -10,6 +10,7 @@ import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { PricingCategoryMeta } from "@/lib/pricing";
 import { getPricingFaq, PRICING_PAGE_COPY } from "@/lib/pricing";
 import LegalLinks from "@/components/legal/LegalLinks";
+import PublicSiteLinks from "@/components/public/PublicSiteLinks";
 import type { Locale, Messages } from "@/lib/i18n";
 
 type PlanesExperienceProps = {
@@ -143,10 +144,15 @@ export default function PlanesExperience({
       </main>
       <footer className="relative z-10 border-t border-white/5">
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
+          <PublicSiteLinks
+            locale={locale}
+            keys={["studio", "examples", "about"]}
+            className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/55"
+          />
           <LegalLinks
             locale={locale}
             labels={legal}
-            className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/40"
+            className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/40"
           />
         </div>
       </footer>

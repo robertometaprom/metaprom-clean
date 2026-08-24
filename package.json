@@ -17,6 +17,7 @@
     "test:video-repair": "tsx --tsconfig tests/tsconfig.video-repair.json --test tests/video-repair.test.ts",
     "test:video-public-auth": "tsx --tsconfig tests/tsconfig.video-public-auth.json --test tests/video-public-auth.test.ts",
     "test:share-launch": "tsx --test tests/share-launch.test.ts",
+    "test:seo": "tsx --test tests/seo-foundation.test.ts",
     "test:closed-production-surfaces": "tsx --test tests/closed-production-surfaces.test.ts",
     "test:gtm4": "tsx --test tests/gtm4-ux-navigation.test.ts",
     "test:gtm5": "tsx --test tests/gtm5-commercial-message.test.ts",

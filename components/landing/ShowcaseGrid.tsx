@@ -5,7 +5,7 @@ import PortfolioImage from "@/components/landing/PortfolioImage";
 import CommercialVideo from "@/components/landing/CommercialVideo";
 
 type ShowcaseGridProps = {
-  headline: string;
+  headline?: string;
   labels: LandingContent["showcaseLabels"];
   items: LandingContent["showcase"];
 };
@@ -96,12 +96,20 @@ export default function ShowcaseGrid({
   if (items.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-32 md:py-40">
-      <h2 className="max-w-3xl text-3xl font-bold tracking-tight text-[#F5F5F0] md:text-5xl">
-        {headline}
-      </h2>
+    <section
+      className={
+        headline
+          ? "mx-auto max-w-7xl px-6 py-32 md:py-40"
+          : "mx-auto max-w-7xl px-6 pb-24 pt-10 md:pb-32 md:pt-14"
+      }
+    >
+      {headline ? (
+        <h2 className="max-w-3xl text-3xl font-bold tracking-tight text-[#F5F5F0] md:text-5xl">
+          {headline}
+        </h2>
+      ) : null}
 
-      <div className="mt-20 grid gap-12 md:gap-16">
+      <div className={headline ? "mt-20 grid gap-12 md:gap-16" : "grid gap-12 md:gap-16"}>
         {items.map((item) => (
           <ShowcaseCard key={item.id} labels={labels} item={item} />
         ))}

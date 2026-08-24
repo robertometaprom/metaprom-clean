@@ -8,7 +8,10 @@ import { getEntitlementBalances } from "@/lib/entitlements";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Business Dashboard — Metaprom AI" };
+export const metadata: Metadata = {
+  title: "Business Dashboard — Metaprom AI",
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
 const ranges: Array<{ value: DashboardRange; label: string }> = [

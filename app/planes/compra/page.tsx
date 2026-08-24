@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = {
   title: "Estado de compra — Metaprom",
   description: "Confirmación de pago de paquetes Metaprom.",
+  robots: { index: false, follow: false },
 };
 
 type CompraPageProps = {

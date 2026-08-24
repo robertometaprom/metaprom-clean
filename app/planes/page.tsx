@@ -10,12 +10,14 @@ import {
   getPackagesByCategory,
   PRICING_PACKAGES,
 } from "@/lib/pricing";
+import { publicIndexMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicIndexMetadata({
   title: "Planes Metaprom — Comerciales e imágenes publicitarias",
   description:
     "Comerciales e imágenes publicitarias listos para usar. Sin suscripciones. Sin vencimientos. Compra solo lo que necesites.",
-};
+  path: "/planes",
+});
 
 export default async function PlanesPage() {
   const locale = await getLocale();

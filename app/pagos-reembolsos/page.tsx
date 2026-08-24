@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import LegalDocument from "@/components/legal/LegalDocument";
 import { getLocale } from "@/lib/i18n";
 import { PAYMENTS_POLICY } from "@/lib/legal/policies";
+import { publicIndexMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = PAYMENTS_POLICY[locale];
 
-  return {
+  return publicIndexMetadata({
     title: copy.metaTitle,
     description: copy.metaDescription,
-  };
+    path: "/pagos-reembolsos",
+  });
 }
 
 export default async function PagosReembolsosPage() {

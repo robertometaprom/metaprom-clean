@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import JsonLd from "@/components/seo/JsonLd";
 import { getLocale } from "@/lib/i18n";
+import {
+  CANONICAL_BRAND_NAME,
+  CANONICAL_SITE_ORIGIN,
+  GOOGLE_SITE_VERIFICATION,
+} from "@/lib/seo/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,11 +20,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Metaprom — Premium marketing for your business",
-  description:
-    "Premium marketing images and cinematic commercials that transform how customers perceive your business.",
+  metadataBase: new URL(CANONICAL_SITE_ORIGIN),
+  title: CANONICAL_BRAND_NAME,
   verification: {
-    google: "Z4iHqhKoXHK2Mb4W_k3jGQbb4G5Qgnw8TAROyhjLPrU",
+    google: GOOGLE_SITE_VERIFICATION,
+  },
+  openGraph: {
+    siteName: CANONICAL_BRAND_NAME,
+    type: "website",
   },
 };
 
@@ -34,7 +43,10 @@ export default async function RootLayout({
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <JsonLd />
+        {children}
+      </body>
     </html>
   );
 }

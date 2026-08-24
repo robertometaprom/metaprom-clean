@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
+import PublicSiteLinks from "@/components/public/PublicSiteLinks";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import type { Locale, Messages } from "@/lib/i18n";
 
@@ -32,6 +33,12 @@ export default function Navbar({ labels, locale }: NavbarProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <PublicSiteLinks
+            locale={locale}
+            keys={["studio", "examples", "about"]}
+            className="hidden items-center gap-4 md:flex"
+            linkClassName="whitespace-nowrap text-[13px] text-white/70 transition hover:text-white sm:text-base"
+          />
           <Link
             href="/planes"
             className="whitespace-nowrap text-[13px] text-white/70 transition hover:text-white sm:text-base"

@@ -3,17 +3,20 @@ import Link from "next/link";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import MetapromLogo from "@/components/studio/MetapromLogo";
 import LegalLinks from "@/components/legal/LegalLinks";
+import PublicSiteLinks from "@/components/public/PublicSiteLinks";
 import SupportForm from "./SupportForm";
 import { getLocale, getMessages } from "@/lib/i18n";
+import { publicIndexMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const messages = await getMessages(locale);
 
-  return {
+  return publicIndexMetadata({
     title: messages.support.metaTitle,
     description: messages.support.metaDescription,
-  };
+    path: "/soporte",
+  });
 }
 
 export default async function SupportPage() {
@@ -59,10 +62,14 @@ export default async function SupportPage() {
 
       <footer className="border-t border-white/5">
         <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
+          <PublicSiteLinks
+            locale={locale}
+            className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/55"
+          />
           <LegalLinks
             locale={locale}
             labels={messages.legalNav}
-            className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/45"
+            className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/45"
           />
         </div>
       </footer>

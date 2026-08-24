@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import LandingVisitBeacon from "@/components/analytics/LandingVisitBeacon";
 import Navbar from "@/components/Navbar";
@@ -13,6 +14,14 @@ import TheReveal from "@/components/landing/TheReveal";
 import VideoUseCases from "@/components/landing/VideoUseCases";
 import WhatIsMetaprom from "@/components/landing/WhatIsMetaprom";
 import { getLandingContent } from "@/lib/i18n";
+import { publicIndexMetadata } from "@/lib/seo/metadata";
+import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "@/lib/seo/site";
+
+export const metadata: Metadata = publicIndexMetadata({
+  title: HOMEPAGE_TITLE,
+  description: HOMEPAGE_DESCRIPTION,
+  path: "/",
+});
 
 const ShowcaseGrid = dynamic(
   () => import("@/components/landing/ShowcaseGrid"),

@@ -49,10 +49,15 @@ test("pixel loader exists once and does not identify or send identity fields", (
   assert.match(layout, /import TikTokPixel/);
   assert.match(layout, /<TikTokPixel \/>/);
   assert.equal((layout.match(/<TikTokPixel/g) ?? []).length, 1);
+  assert.doesNotMatch(pixel, /["']use client["']/);
   assert.match(pixel, /id="tiktok-pixel"/);
+  assert.match(pixel, /strategy="beforeInteractive"/);
+  assert.doesNotMatch(pixel, /afterInteractive/);
   assert.match(pixel, /ttq\.load\(/);
   assert.match(pixel, /ttq\.page\(\)/);
   assert.equal((pixel.match(/ttq\.load\(/g) ?? []).length, 1);
+  assert.equal((pixel.match(/ttq\.page\(\)/g) ?? []).length, 1);
+  assert.doesNotMatch(layout, /ttq\.page\(/);
   assert.doesNotMatch(pixel, /ttq\.identify\(/);
   assert.doesNotMatch(browser, /ttq\.identify\(/);
   assert.doesNotMatch(`${pixel}\n${browser}\n${eventsApi}`, /"email"\s*:|"phone"\s*:|"external_id"\s*:/);
@@ -66,13 +71,16 @@ test("ViewContent is scoped to landing_visit, not preview or /planes", () => {
   const home = readRepo("app/page.tsx");
   const planes = readRepo("app/planes/page.tsx");
   const previewHook = readRepo("components/analytics/use-preview-viewed.ts");
+  const browser = readRepo("lib/tiktok/browser.ts");
 
   assert.match(home, /LandingVisitBeacon/);
   assert.match(landing, /ViewContent/);
+  assert.match(landing, /whenTikTokPixelReady/);
   assert.match(landing, /tiktokLandingViewContentEventId/);
   assert.match(landing, /tiktokLandingViewContentEventId\(visitorId, sessionKey\)/);
+  assert.match(browser, /ttq\?\.ready/);
   assert.doesNotMatch(planes, /ViewContent/);
-  assert.doesNotMatch(previewHook, /ViewContent|trackTikTokPixelEvent/);
+  assert.doesNotMatch(previewHook, /ViewContent|trackTikTokPixelEvent|whenTikTokPixelReady/);
 });
 
 test("CompleteRegistration is new signup only and uses signup_completed event_id", () => {

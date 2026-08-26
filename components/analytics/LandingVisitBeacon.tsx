@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getOrCreateVisitorId } from "@/lib/analytics/browser";
 import { trackClientFunnelEvent } from "@/lib/analytics/client";
-import { trackTikTokPixelEvent } from "@/lib/tiktok/browser";
+import { trackTikTokPixelEvent, whenTikTokPixelReady } from "@/lib/tiktok/browser";
 import { tiktokLandingViewContentEventId } from "@/lib/tiktok/ids";
 
 const SESSION_KEY = "mp.landing_visit";
@@ -41,9 +41,12 @@ export default function LandingVisitBeacon() {
       metadata: { landing_path: "/" },
     });
     if (visitorId) {
-      trackTikTokPixelEvent({
-        event: "ViewContent",
-        eventId: tiktokLandingViewContentEventId(visitorId, sessionKey),
+      const eventId = tiktokLandingViewContentEventId(visitorId, sessionKey);
+      whenTikTokPixelReady(() => {
+        trackTikTokPixelEvent({
+          event: "ViewContent",
+          eventId,
+        });
       });
     }
   }, []);

@@ -1,26 +1,20 @@
-"use client";
-
 import Script from "next/script";
-import { usePathname } from "next/navigation";
 import { getBrowserTikTokPixelId } from "@/lib/tiktok/browser";
 
 /**
- * Single production TikTok Pixel loader. Skips the internal /analytics dashboard.
+ * Single production TikTok Pixel loader in the root document.
+ * Skips the internal /analytics dashboard.
  * Does not call ttq.identify and does not enable Automatic Advanced Matching.
  */
 export default function TikTokPixel() {
-  const pathname = usePathname();
   const pixelId = getBrowserTikTokPixelId();
 
   if (!pixelId) {
     return null;
   }
 
-  if (pathname === "/analytics" || pathname.startsWith("/analytics/")) {
-    return null;
-  }
-
   const snippet = `!function (w, d, t) {
+  if (w.location.pathname === "/analytics" || w.location.pathname.indexOf("/analytics/") === 0) return;
   w.TikTokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
   ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
   ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
@@ -39,7 +33,7 @@ export default function TikTokPixel() {
 }(window, document, 'ttq');`;
 
   return (
-    <Script id="tiktok-pixel" strategy="afterInteractive">
+    <Script id="tiktok-pixel" strategy="beforeInteractive">
       {snippet}
     </Script>
   );

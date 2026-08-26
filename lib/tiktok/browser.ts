@@ -1,6 +1,7 @@
 import { isSafeTikTokPixelId, tiktokInitiateCheckoutEventId } from "@/lib/tiktok/ids";
 
 type TikTokQueue = {
+  ready?: (callback: () => void) => void;
   track?: (
     event: string,
     properties?: Record<string, unknown>,
@@ -17,6 +18,35 @@ declare global {
 export function getBrowserTikTokPixelId(): string | null {
   const value = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID?.trim() ?? "";
   return isSafeTikTokPixelId(value) ? value : null;
+}
+
+export function whenTikTokPixelReady(callback: () => void): void {
+  try {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const attach = (): boolean => {
+      if (typeof window.ttq?.ready === "function") {
+        window.ttq.ready(callback);
+        return true;
+      }
+      return false;
+    };
+
+    if (attach()) {
+      return;
+    }
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (attach() || Date.now() - startedAt > 10_000) {
+        window.clearInterval(timer);
+      }
+    }, 50);
+  } catch {
+    // Observability only.
+  }
 }
 
 export function trackTikTokPixelEvent(input: {

@@ -218,3 +218,20 @@ test("analytics and Facebook attribution files were not modified by this legal b
   assert.match(cookies, /applyFirstPartyAnalyticsCookies/);
   assert.doesNotMatch(record, /facebook\.net|fbq\(|gtag\(/);
 });
+
+test("privacy discloses TikTok Pixel and Events API without AAM or identity fields", () => {
+  assert.match(privacyEs, /TikTok Pixel/);
+  assert.match(privacyEs, /TikTok Events API/);
+  assert.match(privacyEs, /_ttp/);
+  assert.match(privacyEs, /ttclid/);
+  assert.match(privacyEs, /no envía de forma intencional correo electrónico, teléfono ni external_id/);
+  assert.match(privacyEs, /no habilita Automatic Advanced Matching/);
+  assert.doesNotMatch(privacyEs, /ni TikTok Pixel/);
+  assert.match(privacyEn, /TikTok Pixel/);
+  assert.match(privacyEn, /TikTok Events API/);
+  assert.match(privacyEn, /_ttp/);
+  assert.match(privacyEn, /ttclid/);
+  assert.match(privacyEn, /does not intentionally send email, phone, or external_id/);
+  assert.match(privacyEn, /does not enable Automatic Advanced Matching/);
+  assert.doesNotMatch(privacyEn, /or TikTok Pixel/);
+});

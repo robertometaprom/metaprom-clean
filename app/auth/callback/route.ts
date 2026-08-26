@@ -6,6 +6,13 @@ import {
 } from "@/lib/auth/oauth-callback-diagnostics";
 import { readAcquisitionFromCookies, readVisitorIdFromCookies } from "@/lib/analytics/cookies";
 import { recordSignupCompleted } from "@/lib/analytics/record";
+import { trackTikTokServerEvent } from "@/lib/tiktok/events-api";
+import {
+  sanitizeTikTokTtp,
+  shouldEmitTikTokOnFunnelInsert,
+  tiktokCompleteRegistrationEventId,
+  TIKTOK_TTP_COOKIE_NAME,
+} from "@/lib/tiktok/ids";
 import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -138,12 +145,24 @@ export async function GET(request: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await recordSignupCompleted({
+        const signupResult = await recordSignupCompleted({
           userId: user.id,
           createdAt: user.created_at,
           visitorId: readVisitorIdFromCookies(request.cookies),
           acquisition: readAcquisitionFromCookies(request.cookies),
         });
+        if (shouldEmitTikTokOnFunnelInsert(signupResult)) {
+          const acquisition = readAcquisitionFromCookies(request.cookies);
+          await trackTikTokServerEvent({
+            event: "CompleteRegistration",
+            eventId: tiktokCompleteRegistrationEventId(user.id),
+            pageUrl: "/studio",
+            user: {
+              ttclid: acquisition?.tiktok?.ttclid ?? null,
+              ttp: sanitizeTikTokTtp(request.cookies.get(TIKTOK_TTP_COOKIE_NAME)?.value),
+            },
+          });
+        }
       }
     } catch (analyticsError) {
       console.error("signup analytics failed:", analyticsError);

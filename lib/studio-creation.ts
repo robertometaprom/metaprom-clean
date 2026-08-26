@@ -34,6 +34,7 @@ import {
 } from "@/lib/studio-prompts";
 import { appendCreationRunId } from "@/lib/analytics/creation-run";
 import { createClient } from "@/lib/supabase/client";
+import { trackTikTokInitiateCheckoutPixel } from "@/lib/tiktok/browser";
 
 export type CreationStep = "image" | "video" | "done";
 
@@ -893,6 +894,20 @@ export async function purchaseHdCommercial(
   const sessionId = readString(checkoutData.sessionId);
   const oxxoReference = readString(checkoutData.oxxoReference);
   const provider = readString(checkoutData.provider);
+  const purchaseId =
+    checkoutData.purchaseId == null ? undefined : String(checkoutData.purchaseId);
+
+  if (purchaseId) {
+    trackTikTokInitiateCheckoutPixel({
+      purchaseId,
+      value:
+        typeof checkoutData.amountMxn === "number"
+          ? checkoutData.amountMxn
+          : undefined,
+      currency: "MXN",
+      contentId: readString(checkoutData.productKey) ?? "commercial_1",
+    });
+  }
 
   if (redirectUrl) {
     input.onStatus?.("Abriendo checkout seguro...");

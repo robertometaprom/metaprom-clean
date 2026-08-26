@@ -1,5 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 import {
+  applyFirstTouchTikTokClickId,
   incomingFromSearchParams,
   incomingShareTouch,
   parseAcquisitionState,
@@ -16,6 +17,11 @@ import {
   VISITOR_COOKIE_MAX_AGE_SECONDS,
   VISITOR_COOKIE_NAME,
 } from "@/lib/analytics/ids";
+import {
+  sanitizeTikTokClickId,
+  sanitizeTikTokTtp,
+  TIKTOK_TTP_COOKIE_NAME,
+} from "@/lib/tiktok/ids";
 
 export type CookieReader = {
   get(name: string): { value: string } | undefined;
@@ -132,7 +138,11 @@ export function applyFirstPartyAnalyticsCookies(
         pathname,
       });
 
-  const next = resolveAcquisitionState(existing, incoming);
+  const withOrigin = resolveAcquisitionState(existing, incoming);
+  const next = applyFirstTouchTikTokClickId(
+    withOrigin,
+    sanitizeTikTokClickId(request.nextUrl.searchParams.get("ttclid")),
+  );
   if (!next) {
     return;
   }
@@ -148,4 +158,26 @@ export function applyFirstPartyAnalyticsCookies(
     serialized,
     cookieOptions(ACQUISITION_COOKIE_MAX_AGE_SECONDS),
   );
+}
+
+export function readTikTokClickIdFromAcquisition(
+  acquisition: AcquisitionState | null,
+): string | null {
+  return sanitizeTikTokClickId(acquisition?.tiktok?.ttclid);
+}
+
+export function readTikTokTtpFromRequest(request: Request): string | null {
+  return sanitizeTikTokTtp(
+    getCookieFromHeader(request.headers.get("cookie"), TIKTOK_TTP_COOKIE_NAME),
+  );
+}
+
+export function readTikTokCheckoutSnapshot(request: Request): {
+  ttclid: string | null;
+  ttp: string | null;
+} {
+  return {
+    ttclid: readTikTokClickIdFromAcquisition(readAcquisitionFromRequest(request)),
+    ttp: readTikTokTtpFromRequest(request),
+  };
 }

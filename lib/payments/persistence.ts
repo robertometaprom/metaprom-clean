@@ -4,6 +4,12 @@ import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
 import { consumeCommercialForAsset } from "@/lib/entitlements/consume-commercial";
 import type { PricingPackage } from "@/lib/pricing";
 import { recordPremiumActivated, recordPurchaseCompleted } from "@/lib/analytics/record";
+import {
+  tiktokUserFromPurchaseMetadata,
+  trackTikTokServerEvent,
+} from "@/lib/tiktok/events-api";
+import { shouldEmitTikTokOnFunnelInsert, tiktokPurchaseEventId } from "@/lib/tiktok/ids";
+import { resolveTikTokPurchaseMoney } from "@/lib/tiktok/purchase-value";
 
 import {
   isCommercialWorkflowAsset,
@@ -320,6 +326,47 @@ async function fulfillPackageEntitlements(
   }
 }
 
+async function emitTikTokPurchaseIfNew(input: {
+  insertResult: "inserted" | "duplicate" | "failed" | "skipped";
+  providerId: PaymentProviderId;
+  purchase: PurchaseRecord;
+  result: PaymentWebhookResult;
+  pkg: PricingPackage | null;
+}): Promise<void> {
+  if (!shouldEmitTikTokOnFunnelInsert(input.insertResult)) {
+    return;
+  }
+
+  const money = resolveTikTokPurchaseMoney({
+    providerId: input.providerId,
+    chargedAmountTotal: input.result.chargedAmountTotal,
+    chargedCurrency: input.result.chargedCurrency,
+    catalogAmountMajor: input.pkg?.displayPrice,
+    catalogCurrency: input.pkg ? "MXN" : null,
+  });
+  if (!money) {
+    console.error("tiktok purchase skipped: missing trusted charged amount", {
+      purchaseId: input.purchase.id,
+      providerId: input.providerId,
+    });
+    return;
+  }
+
+  await trackTikTokServerEvent({
+    event: "Purchase",
+    eventId: tiktokPurchaseEventId(input.purchase.id),
+    pageUrl: "/planes/compra",
+    user: tiktokUserFromPurchaseMetadata(toRecordMetadata(input.purchase.metadata)),
+    properties: {
+      value: money.value,
+      currency: money.currency,
+      contentId: input.purchase.product_id,
+      contentName:
+        typeof input.pkg?.name === "string" ? input.pkg.name : null,
+    },
+  });
+}
+
 export async function persistPaymentResult(
   supabase: SupabaseClient,
   providerId: PaymentProviderId,
@@ -349,13 +396,20 @@ export async function persistPaymentResult(
     if (result.status === "completed") {
       await fulfillPackageEntitlements(supabase, purchase, pkg);
       try {
-        await recordPurchaseCompleted({
+        const purchaseInsertResult = await recordPurchaseCompleted({
           userId: purchase.user_id,
           purchaseId: purchase.id,
           productId: purchase.product_id,
           amountMxn: pkg?.displayPrice,
           currency: pkg ? "MXN" : undefined,
           sessionId: result.sessionId,
+        });
+        await emitTikTokPurchaseIfNew({
+          insertResult: purchaseInsertResult,
+          providerId,
+          purchase,
+          result,
+          pkg,
         });
       } catch (analyticsError) {
         console.error("purchase_completed analytics failed:", analyticsError);
@@ -412,13 +466,20 @@ export async function persistPaymentResult(
   if (result.status === "completed") {
     await fulfillPackageEntitlements(supabase, nextPurchase, pkg);
     try {
-      await recordPurchaseCompleted({
+      const purchaseInsertResult = await recordPurchaseCompleted({
         userId: nextPurchase.user_id,
         purchaseId: nextPurchase.id,
         productId: nextPurchase.product_id,
         amountMxn: pkg?.displayPrice,
         currency: pkg ? "MXN" : undefined,
         sessionId: result.sessionId,
+      });
+      await emitTikTokPurchaseIfNew({
+        insertResult: purchaseInsertResult,
+        providerId,
+        purchase: nextPurchase,
+        result,
+        pkg,
       });
     } catch (analyticsError) {
       console.error("purchase_completed analytics failed:", analyticsError);

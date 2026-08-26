@@ -15,6 +15,7 @@ import type {
   PaymentSessionStatus,
 } from "@/lib/payments/types";
 import { getPricingPackageById } from "@/lib/pricing";
+import { readTikTokCheckoutSnapshot } from "@/lib/analytics/cookies";
 
 export const runtime = "nodejs";
 
@@ -165,6 +166,7 @@ async function postWithTrace(req: Request, traceId: string) {
   }
 
   try {
+    const tiktok = readTikTokCheckoutSnapshot(req);
     const result = await createCheckoutSession(supabase, {
       productKey,
       userId: user.id,
@@ -172,6 +174,8 @@ async function postWithTrace(req: Request, traceId: string) {
       assetId,
       ownedAsset,
       paymentMethod,
+      tiktokTtclid: tiktok.ttclid,
+      tiktokTtp: tiktok.ttp,
     });
 
     logTrace(traceId, "package checkout created", {
@@ -276,6 +280,8 @@ async function getWithTrace(req: Request, traceId: string) {
       stripePriceId: session.stripePriceId,
       stripeAssetId: session.stripeAssetId,
       stripeUserId: session.stripeUserId,
+      chargedAmountTotal: session.chargedAmountTotal,
+      chargedCurrency: session.chargedCurrency,
     });
     if (persisted?.product_id) {
       persistedProductId = persisted.product_id;

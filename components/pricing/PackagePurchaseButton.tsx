@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import LegalNotice from "@/components/legal/LegalNotice";
 import type { Locale } from "@/lib/i18n";
+import { trackTikTokInitiateCheckoutPixel } from "@/lib/tiktok/browser";
 
 type PackagePurchaseButtonProps = {
   productKey: string;
@@ -40,6 +41,9 @@ export default function PackagePurchaseButton({
         redirectUrl?: string;
         status?: string;
         sessionId?: string;
+        purchaseId?: string | number;
+        amountMxn?: number;
+        productKey?: string;
       };
 
       if (response.status === 401) {
@@ -49,6 +53,15 @@ export default function PackagePurchaseButton({
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo iniciar el pago.");
+      }
+
+      if (data.purchaseId != null) {
+        trackTikTokInitiateCheckoutPixel({
+          purchaseId: data.purchaseId,
+          value: data.amountMxn,
+          currency: "MXN",
+          contentId: data.productKey ?? productKey,
+        });
       }
 
       if (data.redirectUrl) {

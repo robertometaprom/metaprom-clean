@@ -38,6 +38,10 @@ export type CheckoutSession = {
   stripePriceId?: string | null;
   stripeAssetId?: string | null;
   stripeUserId?: string | null;
+  /** Stripe Checkout Session amount_total in minor units, when retrieved. */
+  chargedAmountTotal?: number | null;
+  /** Stripe Checkout Session currency, when retrieved. */
+  chargedCurrency?: string | null;
 };
 
 export type PaymentWebhookResult = {
@@ -50,6 +54,10 @@ export type PaymentWebhookResult = {
   /** Server-written Checkout Session metadata; used only as a tamper check. */
   stripeAssetId?: string | null;
   stripeUserId?: string | null;
+  /** Stripe Checkout Session amount_total in minor units, when retrieved. */
+  chargedAmountTotal?: number | null;
+  /** Stripe Checkout Session currency, when retrieved. */
+  chargedCurrency?: string | null;
 };
 
 export type PaymentWebhookPayload = {

@@ -9,6 +9,13 @@ import {
 
 import { grantPackageEntitlementFromPurchase } from "@/lib/entitlements";
 import { recordCheckoutStarted, recordPremiumActivated, recordPurchaseCompleted } from "@/lib/analytics/record";
+import { trackTikTokServerEvent } from "@/lib/tiktok/events-api";
+import {
+  shouldEmitTikTokOnFunnelInsert,
+  tiktokInitiateCheckoutEventId,
+  tiktokPurchaseEventId,
+} from "@/lib/tiktok/ids";
+import { resolveTikTokPurchaseMoney } from "@/lib/tiktok/purchase-value";
 import { ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL } from "@/lib/entitlements/flags";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -41,6 +48,9 @@ export type CreateCheckoutSessionInput = {
    * Preferred method hint. Package checkouts default to card + OXXO in Stripe.
    */
   paymentMethod?: PaymentMethod;
+  /** First-party TikTok click / cookie snapshot for later Events API Purchase. */
+  tiktokTtclid?: string | null;
+  tiktokTtp?: string | null;
 };
 
 export type CreateCheckoutSessionResult = {
@@ -182,6 +192,8 @@ export async function createCheckoutSession(
         pkg.category === "commercials" ? "commercial" : "advertising_asset",
       checkoutKind: "package",
       consumeCurrentProject: Boolean(assetId) && pkg.category === "commercials",
+      ...(input.tiktokTtclid ? { tiktokTtclid: input.tiktokTtclid } : {}),
+      ...(input.tiktokTtp ? { tiktokTtp: input.tiktokTtp } : {}),
     },
     completed_at:
       session.status === "completed" ? new Date().toISOString() : null,
@@ -219,6 +231,21 @@ export async function createCheckoutSession(
         assetId,
       });
     }
+    await trackTikTokServerEvent({
+      event: "InitiateCheckout",
+      eventId: tiktokInitiateCheckoutEventId(purchase.id),
+      pageUrl: assetId ? "/studio" : "/planes",
+      user: {
+        ttclid: input.tiktokTtclid ?? null,
+        ttp: input.tiktokTtp ?? null,
+      },
+      properties: {
+        value: pkg.displayPrice,
+        currency: "MXN",
+        contentId: pkg.id,
+        contentName: pkg.name,
+      },
+    });
   } catch (analyticsError) {
     console.error("checkout_started analytics failed:", analyticsError);
   }
@@ -233,7 +260,7 @@ export async function createCheckoutSession(
       metadata: { instantCompletion: true },
     });
     try {
-      await recordPurchaseCompleted({
+      const purchaseInsertResult = await recordPurchaseCompleted({
         userId: input.userId,
         purchaseId: purchase.id,
         productId: pkg.id,
@@ -241,6 +268,30 @@ export async function createCheckoutSession(
         currency: "MXN",
         sessionId: session.sessionId,
       });
+      if (shouldEmitTikTokOnFunnelInsert(purchaseInsertResult)) {
+        const money = resolveTikTokPurchaseMoney({
+          providerId: provider.id,
+          catalogAmountMajor: pkg.displayPrice,
+          catalogCurrency: "MXN",
+        });
+        if (money) {
+          await trackTikTokServerEvent({
+            event: "Purchase",
+            eventId: tiktokPurchaseEventId(purchase.id),
+            pageUrl: assetId ? "/studio" : "/planes/compra",
+            user: {
+              ttclid: input.tiktokTtclid ?? null,
+              ttp: input.tiktokTtp ?? null,
+            },
+            properties: {
+              value: money.value,
+              currency: money.currency,
+              contentId: pkg.id,
+              contentName: pkg.name,
+            },
+          });
+        }
+      }
       await recordPremiumActivated({
         userId: input.userId,
         purchaseId: purchase.id,

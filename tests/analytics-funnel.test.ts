@@ -10,6 +10,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  applyFirstTouchTikTokClickId,
   incomingFromSearchParams,
   incomingShareTouch,
   isShareAttributed,
@@ -140,6 +141,37 @@ test("first-touch origin is not overwritten by internal navigation; first share 
 
   const roundTrip = parseAcquisitionState(serializeAcquisitionState(sticky!));
   assert.deepEqual(roundTrip, sticky);
+});
+
+test("ttclid is first-touch and does not overwrite origin or Share attribution", () => {
+  const utm = incomingFromSearchParams({
+    searchParams: new URLSearchParams("utm_source=google&utm_medium=cpc"),
+    referrer: "https://www.google.com/",
+    requestHost: "www.metaprom.com",
+    pathname: "/",
+    at: 1,
+  });
+  const first = resolveAcquisitionState(null, utm);
+  const withTtclid = applyFirstTouchTikTokClickId(first, "E0TESTTTCLID001", 2);
+  assert.equal(withTtclid?.origin.kind, "utm");
+  assert.equal(withTtclid?.tiktok?.ttclid, "E0TESTTTCLID001");
+
+  const later = applyFirstTouchTikTokClickId(withTtclid, "E0OTHERCLICKID", 3);
+  assert.equal(later?.tiktok?.ttclid, "E0TESTTTCLID001");
+
+  const share = incomingShareTouch({
+    shareSlug: SLUG_A,
+    shareChannel: "whatsapp",
+    at: 4,
+  });
+  const withShare = resolveAcquisitionState(later, share);
+  assert.equal(withShare?.origin.kind, "utm");
+  assert.equal(withShare?.share?.shareSlug, SLUG_A);
+  assert.equal(withShare?.tiktok?.ttclid, "E0TESTTTCLID001");
+
+  const roundTrip = parseAcquisitionState(serializeAcquisitionState(withShare!));
+  assert.equal(roundTrip?.tiktok?.ttclid, "E0TESTTTCLID001");
+  assert.equal(roundTrip?.share?.shareSlug, SLUG_A);
 });
 
 test("share-first arrival records origin=share and keeps old URLs without ch valid", () => {

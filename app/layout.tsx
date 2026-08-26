@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import JsonLd from "@/components/seo/JsonLd";
+import TikTokPixel from "@/components/analytics/TikTokPixel";
 import { getLocale } from "@/lib/i18n";
 import {
   CANONICAL_BRAND_NAME,
@@ -45,6 +46,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <JsonLd />
+        <TikTokPixel />
         {children}
       </body>
     </html>

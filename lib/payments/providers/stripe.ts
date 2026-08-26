@@ -103,8 +103,23 @@ async function retrieveCheckoutSessionWithPrice(
   });
 }
 
+function chargedAmountFromStripeSession(session: Stripe.Checkout.Session): {
+  chargedAmountTotal: number | null;
+  chargedCurrency: string | null;
+} {
+  return {
+    chargedAmountTotal:
+      typeof session.amount_total === "number" ? session.amount_total : null,
+    chargedCurrency:
+      typeof session.currency === "string" && session.currency.trim()
+        ? session.currency
+        : null,
+  };
+}
+
 function toCheckoutSession(session: Stripe.Checkout.Session): CheckoutSession {
   const purchaseId = requirePurchaseId(session);
+  const charged = chargedAmountFromStripeSession(session);
 
   return {
     sessionId: session.id,
@@ -115,6 +130,8 @@ function toCheckoutSession(session: Stripe.Checkout.Session): CheckoutSession {
     stripePriceId: extractStripePriceId(session),
     stripeAssetId: session.metadata?.assetId || null,
     stripeUserId: session.metadata?.userId || null,
+    chargedAmountTotal: charged.chargedAmountTotal,
+    chargedCurrency: charged.chargedCurrency,
   };
 }
 
@@ -122,6 +139,7 @@ function toWebhookResult(
   session: Stripe.Checkout.Session,
   status?: PaymentSessionStatus,
 ): PaymentWebhookResult {
+  const charged = chargedAmountFromStripeSession(session);
   return {
     sessionId: session.id,
     purchaseId: requirePurchaseId(session),
@@ -133,6 +151,8 @@ function toWebhookResult(
     stripePriceId: extractStripePriceId(session),
     stripeAssetId: session.metadata?.assetId || null,
     stripeUserId: session.metadata?.userId || null,
+    chargedAmountTotal: charged.chargedAmountTotal,
+    chargedCurrency: charged.chargedCurrency,
   };
 }
 

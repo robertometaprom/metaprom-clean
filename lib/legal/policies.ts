@@ -672,7 +672,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
     title: "Aviso de Privacidad",
     description:
       "Este aviso describe los datos que trata Metaprom AI, para qué los utiliza y cómo puedes ejercer tus derechos en México.",
-    updated: "22 de agosto de 2026",
+    updated: "25 de agosto de 2026",
     ...LEGAL_CHROME.es,
     sections: [
       {
@@ -708,6 +708,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
               "Metadatos de pago y facturación: producto, importe, moneda, estado, referencia y registros necesarios para acreditar y conciliar pagos. Stripe procesa los datos completos de tarjeta; Metaprom AI no declara almacenarlos.",
               "Identificadores de visitante y adquisición de primer partido: un identificador aleatorio de visitante y una atribución de origen o Share. Estos identificadores no contienen nombre, correo, teléfono ni el contenido de tus prompts.",
               "Referrer y atribución UTM: host de referencia y parámetros UTM cuando llegan con la visita.",
+              "Identificadores de clic y cookie de TikTok usados para medición publicitaria: ttclid cuando llega en la URL de visita y _ttp cuando el Pixel de TikTok la establece en este sitio. No contienen nombre, correo ni teléfono.",
               "Eventos de Share: que se creó o abrió una URL compartida, el canal cuando está disponible y el identificador público del Share, sin el correo de la cuenta ni la identidad del titular.",
               "Comunicaciones de soporte: el nombre, correo, categoría y mensaje que envías, y el seguimiento de la resolución.",
               "Preferencia de idioma: una cookie de primer partido para recordar el idioma de la interfaz.",
@@ -731,6 +732,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
               "Prestar soporte, corregir errores, atender reembolsos y conservar evidencia de las solicitudes.",
               "Proteger cuentas, investigar abuso, mantener la disponibilidad y diagnosticar fallas.",
               "Medir el uso del producto y la atribución de visitas y Shares con analítica de primer partido de Metaprom AI.",
+              "Medir conversiones publicitarias con TikTok Pixel y TikTok Events API.",
               "Cumplir obligaciones legales y hacer valer nuestras condiciones.",
             ],
           },
@@ -741,11 +743,15 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
         blocks: [
           {
             type: "p",
-            text: "Metaprom AI utiliza medición y atribución de primer partido. Usamos una cookie de visitante (mp_vid, 180 días) con un identificador aleatorio y una cookie de adquisición (mp_acq, 30 días) para recordar el origen de la visita y el primer Share abierto, incluidos referrer y UTM cuando existen. También usamos almacenamiento de sesión necesario para autenticación y una cookie de idioma.",
+            text: "Metaprom AI utiliza medición y atribución de primer partido. Usamos una cookie de visitante (mp_vid, 180 días) con un identificador aleatorio y una cookie de adquisición (mp_acq, 30 días) para recordar el origen de la visita y el primer Share abierto, incluidos referrer y UTM cuando existen. mp_acq también puede conservar el primer ttclid de TikTok durante esa ventana de 30 días. También usamos almacenamiento de sesión necesario para autenticación y una cookie de idioma.",
           },
           {
             type: "p",
-            text: "Esta medición no accede a conversaciones, contactos o mensajes de WhatsApp. No usamos GA4, Google Tag Manager, Meta Pixel ni TikTok Pixel. Los datos de Facebook Business Suite no forman parte de la analítica de Metaprom AI.",
+            text: "Además usamos TikTok Pixel en el navegador y TikTok Events API en el servidor para medición publicitaria y de conversiones. El Pixel puede establecer una cookie de primer partido _ttp. Esta implementación no habilita Automatic Advanced Matching (AAM) y no envía de forma intencional correo electrónico, teléfono ni external_id a TikTok. TikTok puede recibir datos técnicos habituales del Pixel o de la petición al servidor, según sus propias prácticas.",
+          },
+          {
+            type: "p",
+            text: "Esta medición no accede a conversaciones, contactos o mensajes de WhatsApp. No usamos GA4, Google Tag Manager ni Meta Pixel. Los datos de Facebook Business Suite no forman parte de la analítica de Metaprom AI.",
           },
         ],
       },
@@ -790,7 +796,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
           },
           {
             type: "p",
-            text: "En el servicio, Google se usa para iniciar sesión y Stripe para procesar pagos. Algunos proveedores pueden operar fuera de México. Procuramos compartir únicamente lo necesario. También podremos comunicar información cuando la ley lo exija, para proteger derechos o atender a una autoridad competente.",
+            text: "En el servicio, Google se usa para iniciar sesión y Stripe para procesar pagos. TikTok se usa para medición publicitaria de conversiones. Algunos proveedores pueden operar fuera de México. Procuramos compartir únicamente lo necesario. También podremos comunicar información cuando la ley lo exija, para proteger derechos o atender a una autoridad competente.",
           },
         ],
       },
@@ -837,7 +843,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
     title: "Privacy Notice",
     description:
       "This notice describes the data Metaprom AI processes, why it is used, and how you can exercise your rights in Mexico.",
-    updated: "August 22, 2026",
+    updated: "August 25, 2026",
     ...LEGAL_CHROME.en,
     sections: [
       {
@@ -872,6 +878,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
               "Payment and billing metadata: product, amount, currency, status, reference, and records needed to credit and reconcile payments. Stripe processes full card data; Metaprom AI does not claim to store it.",
               "First-party visitor and acquisition identifiers: a random visitor identifier and an origin or Share attribution. These identifiers do not contain your name, email, phone number, or prompt content.",
               "Referrer and UTM attribution: referring host and UTM parameters when they arrive with the visit.",
+              "TikTok click and cookie identifiers used for advertising measurement: ttclid when it arrives on the visit URL, and _ttp when the TikTok Pixel sets it on this site. They do not contain your name, email, or phone number.",
               "Share events: that a shared URL was created or opened, the channel when available, and the public Share identifier, without the account email or owner identity.",
               "Support communications: the name, email, category, and message you send, and follow-up of the resolution.",
               "Language preference: a first-party cookie to remember the interface language.",
@@ -895,6 +902,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
               "Provide support, correct errors, handle refunds, and keep evidence of requests.",
               "Protect accounts, investigate abuse, maintain availability, and diagnose failures.",
               "Measure product use and the attribution of visits and Shares with Metaprom AI first-party analytics.",
+              "Measure advertising conversions with TikTok Pixel and TikTok Events API.",
               "Comply with legal obligations and enforce our terms.",
             ],
           },
@@ -905,11 +913,15 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
         blocks: [
           {
             type: "p",
-            text: "Metaprom AI uses first-party measurement and attribution. We use a visitor cookie (mp_vid, 180 days) with a random identifier and an acquisition cookie (mp_acq, 30 days) to remember visit origin and the first Share opened, including referrer and UTM when present. We also use session storage needed for authentication and a language cookie.",
+            text: "Metaprom AI uses first-party measurement and attribution. We use a visitor cookie (mp_vid, 180 days) with a random identifier and an acquisition cookie (mp_acq, 30 days) to remember visit origin and the first Share opened, including referrer and UTM when present. mp_acq may also retain the first TikTok ttclid during that 30-day window. We also use session storage needed for authentication and a language cookie.",
           },
           {
             type: "p",
-            text: "This measurement does not access WhatsApp conversations, contacts, or messages. We do not use GA4, Google Tag Manager, Meta Pixel, or TikTok Pixel. Facebook Business Suite data is not part of Metaprom AI analytics.",
+            text: "We also use TikTok Pixel in the browser and TikTok Events API on the server for advertising and conversion measurement. The Pixel may set a first-party _ttp cookie. This implementation does not enable Automatic Advanced Matching (AAM) and does not intentionally send email, phone, or external_id to TikTok. TikTok may still receive ordinary technical Pixel or server-request data according to its own practices.",
+          },
+          {
+            type: "p",
+            text: "This measurement does not access WhatsApp conversations, contacts, or messages. We do not use GA4, Google Tag Manager, or Meta Pixel. Facebook Business Suite data is not part of Metaprom AI analytics.",
           },
         ],
       },
@@ -953,7 +965,7 @@ export const PRIVACY_POLICY: Record<Locale, LegalPolicyCopy> = {
           },
           {
             type: "p",
-            text: "In the service, Google is used for sign-in and Stripe is used to process payments. Some providers may operate outside Mexico. We aim to share only what is necessary. We may also disclose information when the law requires it, to protect rights, or to respond to a competent authority.",
+            text: "In the service, Google is used for sign-in and Stripe is used to process payments. TikTok is used for advertising conversion measurement. Some providers may operate outside Mexico. We aim to share only what is necessary. We may also disclose information when the law requires it, to protect rights, or to respond to a competent authority.",
           },
         ],
       },

@@ -3,6 +3,7 @@ import {
   normalizeShareChannel,
   type ShareChannel,
 } from "@/lib/analytics/channel";
+import { sanitizeTikTokClickId } from "@/lib/tiktok/ids";
 
 export const ORIGIN_KINDS = [
   "direct",
@@ -30,9 +31,16 @@ export type ShareAttribution = {
   at: number;
 };
 
+export type TikTokClickAttribution = {
+  ttclid: string;
+  at: number;
+};
+
 export type AcquisitionState = {
   origin: OriginSnapshot;
   share: ShareAttribution | null;
+  /** First-touch TikTok click id in the acquisition window. Not PII. */
+  tiktok?: TikTokClickAttribution;
 };
 
 type IncomingTouch =
@@ -89,6 +97,7 @@ export function resolveAcquisitionState(
   const next: AcquisitionState = {
     origin: existing.origin,
     share: existing.share,
+    ...(existing.tiktok ? { tiktok: existing.tiktok } : {}),
   };
 
   if (!next.share && incoming.type === "share") {
@@ -270,9 +279,15 @@ type CookieShare = {
   t: number;
 };
 
+type CookieTikTok = {
+  id: string;
+  t: number;
+};
+
 type CookiePayload = {
   o: CookieOrigin;
   sh?: CookieShare;
+  tt?: CookieTikTok;
 };
 
 export function serializeAcquisitionState(state: AcquisitionState): string {
@@ -295,6 +310,10 @@ export function serializeAcquisitionState(state: AcquisitionState): string {
       t: state.share.at,
       ...(state.share.shareChannel ? { c: state.share.shareChannel } : {}),
     };
+  }
+
+  if (state.tiktok) {
+    payload.tt = { id: state.tiktok.ttclid, t: state.tiktok.at };
   }
 
   return JSON.stringify(payload);
@@ -346,10 +365,55 @@ export function parseAcquisitionState(raw: string | null | undefined): Acquisiti
       };
     }
 
-    return { origin, share };
+    const tiktokId = sanitizeTikTokClickId(payload.tt?.id);
+    const tiktok: TikTokClickAttribution | undefined =
+      tiktokId && typeof payload.tt?.t === "number"
+        ? { ttclid: tiktokId, at: payload.tt.t }
+        : undefined;
+
+    return { origin, share, ...(tiktok ? { tiktok } : {}) };
   } catch {
     return null;
   }
+}
+
+function emptyDirectState(at: number): AcquisitionState {
+  return {
+    origin: {
+      kind: "direct",
+      shareSlug: null,
+      shareChannel: null,
+      referrerHost: null,
+      utmSource: null,
+      utmMedium: null,
+      utmCampaign: null,
+      at,
+    },
+    share: null,
+  };
+}
+
+/**
+ * First-touch ttclid. Never overwrites an existing TikTok click id.
+ * Does not change origin or Share attribution.
+ */
+export function applyFirstTouchTikTokClickId(
+  existing: AcquisitionState | null,
+  ttclid: string | null,
+  at = Date.now(),
+): AcquisitionState | null {
+  const sanitized = sanitizeTikTokClickId(ttclid);
+  if (!sanitized) {
+    return existing;
+  }
+  if (existing?.tiktok?.ttclid) {
+    return existing;
+  }
+  const base = existing ?? emptyDirectState(at);
+  return {
+    ...base,
+    tiktok: { ttclid: sanitized, at },
+  };
 }
 
 export function isShareAttributed(state: AcquisitionState | null): boolean {

@@ -32,6 +32,7 @@ import type {
 import { parseCommercialProductionProfile } from "@/lib/commercial-production-profile";
 import { parsePromotionalOverlays, requiresMetapromWatermark } from "@/lib/promotional-overlay-contract";
 import { parseOverlayStyle, type OverlayStyle } from "@/lib/overlay-style-contract";
+import { retryFinalAssetUpdate } from "@/lib/studio-persistence-retry";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -65,6 +66,46 @@ export type PersistStudioCreationResult = {
   assetId: string;
   asset: BibliotecaAsset;
 };
+
+export type StudioPersistenceRecovery = {
+  projectId: string;
+  assetId: string;
+  updates: Partial<BibliotecaAsset>;
+  existingShareSlug: string | null;
+  uploadedPaths: {
+    original: string;
+    enhanced: string;
+    teaser: string | null;
+  };
+};
+
+export class StudioPersistenceError extends Error {
+  readonly recovery: StudioPersistenceRecovery;
+  readonly cause: unknown;
+
+  constructor(recovery: StudioPersistenceRecovery, cause: unknown) {
+    super("No pudimos terminar de guardar tu comercial. Intenta guardar de nuevo.");
+    this.name = "StudioPersistenceError";
+    this.recovery = recovery;
+    this.cause = cause;
+  }
+}
+
+function safePersistenceError(error: unknown): Record<string, unknown> {
+  if (!error || typeof error !== "object") return { message: String(error) };
+  const candidate = error as {
+    name?: unknown; code?: unknown; message?: unknown; details?: unknown;
+    hint?: unknown; status?: unknown;
+  };
+  return Object.fromEntries(
+    Object.entries({
+      name: candidate.name, code: candidate.code, message: candidate.message,
+      details: candidate.details, hint: candidate.hint, status: candidate.status,
+    }).filter(([, value]) =>
+      typeof value === "string" || typeof value === "number"
+    ),
+  );
+}
 
 function resolveShareSlug(
   existingShareSlug?: string | null,
@@ -141,6 +182,45 @@ async function updateAssetWithShareSlugRetry(
   }
 
   throw new Error("Unable to assign a unique share slug.");
+}
+
+async function finalizeStudioAsset(
+  recovery: StudioPersistenceRecovery,
+  onStage?: PersistStudioCreationInput["onStage"],
+): Promise<BibliotecaAsset> {
+  try {
+    return await retryFinalAssetUpdate({
+      update: () => updateAssetWithShareSlugRetry(
+        recovery.assetId, recovery.updates, recovery.existingShareSlug, onStage,
+      ),
+      onRetry: (error, attempt) => onStage?.("asset update:retry", {
+        assetId: recovery.assetId,
+        attempt,
+        error: safePersistenceError(error),
+      }),
+    });
+  } catch (error) {
+    console.error("[studio-persistence] final asset update failed", {
+      projectId: recovery.projectId,
+      assetId: recovery.assetId,
+      uploadedPaths: recovery.uploadedPaths,
+      error: safePersistenceError(error),
+    });
+    throw new StudioPersistenceError(recovery, error);
+  }
+}
+
+export async function reconcileStudioCreation(
+  recovery: StudioPersistenceRecovery,
+  onStage?: PersistStudioCreationInput["onStage"],
+): Promise<PersistStudioCreationResult> {
+  onStage?.("asset reconciliation:start", {
+    projectId: recovery.projectId,
+    assetId: recovery.assetId,
+  });
+  const asset = await finalizeStudioAsset(recovery, onStage);
+  onStage?.("asset reconciliation:success", { assetId: recovery.assetId });
+  return { projectId: recovery.projectId, assetId: recovery.assetId, asset };
 }
 
 export async function persistStudioCreation(
@@ -338,13 +418,20 @@ export async function persistStudioCreation(
     };
   }
 
-  input.onStage?.("asset update:start", { assetId });
-  const asset = await updateAssetWithShareSlugRetry(
+  const recovery: StudioPersistenceRecovery = {
+    projectId,
     assetId,
-    teaserUpdates,
-    existingShareSlug,
-    input.onStage,
-  );
+    updates: teaserUpdates,
+    existingShareSlug: existingShareSlug ?? null,
+    uploadedPaths: {
+      original: originalUpload.path,
+      enhanced: enhancedUpload.path,
+      teaser: teaserUpdates.teaser_video_path ?? null,
+    },
+  };
+
+  input.onStage?.("asset update:start", { assetId });
+  const asset = await finalizeStudioAsset(recovery, input.onStage);
   input.onStage?.("asset update:success", { assetId });
 
   return { projectId, assetId, asset };

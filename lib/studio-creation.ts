@@ -27,7 +27,12 @@ import {
   resolveImageIntent,
   type ImageIntent,
 } from "@/lib/studio/image-intent";
-import { persistStudioCreation } from "@/lib/studio-persistence";
+import {
+  reconcileStudioCreation,
+  persistStudioCreation,
+  StudioPersistenceError,
+  type StudioPersistenceRecovery,
+} from "@/lib/studio-persistence";
 import {
   buildStudioImagePrompt,
   buildStudioVideoPrompt,
@@ -49,6 +54,7 @@ export type AutoSaveStatus =
   | "idle"
   | "saving"
   | "saved"
+  | "persistence-error"
   | "local-only"
   | "requires-package";
 
@@ -151,6 +157,7 @@ export type PersistCreationResult = {
   code?: typeof ADVERTISING_IMAGE_PACKAGE_REQUIRED_CODE;
   message?: string;
   planesHref?: typeof ADVERTISING_IMAGE_PLANES_HREF;
+  recovery?: StudioPersistenceRecovery;
 };
 
 export type PurchaseHdInput = {
@@ -760,9 +767,54 @@ export async function persistCreationToLibrary(
       return finalResult;
     }
 
+    if (saveError instanceof StudioPersistenceError) {
+      finalResult = {
+        projectId: saveError.recovery.projectId,
+        assetId: saveError.recovery.assetId,
+        shareSlug:
+          typeof saveError.recovery.updates.share_slug === "string"
+            ? saveError.recovery.updates.share_slug
+            : null,
+        status: "persistence-error",
+        message: saveError.message,
+        recovery: saveError.recovery,
+      };
+      logPersistCreationStage("final PersistCreationResult", finalResult);
+      return finalResult;
+    }
+
     console.error(saveError);
     logPersistCreationStage("final PersistCreationResult", finalResult);
     return finalResult;
+  }
+}
+
+export async function retryCreationPersistence(
+  recovery: StudioPersistenceRecovery,
+): Promise<PersistCreationResult> {
+  try {
+    const result = await reconcileStudioCreation(recovery, logPersistCreationStage);
+    return {
+      projectId: result.projectId,
+      assetId: result.assetId,
+      shareSlug: result.asset.share_slug ?? null,
+      status: "saved",
+    };
+  } catch (error) {
+    if (error instanceof StudioPersistenceError) {
+      return {
+        projectId: error.recovery.projectId,
+        assetId: error.recovery.assetId,
+        shareSlug:
+          typeof error.recovery.updates.share_slug === "string"
+            ? error.recovery.updates.share_slug
+            : null,
+        status: "persistence-error",
+        message: error.message,
+        recovery: error.recovery,
+      };
+    }
+    throw error;
   }
 }
 
@@ -1071,6 +1123,8 @@ export function getAutoSaveMessage(status: AutoSaveStatus): string | null {
       return "Guardado automáticamente en tu biblioteca.";
     case "local-only":
       return "Guarda este trabajo en tu biblioteca personal.";
+    case "persistence-error":
+      return "Tu comercial está listo, pero falta terminar de guardarlo.";
     case "requires-package":
       return ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE;
     default:

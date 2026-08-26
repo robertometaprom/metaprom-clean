@@ -39,11 +39,13 @@ import {
   getAutoSaveMessage,
   mapCreationError,
   persistCreationToLibrary,
+  retryCreationPersistence,
   purchaseHdCommercial,
   type AutoSaveStatus,
   type CreationMode,
   type CreationStep,
 } from "@/lib/studio-creation";
+import type { StudioPersistenceRecovery } from "@/lib/studio-persistence";
 import {
   ADVERTISING_IMAGE_AUTH_REQUIRED_MESSAGE,
   ADVERTISING_IMAGE_PACKAGE_REQUIRED_MESSAGE,
@@ -350,6 +352,7 @@ export default function CreativeDirector({
   );
   const savedProjectIdRef = useRef<string | null>(null);
   const savedAssetIdRef = useRef<string | null>(null);
+  const persistenceRecoveryRef = useRef<StudioPersistenceRecovery | null>(null);
   const imagePromptRef = useRef("");
   const videoPromptRef = useRef("");
   const generationMetadataRef = useRef<
@@ -1216,15 +1219,18 @@ export default function CreativeDirector({
           input.generationMetadata ?? generationMetadataRef.current ?? undefined,
       });
 
-      if (result.projectId) savedProjectIdRef.current = result.projectId;
-      if (result.assetId) {
+      if (result.status === "saved" && result.projectId) {
+        savedProjectIdRef.current = result.projectId;
+      }
+      if (result.status === "saved" && result.assetId) {
         savedAssetIdRef.current = result.assetId;
         setCheckoutAssetId(result.assetId);
       }
-      if (result.shareSlug) {
+      if (result.status === "saved" && result.shareSlug) {
         setShareSlug(result.shareSlug);
       }
       if (result.status === "saved") {
+        persistenceRecoveryRef.current = null;
         markStudioHasProjects();
         onLibraryUpdated?.({
           projectId: result.projectId ?? undefined,
@@ -1244,12 +1250,50 @@ export default function CreativeDirector({
           result.message ??
             "Necesitas Imágenes Publicitarias disponibles para crear esta pieza.",
         );
+      } else if (result.status === "persistence-error") {
+        persistenceRecoveryRef.current = result.recovery ?? null;
+        setError(
+          result.message ??
+            "Tu comercial está listo, pero no pudimos terminar de guardarlo.",
+        );
       }
       setAutoSaveStatus(result.status);
       return result;
     },
     [onLibraryUpdated, persistAnonymousDraft],
   );
+
+  const retryCommercialPersistence = useCallback(async () => {
+    const recovery = persistenceRecoveryRef.current;
+    if (!recovery) return;
+
+    setAutoSaveStatus("saving");
+    setError(null);
+    setCommercialPersisting(true);
+    const result = await retryCreationPersistence(recovery);
+    setAutoSaveStatus(result.status);
+
+    if (result.status !== "saved" || !result.assetId || !result.projectId) {
+      persistenceRecoveryRef.current = result.recovery ?? recovery;
+      setCommercialPersisting(false);
+      setError(
+        result.message ??
+          "Tu comercial está listo, pero no pudimos terminar de guardarlo.",
+      );
+      return;
+    }
+
+    savedProjectIdRef.current = result.projectId;
+    savedAssetIdRef.current = result.assetId;
+    setCheckoutAssetId(result.assetId);
+    setShareSlug(result.shareSlug);
+    persistenceRecoveryRef.current = null;
+    setCommercialPersisting(false);
+    markStudioHasProjects();
+    onLibraryUpdated?.({ projectId: result.projectId, assetId: result.assetId });
+    setCreationProgressComplete(true);
+    setPhase("preview");
+  }, [onLibraryUpdated]);
 
   useEffect(() => {
     if (!isAuthenticated || autoSaveStatus !== "local-only") return;
@@ -1572,6 +1616,7 @@ export default function CreativeDirector({
     // for the new finished asset (idempotent per asset_id).
     savedProjectIdRef.current = null;
     savedAssetIdRef.current = null;
+    persistenceRecoveryRef.current = null;
     setCheckoutAssetId(null);
 
     if (videoUrlRef.current?.startsWith("blob:")) {
@@ -1670,7 +1715,7 @@ export default function CreativeDirector({
 
       setCreationPreparing(false);
       setCommercialPersisting(true);
-      await persistToLibrary({
+      const persistResult = await persistToLibrary({
         originalFile: file,
         enhancedDataUrl: result.premiumImage,
         teaserVideoBlob: result.videoBlob,
@@ -1679,6 +1724,12 @@ export default function CreativeDirector({
         generationMetadata: result.generationMetadata,
         billAdvertisingAsset: false,
       });
+
+      if (persistResult.status !== "saved" || !persistResult.assetId) {
+        setCommercialPersisting(false);
+        setCreationProgressComplete(false);
+        return;
+      }
 
       setCreationProgressComplete(true);
       await sleep(650);
@@ -2214,8 +2265,13 @@ export default function CreativeDirector({
   }, []);
 
   const handleUnlock = useCallback(() => {
-    if (!isAuthenticated || !savedAssetIdRef.current) {
+    if (!isAuthenticated) {
       void requestAuthentication("unlock");
+      return;
+    }
+
+    if (!savedAssetIdRef.current) {
+      setError("Termina de guardar tu comercial antes de desbloquearlo.");
       return;
     }
 
@@ -2497,6 +2553,18 @@ export default function CreativeDirector({
               longWait={creationProgress.longWait}
             />
           </DirectorStage>
+          {autoSaveStatus === "persistence-error" ? (
+            <div className="mx-auto mt-6 max-w-md rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-center text-sm text-amber-100">
+              <p>{error ?? "Falta terminar de guardar tu comercial."}</p>
+              <button
+                type="button"
+                onClick={() => void retryCommercialPersistence()}
+                className="mt-3 rounded-xl bg-white px-4 py-2 font-semibold text-neutral-950 transition hover:bg-neutral-100"
+              >
+                Reintentar guardado
+              </button>
+            </div>
+          ) : null}
           {isBatchCreating && batchItems.length > 0 ? (
             <ul className="mx-auto mt-6 grid max-w-2xl grid-cols-4 gap-2 px-6 sm:grid-cols-5 md:grid-cols-6">
               {batchItems.map((item, index) => (

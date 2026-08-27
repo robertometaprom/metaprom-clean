@@ -62,6 +62,7 @@ export default function ShareCommercialActions({
     content,
     isMobileShareContext,
     sharePrimary,
+    shareWhatsApp,
     trackWhatsAppCta,
   } = useShareCommercial({
     publicPreviewUrl,
@@ -75,8 +76,7 @@ export default function ShareCommercialActions({
   const handleClick = useCallback(async () => {
     if (isWhatsAppVariant) {
       if (isMobileShareContext) {
-        // sharePrimary already records review_cta / native|whatsapp growth events
-        await sharePrimary();
+        await shareWhatsApp("review_cta");
         return;
       }
 
@@ -95,6 +95,7 @@ export default function ShareCommercialActions({
     isMobileShareContext,
     isWhatsAppVariant,
     sharePrimary,
+    shareWhatsApp,
     trackWhatsAppCta,
   ]);
 

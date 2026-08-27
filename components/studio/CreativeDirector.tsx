@@ -209,6 +209,11 @@ type CreativeDirectorProps = {
     projectId?: string;
     assetId?: string;
   }) => void;
+  premiumUnlockRequest?: {
+    id: number;
+    assetId: string;
+    paymentMethod: PaymentMethod;
+  } | null;
   chrome?: {
     signIn: string;
     signUp: string;
@@ -221,6 +226,7 @@ export default function CreativeDirector({
   libraryOpen = false,
   onOpenLibrary,
   onLibraryUpdated,
+  premiumUnlockRequest = null,
   chrome,
 }: CreativeDirectorProps) {
   // Lazy init so ?ux4aReview=1 survives React Strict Mode remounts and does not
@@ -352,6 +358,7 @@ export default function CreativeDirector({
   );
   const savedProjectIdRef = useRef<string | null>(null);
   const savedAssetIdRef = useRef<string | null>(null);
+  const premiumUnlockRequestHandledRef = useRef<number | null>(null);
   const persistenceRecoveryRef = useRef<StudioPersistenceRecovery | null>(null);
   const imagePromptRef = useRef("");
   const videoPromptRef = useRef("");
@@ -2074,14 +2081,6 @@ export default function CreativeDirector({
     requestAuthentication,
   ]);
 
-  const handleDownloadImage = () => {
-    if (!premiumImage) return;
-    const link = document.createElement("a");
-    link.href = premiumImage;
-    link.download = "metaprom-premium.jpg";
-    link.click();
-  };
-
   const handleDownloadVideo = () => {
     if (!videoUrl) return;
     const link = document.createElement("a");
@@ -2156,6 +2155,26 @@ export default function CreativeDirector({
       handleOpenLibrary();
     }
   };
+
+  useEffect(() => {
+    if (
+      !premiumUnlockRequest ||
+      premiumUnlockRequestHandledRef.current === premiumUnlockRequest.id
+    ) {
+      return;
+    }
+
+    premiumUnlockRequestHandledRef.current = premiumUnlockRequest.id;
+    savedAssetIdRef.current = premiumUnlockRequest.assetId;
+    setCheckoutAssetId(premiumUnlockRequest.assetId);
+    setCreationMode("commercial");
+    creationModeRef.current = "commercial";
+    setDirectorPanelOpen(false);
+
+    void startCheckoutPurchase(premiumUnlockRequest.paymentMethod, () => undefined)
+      .then(handleCheckoutSuccess)
+      .catch(() => undefined);
+  }, [premiumUnlockRequest]);
 
   const resetFlow = () => {
     setPhase("welcome");
@@ -3296,13 +3315,6 @@ export default function CreativeDirector({
                     </button>
                     <button
                       type="button"
-                      onClick={handleDownloadImage}
-                      className="w-full text-sm text-white/45 transition hover:text-white/70"
-                    >
-                      Descargar vista previa
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setPhase("intent")}
                       className="w-full text-sm text-white/35 transition hover:text-white/55"
                     >
@@ -3395,8 +3407,6 @@ export default function CreativeDirector({
               initialStage={reviewVisualMock ? "offer" : "fade"}
               onUnlock={handleUnlock}
               onCreateNew={resetFlow}
-              onDownloadImage={premiumImage ? handleDownloadImage : undefined}
-              hasPremiumImage={Boolean(premiumImage)}
               shareSlug={shareSlug}
               publicPreviewUrl={
                 shareSlug ? buildPublicPreviewUrl(shareSlug) : null

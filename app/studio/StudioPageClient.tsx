@@ -6,6 +6,7 @@ import CreativeDirector from "@/components/studio/CreativeDirector";
 import Biblioteca from "@/components/biblioteca/Biblioteca";
 import StudioShell, { useStudioAuth } from "@/components/studio/StudioShell";
 import type { PaymentProviderDisplayMetadata } from "@/lib/payments";
+import type { PaymentMethod } from "@/lib/payments/types";
 import {
   clearBibliotecaQueryFromUrl,
   readBibliotecaFocusFromLocation,
@@ -32,6 +33,11 @@ export default function StudioPageClient({
   const [libraryFocus, setLibraryFocus] = useState<BibliotecaFocus | null>(null);
   const [libraryRefreshToken, setLibraryRefreshToken] = useState(0);
   const [libraryResetToListToken, setLibraryResetToListToken] = useState(0);
+  const [premiumUnlockRequest, setPremiumUnlockRequest] = useState<{
+    id: number;
+    assetId: string;
+    paymentMethod: PaymentMethod;
+  } | null>(null);
 
   useEffect(() => {
     const focus = readBibliotecaFocusFromLocation();
@@ -71,6 +77,19 @@ export default function StudioPageClient({
     setLibraryRefreshToken((current) => current + 1);
   }, []);
 
+  const handlePremiumUnlock = useCallback(
+    (assetId: string, paymentMethod: PaymentMethod) => {
+      setLibraryOpen(false);
+      setLibraryFocus(null);
+      setPremiumUnlockRequest({
+        id: Date.now(),
+        assetId,
+        paymentMethod,
+      });
+    },
+    [],
+  );
+
   return (
     <StudioShell
       variant={isWelcome ? "welcome" : "flow"}
@@ -86,6 +105,7 @@ export default function StudioPageClient({
         libraryOpen={libraryOpen}
         onOpenLibrary={handleOpenLibrary}
         onLibraryUpdated={handleLibraryUpdated}
+        premiumUnlockRequest={premiumUnlockRequest}
         chrome={{
           signIn: nav.signIn,
           signUp: nav.signUp,
@@ -99,6 +119,7 @@ export default function StudioPageClient({
         refreshToken={libraryRefreshToken}
         resetToListToken={libraryResetToListToken}
         onClearFocus={handleClearLibraryFocus}
+        onPremiumUnlock={handlePremiumUnlock}
         authUser={authUser}
         authReady={authReady}
       />

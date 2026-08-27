@@ -21,8 +21,6 @@ type CinematicRevealProps = {
   fromUserGesture?: boolean;
   onUnlock: () => void;
   onCreateNew: () => void;
-  onDownloadImage?: () => void;
-  hasPremiumImage?: boolean;
   publicPreviewUrl?: string | null;
   shareSlug?: string | null;
   /**
@@ -51,8 +49,6 @@ export default function CinematicReveal({
   initialStage = "fade",
   onUnlock,
   onCreateNew,
-  onDownloadImage,
-  hasPremiumImage,
   publicPreviewUrl,
   shareSlug,
   reviewMode = false,
@@ -224,7 +220,7 @@ export default function CinematicReveal({
         <ShareCommercialActions
           publicPreviewUrl={publicPreviewUrl}
           shareSlug={shareSlug}
-          variant="prominent"
+          variant="whatsapp"
         />
       )}
       {autoSaveMessage &&
@@ -240,15 +236,6 @@ export default function CinematicReveal({
           <p className="text-xs text-white/35">{autoSaveMessage}</p>
         ))}
       <div className="flex flex-col gap-2 border-t border-white/10 pt-5">
-        {hasPremiumImage && onDownloadImage && (
-          <button
-            type="button"
-            onClick={onDownloadImage}
-            className="text-xs text-white/35 transition hover:text-white/55"
-          >
-            Descargar imagen de apoyo
-          </button>
-        )}
         <button
           type="button"
           onClick={onCreateNew}
@@ -270,6 +257,9 @@ export default function CinematicReveal({
         ref={handleVideoRef}
         src={videoUrl}
         playsInline
+        controlsList="nodownload noremoteplayback"
+        disablePictureInPicture
+        draggable={false}
         preload="auto"
         className={`absolute inset-0 z-0 h-full w-full object-contain transition-opacity duration-700 ${
           stage === "playback"
@@ -279,6 +269,7 @@ export default function CinematicReveal({
         onCanPlay={handleVideoCanPlay}
         onLoadedData={() => setVideoReady(true)}
         onEnded={handleVideoEnded}
+        onContextMenu={(event) => event.preventDefault()}
       />
 
       {!videoReady && stage !== "offer" && (
@@ -363,6 +354,10 @@ export default function CinematicReveal({
                     loop
                     playsInline
                     autoPlay
+                    controlsList="nodownload noremoteplayback"
+                    disablePictureInPicture
+                    draggable={false}
+                    onContextMenu={(event) => event.preventDefault()}
                     className="h-full w-full object-cover"
                   />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -419,6 +414,10 @@ export default function CinematicReveal({
                     loop
                     playsInline
                     autoPlay
+                    controlsList="nodownload noremoteplayback"
+                    disablePictureInPicture
+                    draggable={false}
+                    onContextMenu={(event) => event.preventDefault()}
                     className="h-full w-full object-cover"
                   />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

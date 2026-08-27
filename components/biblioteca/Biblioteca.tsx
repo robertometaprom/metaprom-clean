@@ -37,7 +37,6 @@ import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 import { ShareCommercialActions } from "@/components/share";
 import { isCommercialUnlockEligible } from "@/lib/creative-recipe";
-import { purchaseHdCommercial } from "@/lib/studio-creation";
 import type { PaymentMethod } from "@/lib/payments/types";
 
 
@@ -57,6 +56,8 @@ export type BibliotecaProps = {
   resetToListToken?: number;
 
   onClearFocus?: () => void;
+
+  onPremiumUnlock?: (assetId: string, paymentMethod: PaymentMethod) => void;
 
   authUser: User | null;
 
@@ -321,6 +322,8 @@ export default function Biblioteca({
   resetToListToken = 0,
 
   onClearFocus,
+
+  onPremiumUnlock,
 
   authUser,
 
@@ -1094,6 +1097,8 @@ export default function Biblioteca({
 
                   onHighlightSeen={() => setHighlightAssetId(null)}
 
+                  onPremiumUnlock={onPremiumUnlock}
+
                 />
 
               ))}
@@ -1136,6 +1141,8 @@ function AssetDetailCard({
 
   onHighlightSeen,
 
+  onPremiumUnlock,
+
 }: {
 
   asset: BibliotecaAsset;
@@ -1143,6 +1150,8 @@ function AssetDetailCard({
   highlighted?: boolean;
 
   onHighlightSeen?: () => void;
+
+  onPremiumUnlock?: (assetId: string, paymentMethod: PaymentMethod) => void;
 
 }) {
 
@@ -1162,8 +1171,6 @@ function AssetDetailCard({
 
   const [downloading, setDownloading] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-  const [unlocking, setUnlocking] = useState(false);
-  const [unlockMessage, setUnlockMessage] = useState<string | null>(null);
 
 
 
@@ -1314,27 +1321,6 @@ function AssetDetailCard({
     }
 
   };
-
-  const handleUnlock = async () => {
-    setUnlocking(true);
-    setUnlockMessage(null);
-    try {
-      const result = await purchaseHdCommercial({
-        assetId: asset.id,
-        paymentMethod,
-        onStatus: setUnlockMessage,
-      });
-      setUnlockMessage(result.message);
-    } catch (error) {
-      setUnlockMessage(
-        error instanceof Error ? error.message : "No pudimos completar la compra.",
-      );
-    } finally {
-      setUnlocking(false);
-    }
-  };
-
-
 
   return (
 
@@ -1495,6 +1481,12 @@ function AssetDetailCard({
 
                   controls
 
+                  controlsList="nodownload noremoteplayback"
+
+                  disablePictureInPicture
+
+                  draggable={false}
+
                   playsInline
 
                   preload="metadata"
@@ -1502,6 +1494,8 @@ function AssetDetailCard({
                   className="h-full w-full object-cover"
 
                   onError={handleTeaserError}
+
+                  onContextMenu={(event) => event.preventDefault()}
 
                 />
 
@@ -1692,15 +1686,11 @@ function AssetDetailCard({
             </div>
             <button
               type="button"
-              disabled={unlocking}
-              onClick={() => void handleUnlock()}
-              className="w-full cursor-pointer rounded-lg bg-violet-600 py-2.5 text-xs font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => onPremiumUnlock?.(asset.id, paymentMethod)}
+              className="w-full cursor-pointer rounded-lg bg-violet-600 py-2.5 text-xs font-bold text-white transition hover:bg-violet-700"
             >
-              {unlocking ? "Procesando..." : "Desbloquear este comercial"}
+              Desbloquear este comercial
             </button>
-            {unlockMessage && (
-              <p className="text-xs leading-relaxed text-neutral-600">{unlockMessage}</p>
-            )}
           </div>
         )}
 
@@ -1712,7 +1702,7 @@ function AssetDetailCard({
 
             shareSlug={asset.share_slug}
 
-            variant="compact"
+            variant="whatsapp"
 
             assetType={hasTeaser ? "commercial" : "advertising_image"}
 
@@ -1752,7 +1742,7 @@ function AssetDetailCard({
 
         )}
 
-        {(enhancedUrl || originalUrl) && (
+        {(!hasTeaser || premiumOwned) && (enhancedUrl || originalUrl) && (
 
           <button
 

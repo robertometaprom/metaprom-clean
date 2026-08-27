@@ -772,12 +772,6 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
             initialStage={revealFromOffer ? "offer" : "fade"}
             onUnlock={() => goTo("checkout")}
             onCreateNew={() => goTo("create-another")}
-            onDownloadImage={
-              premiumImage
-                ? () => downloadAsset(premiumImage, "metaprom-imagen-apoyo.jpg")
-                : undefined
-            }
-            hasPremiumImage={Boolean(premiumImage)}
             shareSlug={shareSlug}
             publicPreviewUrl={shareSlug ? buildPublicPreviewUrl(shareSlug) : null}
           />
@@ -798,6 +792,10 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                     loop
                     muted
                     playsInline
+                    controlsList="nodownload noremoteplayback"
+                    disablePictureInPicture
+                    draggable={false}
+                    onContextMenu={(event) => event.preventDefault()}
                     className="aspect-[9/16] w-full object-cover opacity-90"
                   />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -888,6 +886,12 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                       loop
                       muted
                       playsInline
+                      controlsList={purchased ? undefined : "nodownload noremoteplayback"}
+                      disablePictureInPicture={!purchased}
+                      draggable={purchased}
+                      onContextMenu={
+                        purchased ? undefined : (event) => event.preventDefault()
+                      }
                       className="aspect-square w-full object-cover"
                     />
                     <p className="px-4 py-2 text-xs text-white/40">
@@ -923,7 +927,7 @@ export default function ExperienceFlow({ content }: ExperienceFlowProps) {
                   }
                 />
               )}
-              {premiumImage && (
+              {purchased && premiumImage && (
                 <DownloadRow
                   label="Imagen de apoyo"
                   badge="Incluido"

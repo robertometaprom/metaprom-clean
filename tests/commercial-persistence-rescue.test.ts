@@ -4,10 +4,30 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { retryFinalAssetUpdate } from "../lib/studio-persistence-retry.ts";
+import {
+  approximateSerializedBytes,
+  FinalAssetUpdateTimeoutError,
+  isTransientPersistenceError,
+  omitAlreadyPersistedImageUrl,
+  retryFinalAssetUpdate,
+  truncatePersistenceDiagnosticText,
+} from "../lib/studio-persistence-retry.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const readRepo = (path: string) => readFileSync(join(ROOT, path), "utf8");
+
+test("only structured persistence timeouts are explicitly retryable", () => {
+  assert.equal(isTransientPersistenceError({
+    code: "PERSISTENCE_TIMEOUT",
+    status: 408,
+    message: "Final asset update timed out.",
+  }), true);
+  assert.equal(isTransientPersistenceError({
+    code: "PERSISTENCE_REJECTED",
+    status: 400,
+    message: "Permanent validation failure.",
+  }), false);
+});
 
 test("successful final commercial persistence returns on the first update", async () => {
   let updates = 0;
@@ -58,6 +78,118 @@ test("permanent final-update failure is explicit and bounded", async () => {
       (error as { code?: string }).code === "PGRST000",
   );
   assert.equal(updates, 3);
+});
+
+test("timeout aborts and settles an attempt before retrying without overlap", async () => {
+  const timeouts: Array<{ code: string; attempt: number }> = [];
+  const events: string[] = [];
+  let active = 0;
+  let maxActive = 0;
+  let attempts = 0;
+  const result = await retryFinalAssetUpdate({
+    attempts: 2,
+    timeoutMs: 5,
+    wait: async () => undefined,
+    update: async (signal) => {
+      attempts += 1;
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      events.push(`start:${attempts}`);
+      if (attempts === 1) {
+        await new Promise<void>((resolve) => signal.addEventListener("abort", () => {
+          events.push("abort:1");
+          active -= 1;
+          resolve();
+        }, { once: true }));
+        throw new DOMException("aborted", "AbortError");
+      }
+      active -= 1;
+      events.push("settled:2");
+      return "saved";
+    },
+    onTimeout: (error, attempt) => timeouts.push({ code: error.code, attempt }),
+  });
+
+  assert.equal(result, "saved");
+  assert.equal(maxActive, 1);
+  assert.deepEqual(events, ["start:1", "abort:1", "start:2", "settled:2"]);
+  assert.deepEqual(timeouts, [{ code: "PERSISTENCE_TIMEOUT", attempt: 1 }]);
+});
+
+test("minimal final payload omits only image_url and retains final metadata", () => {
+  const finalPayload = omitAlreadyPersistedImageUrl({
+    image_url: `data:image/png;base64,${"x".repeat(2_700_000)}`,
+    image_prompt: "image prompt",
+    video_prompt: "video prompt",
+    ai_instructions: "customer intent",
+    original_path: "user/project/asset/original.png",
+    image_path: "user/project/asset/enhanced.png",
+    teaser_video_path: "user/project/asset/teaser.mp4",
+    share_slug: "share-106",
+    visibility: "public",
+    creative_recipe: { version: 1 },
+  });
+
+  assert.equal("image_url" in finalPayload, false);
+  assert.equal(finalPayload.image_prompt, "image prompt");
+  assert.equal(finalPayload.video_prompt, "video prompt");
+  assert.equal(finalPayload.ai_instructions, "customer intent");
+  assert.equal(finalPayload.teaser_video_path, "user/project/asset/teaser.mp4");
+  assert.equal(finalPayload.share_slug, "share-106");
+  assert.equal(finalPayload.visibility, "public");
+  assert.deepEqual(finalPayload.creative_recipe, { version: 1 });
+  assert.ok((approximateSerializedBytes(finalPayload) ?? Infinity) < 1_000);
+});
+
+test("finalization logs size, dispatch, response and timeout without payload contents", () => {
+  const persistence = readRepo("lib/studio-persistence.ts");
+
+  assert.match(persistence, /asset update:finalization started/);
+  assert.match(persistence, /asset update:patch dispatched/);
+  assert.match(persistence, /asset update:patch response/);
+  assert.match(persistence, /asset update:timeout/);
+  assert.match(persistence, /payloadBytes/);
+  assert.doesNotMatch(persistence, /onStage\?\.\([^\n]*enhancedDataUrl/);
+});
+
+test("final payload construction omits image_url without nullifying it", () => {
+  const persistence = readRepo("lib/studio-persistence.ts");
+  const payloadConstruction = persistence.slice(
+    persistence.indexOf("let teaserUpdates"),
+    persistence.indexOf("let existingShareSlug"),
+  );
+
+  assert.match(payloadConstruction, /omitAlreadyPersistedImageUrl/);
+  assert.match(payloadConstruction, /image_url: input\.enhancedDataUrl/);
+  assert.doesNotMatch(payloadConstruction, /image_url:\s*null/);
+  assert.match(payloadConstruction, /original_path/);
+  assert.match(payloadConstruction, /image_path/);
+  assert.match(payloadConstruction, /image_prompt/);
+  assert.match(payloadConstruction, /video_prompt/);
+  assert.match(payloadConstruction, /ai_instructions/);
+});
+
+test("diagnostic text is behaviorally bounded and payload contents are absent", () => {
+  const persistence = readRepo("lib/studio-persistence.ts");
+  const bounded = truncatePersistenceDiagnosticText("x".repeat(5_000));
+  assert.equal(typeof bounded, "string");
+  assert.equal((bounded as string).length, 501);
+  assert.match(persistence, /truncatePersistenceDiagnosticText\(candidate\.message\)/);
+  assert.match(persistence, /truncatePersistenceDiagnosticText\(candidate\.details\)/);
+  assert.match(persistence, /truncatePersistenceDiagnosticText\(candidate\.hint\)/);
+  assert.doesNotMatch(persistence, /console\.error\([^)]*recovery\.updates/);
+  assert.match(persistence, /status: "aborted"/);
+  assert.match(persistence, /aborted: true/);
+});
+
+test("collision replacement share slug is checkpointed in pending recovery updates", () => {
+  const persistence = readRepo("lib/studio-persistence.ts");
+  assert.match(persistence, /onShareSlugChanged\?\.\(replacementShareSlug\)/);
+  assert.match(
+    persistence,
+    /recovery\.updates = \{ \.\.\.recovery\.updates, share_slug: shareSlug \}/,
+  );
+  assert.match(persistence, /throw new StudioPersistenceError\(recovery, error\)/);
 });
 
 test("project and asset identities are checkpointed immediately after creation", () => {

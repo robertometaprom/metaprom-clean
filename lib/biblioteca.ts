@@ -539,6 +539,7 @@ export async function updateBibliotecaAsset(
     >
   >,
   context?: BibliotecaMutationContext,
+  signal?: AbortSignal,
 ): Promise<BibliotecaAsset> {
   const mutationContext = context ?? await createBibliotecaMutationContext();
   const supabaseClient = mutationContext.client;
@@ -548,7 +549,8 @@ export async function updateBibliotecaAsset(
     .from("assets")
     .select("id, project_id")
     .eq("id", assetId)
-    .maybeSingle();
+    .maybeSingle()
+    .abortSignal(signal ?? new AbortController().signal);
 
   if (assetError) {
     throw assetError;
@@ -563,7 +565,8 @@ export async function updateBibliotecaAsset(
     .select("id")
     .eq("id", asset.project_id)
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle()
+    .abortSignal(signal ?? new AbortController().signal);
 
   if (projectError) {
     throw projectError;
@@ -582,7 +585,8 @@ export async function updateBibliotecaAsset(
           .update(payload)
           .eq("id", assetId)
           .select(select)
-          .single(),
+          .single()
+          .abortSignal(signal ?? new AbortController().signal),
     );
 
   let { data, error } = await runUpdate(updates);

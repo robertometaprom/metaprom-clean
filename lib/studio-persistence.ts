@@ -35,7 +35,13 @@ import type {
 import { parseCommercialProductionProfile } from "@/lib/commercial-production-profile";
 import { parsePromotionalOverlays, requiresMetapromWatermark } from "@/lib/promotional-overlay-contract";
 import { parseOverlayStyle, type OverlayStyle } from "@/lib/overlay-style-contract";
-import { retryFinalAssetUpdate } from "@/lib/studio-persistence-retry";
+import {
+  approximateSerializedBytes,
+  FINAL_ASSET_UPDATE_TIMEOUT_MS,
+  omitAlreadyPersistedImageUrl,
+  retryFinalAssetUpdate,
+  truncatePersistenceDiagnosticText,
+} from "@/lib/studio-persistence-retry";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -99,15 +105,21 @@ export class StudioPersistenceError extends Error {
 }
 
 function safePersistenceError(error: unknown): Record<string, unknown> {
-  if (!error || typeof error !== "object") return { message: String(error) };
+  if (!error || typeof error !== "object") {
+    return { message: truncatePersistenceDiagnosticText(String(error)) };
+  }
   const candidate = error as {
     name?: unknown; code?: unknown; message?: unknown; details?: unknown;
     hint?: unknown; status?: unknown;
   };
   return Object.fromEntries(
     Object.entries({
-      name: candidate.name, code: candidate.code, message: candidate.message,
-      details: candidate.details, hint: candidate.hint, status: candidate.status,
+      name: candidate.name,
+      code: candidate.code,
+      message: truncatePersistenceDiagnosticText(candidate.message),
+      details: truncatePersistenceDiagnosticText(candidate.details),
+      hint: truncatePersistenceDiagnosticText(candidate.hint),
+      status: candidate.status,
     }).filter(([, value]) =>
       typeof value === "string" || typeof value === "number"
     ),
@@ -151,10 +163,12 @@ async function updateAssetWithShareSlugRetry(
   existingShareSlug?: string | null,
   onStage?: PersistStudioCreationInput["onStage"],
   context?: BibliotecaMutationContext,
+  signal?: AbortSignal,
+  onShareSlugChanged?: (shareSlug: string) => void,
 ): Promise<BibliotecaAsset> {
   if (existingShareSlug || !updates.share_slug) {
     try {
-      return await updateBibliotecaAsset(assetId, updates, context);
+      return await updateBibliotecaAsset(assetId, updates, context, signal);
     } catch (error) {
       if (!isSchemaColumnMissingError(error) || !updates.share_slug) {
         throw error;
@@ -163,29 +177,31 @@ async function updateAssetWithShareSlugRetry(
       onStage?.("asset update:share fields unavailable, continuing", {
         assetId,
       });
-      return updateBibliotecaAsset(assetId, withoutShareFields(updates), context);
+      return updateBibliotecaAsset(assetId, withoutShareFields(updates), context, signal);
     }
   }
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
     try {
-      return await updateBibliotecaAsset(assetId, updates, context);
+      return await updateBibliotecaAsset(assetId, updates, context, signal);
     } catch (error) {
       if (isSchemaColumnMissingError(error)) {
         onStage?.("asset update:share fields unavailable, continuing", {
           assetId,
         });
-        return updateBibliotecaAsset(assetId, withoutShareFields(updates), context);
+        return updateBibliotecaAsset(assetId, withoutShareFields(updates), context, signal);
       }
 
       if (!isShareSlugUniqueViolation(error)) {
         throw error;
       }
 
+      const replacementShareSlug = generateShareSlug();
       updates = {
         ...updates,
-        share_slug: generateShareSlug(),
+        share_slug: replacementShareSlug,
       };
+      onShareSlugChanged?.(replacementShareSlug);
     }
   }
 
@@ -204,12 +220,36 @@ async function finalizeStudioAsset(
     );
   }
   const assetId = recovery.assetId;
+  const payloadBytes = approximateSerializedBytes(recovery.updates);
 
   try {
+    onStage?.("asset update:finalization started", { assetId, payloadBytes });
     return await retryFinalAssetUpdate({
-      update: () => updateAssetWithShareSlugRetry(
-        assetId, recovery.updates, recovery.existingShareSlug, onStage, context,
-      ),
+      timeoutMs: FINAL_ASSET_UPDATE_TIMEOUT_MS,
+      update: async (signal, attempt) => {
+        onStage?.("asset update:patch dispatched", { assetId, attempt, payloadBytes });
+        const asset = await updateAssetWithShareSlugRetry(
+          assetId,
+          recovery.updates,
+          recovery.existingShareSlug,
+          onStage,
+          context,
+          signal,
+          (shareSlug) => {
+            recovery.updates = { ...recovery.updates, share_slug: shareSlug };
+          },
+        );
+        onStage?.("asset update:patch response", { assetId, attempt, status: "success" });
+        return asset;
+      },
+      onTimeout: (error, attempt) => onStage?.("asset update:timeout", {
+        assetId,
+        attempt,
+        status: "aborted",
+        aborted: true,
+        responseReceived: false,
+        error: safePersistenceError(error),
+      }),
       onRetry: (error, attempt) => onStage?.("asset update:retry", {
         assetId,
         attempt,
@@ -354,7 +394,7 @@ async function runStudioPersistence(
     onStage?.("storage upload:success", { kind: "enhanced", path: enhancedUpload.path });
   }
 
-  let teaserUpdates: Partial<BibliotecaAsset> = {
+  let teaserUpdates: Partial<BibliotecaAsset> = omitAlreadyPersistedImageUrl({
     ...recovery.updates,
     original_path: recovery.uploadedPaths.original,
     image_path: recovery.uploadedPaths.enhanced,
@@ -362,7 +402,7 @@ async function runStudioPersistence(
     image_prompt: input.imagePrompt,
     video_prompt: input.videoPrompt,
     ai_instructions: input.customerIntent || null,
-  };
+  });
 
   let existingShareSlug: string | null | undefined = recovery.existingShareSlug;
 

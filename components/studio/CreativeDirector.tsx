@@ -1259,6 +1259,13 @@ export default function CreativeDirector({
         );
       } else if (result.status === "persistence-error") {
         persistenceRecoveryRef.current = result.recovery ?? null;
+        if (result.projectId) {
+          savedProjectIdRef.current = result.projectId;
+        }
+        if (result.assetId) {
+          savedAssetIdRef.current = result.assetId;
+          setCheckoutAssetId(result.assetId);
+        }
         setError(
           result.message ??
             "Tu comercial está listo, pero no pudimos terminar de guardarlo.",

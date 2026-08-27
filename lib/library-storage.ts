@@ -1,5 +1,6 @@
 import { getSignedLibraryUrlCached } from "@/lib/library-signed-url-cache";
 import { createClient } from "@/lib/supabase/client";
+import type { BibliotecaSupabaseClient } from "@/lib/biblioteca";
 
 export const LIBRARY_BUCKET = "library";
 
@@ -59,8 +60,9 @@ export function buildLibraryObjectPath(input: {
 
 export async function uploadLibraryObject(
   input: LibraryUploadInput,
+  authenticatedClient?: BibliotecaSupabaseClient,
 ): Promise<{ path: string; publicUrl: string }> {
-  const supabase = createClient();
+  const supabase = authenticatedClient ?? createClient();
   const path = buildLibraryObjectPath(input);
 
   const { error } = await supabase.storage

@@ -1,11 +1,14 @@
 import {
+  BibliotecaAuthError,
   buildAutoProjectName,
+  createBibliotecaMutationContext,
   createBibliotecaProject,
   fetchBibliotecaAssetById,
   saveBibliotecaAssets,
   updateBibliotecaAsset,
   updateBibliotecaProject,
   type BibliotecaAsset,
+  type BibliotecaMutationContext,
   type PersistStudioAssetInput,
   type StudioProjectMetadata,
 } from "@/lib/biblioteca";
@@ -68,15 +71,18 @@ export type PersistStudioCreationResult = {
 };
 
 export type StudioPersistenceRecovery = {
-  projectId: string;
-  assetId: string;
+  userId: string;
+  projectId: string | null;
+  assetId: string | null;
   updates: Partial<BibliotecaAsset>;
   existingShareSlug: string | null;
   uploadedPaths: {
-    original: string;
-    enhanced: string;
+    original: string | null;
+    enhanced: string | null;
     teaser: string | null;
   };
+  input: PersistStudioCreationInput;
+  error: Record<string, unknown> | null;
 };
 
 export class StudioPersistenceError extends Error {
@@ -86,6 +92,7 @@ export class StudioPersistenceError extends Error {
   constructor(recovery: StudioPersistenceRecovery, cause: unknown) {
     super("No pudimos terminar de guardar tu comercial. Intenta guardar de nuevo.");
     this.name = "StudioPersistenceError";
+    recovery.error = safePersistenceError(cause);
     this.recovery = recovery;
     this.cause = cause;
   }
@@ -143,10 +150,11 @@ async function updateAssetWithShareSlugRetry(
   updates: Partial<BibliotecaAsset>,
   existingShareSlug?: string | null,
   onStage?: PersistStudioCreationInput["onStage"],
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaAsset> {
   if (existingShareSlug || !updates.share_slug) {
     try {
-      return await updateBibliotecaAsset(assetId, updates);
+      return await updateBibliotecaAsset(assetId, updates, context);
     } catch (error) {
       if (!isSchemaColumnMissingError(error) || !updates.share_slug) {
         throw error;
@@ -155,19 +163,19 @@ async function updateAssetWithShareSlugRetry(
       onStage?.("asset update:share fields unavailable, continuing", {
         assetId,
       });
-      return updateBibliotecaAsset(assetId, withoutShareFields(updates));
+      return updateBibliotecaAsset(assetId, withoutShareFields(updates), context);
     }
   }
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
     try {
-      return await updateBibliotecaAsset(assetId, updates);
+      return await updateBibliotecaAsset(assetId, updates, context);
     } catch (error) {
       if (isSchemaColumnMissingError(error)) {
         onStage?.("asset update:share fields unavailable, continuing", {
           assetId,
         });
-        return updateBibliotecaAsset(assetId, withoutShareFields(updates));
+        return updateBibliotecaAsset(assetId, withoutShareFields(updates), context);
       }
 
       if (!isShareSlugUniqueViolation(error)) {
@@ -187,14 +195,23 @@ async function updateAssetWithShareSlugRetry(
 async function finalizeStudioAsset(
   recovery: StudioPersistenceRecovery,
   onStage?: PersistStudioCreationInput["onStage"],
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaAsset> {
+  if (!recovery.projectId || !recovery.assetId) {
+    throw new StudioPersistenceError(
+      recovery,
+      new Error("Persistence recovery is missing project or asset identity."),
+    );
+  }
+  const assetId = recovery.assetId;
+
   try {
     return await retryFinalAssetUpdate({
       update: () => updateAssetWithShareSlugRetry(
-        recovery.assetId, recovery.updates, recovery.existingShareSlug, onStage,
+        assetId, recovery.updates, recovery.existingShareSlug, onStage, context,
       ),
       onRetry: (error, attempt) => onStage?.("asset update:retry", {
-        assetId: recovery.assetId,
+        assetId,
         attempt,
         error: safePersistenceError(error),
       }),
@@ -214,17 +231,35 @@ export async function reconcileStudioCreation(
   recovery: StudioPersistenceRecovery,
   onStage?: PersistStudioCreationInput["onStage"],
 ): Promise<PersistStudioCreationResult> {
-  onStage?.("asset reconciliation:start", {
+  onStage?.("persistence reconciliation:start", {
     projectId: recovery.projectId,
     assetId: recovery.assetId,
   });
-  const asset = await finalizeStudioAsset(recovery, onStage);
-  onStage?.("asset reconciliation:success", { assetId: recovery.assetId });
-  return { projectId: recovery.projectId, assetId: recovery.assetId, asset };
+  return runStudioPersistence(recovery.input, recovery, true, onStage);
 }
 
 export async function persistStudioCreation(
   input: PersistStudioCreationInput,
+): Promise<PersistStudioCreationResult> {
+  const recovery: StudioPersistenceRecovery = {
+    userId: input.userId,
+    projectId: input.existingProjectId ?? null,
+    assetId: input.existingAssetId ?? null,
+    updates: {},
+    existingShareSlug: null,
+    uploadedPaths: { original: null, enhanced: null, teaser: null },
+    input,
+    error: null,
+  };
+
+  return runStudioPersistence(input, recovery, false, input.onStage);
+}
+
+async function runStudioPersistence(
+  input: PersistStudioCreationInput,
+  recovery: StudioPersistenceRecovery,
+  reconciling: boolean,
+  onStage?: PersistStudioCreationInput["onStage"],
 ): Promise<PersistStudioCreationResult> {
   // Validate before creating projects, assets, or uploads. Required graphics fail closed.
   const promotionalOverlays = parsePromotionalOverlays(input.promotionalOverlays);
@@ -235,28 +270,42 @@ export async function persistStudioCreation(
   const requiredNarrativeBeats = input.requiredNarrativeBeats == null
     ? null
     : parseRequiredNarrativeBeats(input.requiredNarrativeBeats);
-  let projectId = input.existingProjectId ?? null;
-  let assetId = input.existingAssetId ?? null;
+  recovery.input = input;
+  recovery.userId = input.userId;
 
-  if (!projectId) {
-    input.onStage?.("project insert:start");
-    const project = await createBibliotecaProject(
-      buildAutoProjectName(input.customerIntent),
-      input.projectMetadata,
-    );
-    projectId = project.id;
-    input.onStage?.("project insert:success", { projectId });
-  } else {
-    input.onStage?.("project update:start", { projectId });
-    await updateBibliotecaProject(projectId, input.projectMetadata);
-    input.onStage?.("project update:success", { projectId });
-  }
+  try {
+    const context = await createBibliotecaMutationContext(input.userId);
+
+    if (recovery.assetId && !recovery.projectId) {
+      const existingAsset = await fetchBibliotecaAssetById(recovery.assetId, context);
+      recovery.projectId = existingAsset?.project_id ?? null;
+    }
+
+    if (!recovery.projectId) {
+      onStage?.("project insert:start");
+      const project = await createBibliotecaProject(
+        buildAutoProjectName(input.customerIntent),
+        input.projectMetadata,
+        context,
+      );
+      recovery.projectId = project.id;
+      onStage?.("project insert:success", { projectId: recovery.projectId });
+    } else if (!reconciling) {
+      onStage?.("project update:start", { projectId: recovery.projectId });
+      await updateBibliotecaProject(recovery.projectId, input.projectMetadata, context);
+      onStage?.("project update:success", { projectId: recovery.projectId });
+    }
+
+    const projectId = recovery.projectId;
+    if (!projectId) {
+      throw new Error("Project identity was not preserved after creation.");
+    }
 
   const originalExtension =
     inferExtensionFromMime(input.originalFile.type || "image/jpeg") || "jpg";
 
-  if (!assetId) {
-    input.onStage?.("asset insert:start", { projectId });
+  if (!recovery.assetId) {
+    onStage?.("asset insert:start", { projectId });
     const [asset] = await saveBibliotecaAssets([
       {
         project_id: projectId,
@@ -270,87 +319,77 @@ export async function persistStudioCreation(
         industry: input.projectMetadata.industry ?? null,
         payment_status: "none",
       },
-    ]);
-    assetId = asset.id;
-    input.onStage?.("asset insert:success", { assetId, projectId });
+    ], context);
+    recovery.assetId = asset.id;
+    onStage?.("asset insert:success", { assetId: recovery.assetId, projectId });
   }
 
-  input.onStage?.("storage upload:start", {
-    kind: "original",
-    projectId,
-    assetId,
-  });
-  const originalUpload = await uploadLibraryObject({
-    userId: input.userId,
-    projectId,
-    assetId,
-    kind: "original",
-    file: input.originalFile,
-    contentType: input.originalFile.type || "image/jpeg",
-    extension: originalExtension,
-  });
-  input.onStage?.("storage upload:success", {
-    kind: "original",
-    path: originalUpload.path,
-  });
+  const assetId = recovery.assetId;
+  if (!assetId) {
+    throw new Error("Asset identity was not preserved after creation.");
+  }
+
+  if (!recovery.uploadedPaths.original) {
+    onStage?.("storage upload:start", { kind: "original", projectId, assetId });
+    const originalUpload = await uploadLibraryObject({
+      userId: input.userId, projectId, assetId, kind: "original",
+      file: input.originalFile,
+      contentType: input.originalFile.type || "image/jpeg",
+      extension: originalExtension,
+    }, context.client);
+    recovery.uploadedPaths.original = originalUpload.path;
+    onStage?.("storage upload:success", { kind: "original", path: originalUpload.path });
+  }
 
   const enhancedBlob = dataUrlToBlob(input.enhancedDataUrl);
-  input.onStage?.("storage upload:start", {
-    kind: "enhanced",
-    projectId,
-    assetId,
-  });
-  const enhancedUpload = await uploadLibraryObject({
-    userId: input.userId,
-    projectId,
-    assetId,
-    kind: "enhanced",
-    file: enhancedBlob,
-    contentType: enhancedBlob.type || "image/png",
-    extension: inferExtensionFromMime(enhancedBlob.type || "image/png"),
-  });
-  input.onStage?.("storage upload:success", {
-    kind: "enhanced",
-    path: enhancedUpload.path,
-  });
+  if (!recovery.uploadedPaths.enhanced) {
+    onStage?.("storage upload:start", { kind: "enhanced", projectId, assetId });
+    const enhancedUpload = await uploadLibraryObject({
+      userId: input.userId, projectId, assetId, kind: "enhanced",
+      file: enhancedBlob,
+      contentType: enhancedBlob.type || "image/png",
+      extension: inferExtensionFromMime(enhancedBlob.type || "image/png"),
+    }, context.client);
+    recovery.uploadedPaths.enhanced = enhancedUpload.path;
+    onStage?.("storage upload:success", { kind: "enhanced", path: enhancedUpload.path });
+  }
 
   let teaserUpdates: Partial<BibliotecaAsset> = {
-    original_path: originalUpload.path,
-    image_path: enhancedUpload.path,
+    ...recovery.updates,
+    original_path: recovery.uploadedPaths.original,
+    image_path: recovery.uploadedPaths.enhanced,
     image_url: input.enhancedDataUrl,
     image_prompt: input.imagePrompt,
     video_prompt: input.videoPrompt,
     ai_instructions: input.customerIntent || null,
   };
 
-  let existingShareSlug: string | null | undefined;
+  let existingShareSlug: string | null | undefined = recovery.existingShareSlug;
 
   if (input.teaserVideoBlob) {
-    input.onStage?.("storage upload:start", {
-      kind: "teaser",
-      projectId,
-      assetId,
-    });
-    const teaserUpload = await uploadLibraryObject({
-      userId: input.userId,
-      projectId,
-      assetId,
-      kind: "teaser",
-      file: input.teaserVideoBlob,
-      contentType: "video/mp4",
-      extension: "mp4",
-    });
-    input.onStage?.("storage upload:success", {
-      kind: "teaser",
-      path: teaserUpload.path,
-    });
+    if (!recovery.uploadedPaths.teaser) {
+      onStage?.("storage upload:start", { kind: "teaser", projectId, assetId });
+      const teaserUpload = await uploadLibraryObject({
+        userId: input.userId, projectId, assetId, kind: "teaser",
+        file: input.teaserVideoBlob, contentType: "video/mp4", extension: "mp4",
+      }, context.client);
+      recovery.uploadedPaths.teaser = teaserUpload.path;
+      onStage?.("storage upload:success", { kind: "teaser", path: teaserUpload.path });
+    }
 
-    const existingAsset = await fetchBibliotecaAssetById(assetId);
-    existingShareSlug = existingAsset?.share_slug;
-    const shareSlug = resolveShareSlug(existingShareSlug);
+    if (!teaserUpdates.share_slug) {
+      const existingAsset = await fetchBibliotecaAssetById(assetId, context);
+      existingShareSlug = existingAsset?.share_slug;
+      recovery.existingShareSlug = existingShareSlug ?? null;
+    }
+    const shareSlug = resolveShareSlug(
+      typeof teaserUpdates.share_slug === "string"
+        ? teaserUpdates.share_slug
+        : existingShareSlug,
+    );
     const destination = input.projectMetadata.destination ?? null;
     const recipe = buildCreativeRecipeV1({
-      reference_image_path: enhancedUpload.path,
+      reference_image_path: recovery.uploadedPaths.enhanced,
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
       premium_prompt: buildStudioVideoPrompt(
@@ -388,7 +427,7 @@ export async function persistStudioCreation(
       },
       prompt_builder_version: PROMPT_BUILDER_VERSION,
       video_processing_version: VIDEO_PROCESSING_VERSION,
-      preview_path: teaserUpload.path,
+      preview_path: recovery.uploadedPaths.teaser,
       promotional_overlays: promotionalOverlays,
       production_profile: productionProfile,
       required_narrative_beats: requiredNarrativeBeats,
@@ -399,7 +438,7 @@ export async function persistStudioCreation(
 
     teaserUpdates = {
       ...teaserUpdates,
-      teaser_video_path: teaserUpload.path,
+      teaser_video_path: recovery.uploadedPaths.teaser,
       share_slug: shareSlug,
       visibility: "public",
       creative_recipe: recipe,
@@ -407,9 +446,16 @@ export async function persistStudioCreation(
   } else {
     // Advertising Image (no teaser): assign share_slug so REVIEW can use
     // the existing /p/[share_slug] public preview + WhatsApp handoff.
-    const existingAsset = await fetchBibliotecaAssetById(assetId);
-    existingShareSlug = existingAsset?.share_slug;
-    const shareSlug = resolveShareSlug(existingShareSlug);
+    if (!teaserUpdates.share_slug) {
+      const existingAsset = await fetchBibliotecaAssetById(assetId, context);
+      existingShareSlug = existingAsset?.share_slug;
+      recovery.existingShareSlug = existingShareSlug ?? null;
+    }
+    const shareSlug = resolveShareSlug(
+      typeof teaserUpdates.share_slug === "string"
+        ? teaserUpdates.share_slug
+        : existingShareSlug,
+    );
 
     teaserUpdates = {
       ...teaserUpdates,
@@ -418,23 +464,22 @@ export async function persistStudioCreation(
     };
   }
 
-  const recovery: StudioPersistenceRecovery = {
-    projectId,
-    assetId,
-    updates: teaserUpdates,
-    existingShareSlug: existingShareSlug ?? null,
-    uploadedPaths: {
-      original: originalUpload.path,
-      enhanced: enhancedUpload.path,
-      teaser: teaserUpdates.teaser_video_path ?? null,
-    },
-  };
+  recovery.updates = teaserUpdates;
+  recovery.existingShareSlug = existingShareSlug ?? recovery.existingShareSlug;
 
-  input.onStage?.("asset update:start", { assetId });
-  const asset = await finalizeStudioAsset(recovery, input.onStage);
-  input.onStage?.("asset update:success", { assetId });
+  onStage?.("asset update:start", { assetId });
+  const asset = await finalizeStudioAsset(recovery, onStage, context);
+  onStage?.("asset update:success", { assetId });
 
   return { projectId, assetId, asset };
+  } catch (error) {
+    if (error instanceof StudioPersistenceError) throw error;
+    if (error instanceof BibliotecaAuthError && !recovery.projectId && !recovery.assetId) {
+      throw error;
+    }
+    recovery.error = safePersistenceError(error);
+    throw new StudioPersistenceError(recovery, error);
+  }
 }
 
 export async function persistPremiumVideo(

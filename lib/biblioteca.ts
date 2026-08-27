@@ -130,7 +130,12 @@ function logBibliotecaSupabaseError(
   });
 }
 
-type BibliotecaSupabaseClient = ReturnType<typeof createClient>;
+export type BibliotecaSupabaseClient = ReturnType<typeof createClient>;
+
+export type BibliotecaMutationContext = {
+  client: BibliotecaSupabaseClient;
+  user: User;
+};
 
 async function selectBibliotecaAssetsForProject(
   supabaseClient: BibliotecaSupabaseClient,
@@ -196,8 +201,9 @@ function getAuthenticatedClient() {
   return createClient();
 }
 
-async function requireUser(): Promise<User> {
-  const supabaseClient = getAuthenticatedClient();
+async function requireUser(
+  supabaseClient: BibliotecaSupabaseClient = getAuthenticatedClient(),
+): Promise<User> {
   const {
     data: { user },
     error,
@@ -208,6 +214,19 @@ async function requireUser(): Promise<User> {
   }
 
   return user;
+}
+
+export async function createBibliotecaMutationContext(
+  expectedUserId?: string,
+): Promise<BibliotecaMutationContext> {
+  const client = getAuthenticatedClient();
+  const user = await requireUser(client);
+
+  if (expectedUserId && user.id !== expectedUserId) {
+    throw new BibliotecaAuthError("Authenticated Biblioteca user changed during persistence.");
+  }
+
+  return { client, user };
 }
 
 async function resolveBibliotecaUserId(userId?: string): Promise<string> {
@@ -294,9 +313,11 @@ export async function fetchBibliotecaProjects(
 export async function createBibliotecaProject(
   name: string,
   metadataOrDescription?: StudioProjectMetadata | string,
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaProject> {
-  const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const mutationContext = context ?? await createBibliotecaMutationContext();
+  const supabaseClient = mutationContext.client;
+  const user = mutationContext.user;
 
   const metadata: StudioProjectMetadata & { description?: string | null } =
     typeof metadataOrDescription === "string"
@@ -343,9 +364,11 @@ export async function createBibliotecaProject(
 export async function updateBibliotecaProject(
   projectId: string,
   metadata: StudioProjectMetadata,
+  context?: BibliotecaMutationContext,
 ): Promise<void> {
-  const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const mutationContext = context ?? await createBibliotecaMutationContext();
+  const supabaseClient = mutationContext.client;
+  const user = mutationContext.user;
 
   const updatePayload = {
     workflow_id: metadata.workflow_id ?? null,
@@ -416,9 +439,11 @@ export async function fetchBibliotecaAssets(
 
 export async function fetchBibliotecaAssetById(
   assetId: string,
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaAsset | null> {
-  const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const mutationContext = context ?? await createBibliotecaMutationContext();
+  const supabaseClient = mutationContext.client;
+  const user = mutationContext.user;
 
   const { data, error } = await selectBibliotecaAssetById(
     supabaseClient,
@@ -451,9 +476,11 @@ export async function saveBibliotecaAssets(
   assets: Array<
     Omit<BibliotecaAsset, "id" | "created_at"> & { project_id: string }
   >,
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaAsset[]> {
-  const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const mutationContext = context ?? await createBibliotecaMutationContext();
+  const supabaseClient = mutationContext.client;
+  const user = mutationContext.user;
 
   const projectIds = [...new Set(assets.map((asset) => asset.project_id))];
 
@@ -511,9 +538,11 @@ export async function updateBibliotecaAsset(
       | "creative_recipe"
     >
   >,
+  context?: BibliotecaMutationContext,
 ): Promise<BibliotecaAsset> {
-  const supabaseClient = getAuthenticatedClient();
-  const user = await requireUser();
+  const mutationContext = context ?? await createBibliotecaMutationContext();
+  const supabaseClient = mutationContext.client;
+  const user = mutationContext.user;
 
   const { data: asset, error: assetError } = await supabaseClient
     .from("assets")

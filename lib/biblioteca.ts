@@ -549,8 +549,8 @@ export async function updateBibliotecaAsset(
     .from("assets")
     .select("id, project_id")
     .eq("id", assetId)
-    .maybeSingle()
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
 
   if (assetError) {
     throw assetError;
@@ -565,8 +565,8 @@ export async function updateBibliotecaAsset(
     .select("id")
     .eq("id", asset.project_id)
     .eq("user_id", user.id)
-    .maybeSingle()
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
 
   if (projectError) {
     throw projectError;
@@ -585,8 +585,8 @@ export async function updateBibliotecaAsset(
           .update(payload)
           .eq("id", assetId)
           .select(select)
-          .single()
-          .abortSignal(signal ?? new AbortController().signal),
+          .abortSignal(signal ?? new AbortController().signal)
+          .single(),
     );
 
   let { data, error } = await runUpdate(updates);

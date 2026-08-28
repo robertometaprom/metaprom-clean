@@ -236,7 +236,10 @@ async function finalizeStudioAsset(
           context,
           signal,
           (shareSlug) => {
-            recovery.updates = { ...recovery.updates, share_slug: shareSlug };
+            recovery.updates = omitAlreadyPersistedImageUrl({
+              ...recovery.updates,
+              share_slug: shareSlug,
+            });
           },
         );
         onStage?.("asset update:patch response", { assetId, attempt, status: "success" });
@@ -380,10 +383,15 @@ async function runStudioPersistence(
     recovery.uploadedPaths.original = originalUpload.path;
     onStage?.("storage upload:success", { kind: "original", path: originalUpload.path });
   }
+  recovery.updates = omitAlreadyPersistedImageUrl({
+    ...recovery.updates,
+    original_path: recovery.uploadedPaths.original,
+    image_url: input.enhancedDataUrl,
+  });
 
-  const enhancedBlob = dataUrlToBlob(input.enhancedDataUrl);
   if (!recovery.uploadedPaths.enhanced) {
     onStage?.("storage upload:start", { kind: "enhanced", projectId, assetId });
+    const enhancedBlob = dataUrlToBlob(input.enhancedDataUrl);
     const enhancedUpload = await uploadLibraryObject({
       userId: input.userId, projectId, assetId, kind: "enhanced",
       file: enhancedBlob,
@@ -393,8 +401,7 @@ async function runStudioPersistence(
     recovery.uploadedPaths.enhanced = enhancedUpload.path;
     onStage?.("storage upload:success", { kind: "enhanced", path: enhancedUpload.path });
   }
-
-  let teaserUpdates: Partial<BibliotecaAsset> = omitAlreadyPersistedImageUrl({
+  recovery.updates = omitAlreadyPersistedImageUrl({
     ...recovery.updates,
     original_path: recovery.uploadedPaths.original,
     image_path: recovery.uploadedPaths.enhanced,
@@ -403,6 +410,8 @@ async function runStudioPersistence(
     video_prompt: input.videoPrompt,
     ai_instructions: input.customerIntent || null,
   });
+
+  let teaserUpdates: Partial<BibliotecaAsset> = recovery.updates;
 
   let existingShareSlug: string | null | undefined = recovery.existingShareSlug;
 
@@ -416,6 +425,12 @@ async function runStudioPersistence(
       recovery.uploadedPaths.teaser = teaserUpload.path;
       onStage?.("storage upload:success", { kind: "teaser", path: teaserUpload.path });
     }
+    recovery.updates = omitAlreadyPersistedImageUrl({
+      ...recovery.updates,
+      teaser_video_path: recovery.uploadedPaths.teaser,
+      image_url: input.enhancedDataUrl,
+    });
+    teaserUpdates = recovery.updates;
 
     if (!teaserUpdates.share_slug) {
       const existingAsset = await fetchBibliotecaAssetById(assetId, context);
@@ -504,7 +519,10 @@ async function runStudioPersistence(
     };
   }
 
-  recovery.updates = teaserUpdates;
+  recovery.updates = omitAlreadyPersistedImageUrl({
+    ...teaserUpdates,
+    image_url: input.enhancedDataUrl,
+  });
   recovery.existingShareSlug = existingShareSlug ?? recovery.existingShareSlug;
 
   onStage?.("asset update:start", { assetId });

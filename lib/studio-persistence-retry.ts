@@ -1,4 +1,4 @@
-const FINAL_ASSET_UPDATE_ATTEMPTS = 3;
+export const FINAL_ASSET_UPDATE_ATTEMPTS = 3;
 export const FINAL_ASSET_UPDATE_TIMEOUT_MS = 12_000;
 export const MAX_PERSISTENCE_DIAGNOSTIC_TEXT_LENGTH = 500;
 
@@ -39,6 +39,13 @@ export function approximateSerializedBytes(value: unknown): number | null {
   }
 }
 
+async function settlePersistenceAttempt<T>(pending: Promise<T>): Promise<void> {
+  await pending.then(
+    () => undefined,
+    () => undefined,
+  );
+}
+
 export async function withFinalAssetUpdateTimeout<T>(
   update: (signal: AbortSignal) => Promise<T>,
   timeoutMs = FINAL_ASSET_UPDATE_TIMEOUT_MS,
@@ -46,14 +53,18 @@ export async function withFinalAssetUpdateTimeout<T>(
   const controller = new AbortController();
   let timedOut = false;
   let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined;
+  const pending = update(controller.signal);
   try {
     timeoutId = globalThis.setTimeout(() => {
       timedOut = true;
       controller.abort();
     }, timeoutMs);
-    return await update(controller.signal);
+    return await pending;
   } catch (error) {
-    if (timedOut) throw new FinalAssetUpdateTimeoutError(timeoutMs);
+    if (timedOut) {
+      await settlePersistenceAttempt(pending);
+      throw new FinalAssetUpdateTimeoutError(timeoutMs);
+    }
     throw error;
   } finally {
     if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId);
@@ -83,13 +94,37 @@ export async function retryFinalAssetUpdate<T>(input: {
   onTimeout?: (error: FinalAssetUpdateTimeoutError, attempt: number) => void;
 }): Promise<T> {
   const attempts = Math.max(1, input.attempts ?? FINAL_ASSET_UPDATE_ATTEMPTS);
+  let inFlight: Promise<T> | null = null;
+  let patchesInFlight = 0;
+
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (inFlight) {
+      await settlePersistenceAttempt(inFlight);
+      inFlight = null;
+    }
+
     try {
-      return await withFinalAssetUpdateTimeout(
-        (signal) => input.update(signal, attempt),
+      const result = await withFinalAssetUpdateTimeout(
+        (signal) => {
+          if (patchesInFlight > 0) {
+            throw new Error("A previous final asset PATCH is still in flight.");
+          }
+          patchesInFlight += 1;
+          const pending = input.update(signal, attempt).finally(() => {
+            patchesInFlight = Math.max(0, patchesInFlight - 1);
+          });
+          inFlight = pending;
+          return pending;
+        },
         input.timeoutMs,
       );
+      inFlight = null;
+      return result;
     } catch (error) {
+      if (inFlight) {
+        await settlePersistenceAttempt(inFlight);
+        inFlight = null;
+      }
       if (error instanceof FinalAssetUpdateTimeoutError) input.onTimeout?.(error, attempt);
       if (attempt >= attempts || !isTransientPersistenceError(error)) throw error;
       input.onRetry?.(error, attempt);

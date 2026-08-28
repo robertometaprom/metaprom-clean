@@ -545,12 +545,13 @@ export async function updateBibliotecaAsset(
   const supabaseClient = mutationContext.client;
   const user = mutationContext.user;
 
-  const { data: asset, error: assetError } = await supabaseClient
+  const assetLookup = supabaseClient
     .from("assets")
     .select("id, project_id")
-    .eq("id", assetId)
-    .abortSignal(signal ?? new AbortController().signal)
-    .maybeSingle();
+    .eq("id", assetId);
+  const { data: asset, error: assetError } = await (
+    signal ? assetLookup.abortSignal(signal) : assetLookup
+  ).maybeSingle();
 
   if (assetError) {
     throw assetError;
@@ -560,13 +561,14 @@ export async function updateBibliotecaAsset(
     throw new Error("Asset not found or access denied.");
   }
 
-  const { data: project, error: projectError } = await supabaseClient
+  const projectLookup = supabaseClient
     .from("projects")
     .select("id")
     .eq("id", asset.project_id)
-    .eq("user_id", user.id)
-    .abortSignal(signal ?? new AbortController().signal)
-    .maybeSingle();
+    .eq("user_id", user.id);
+  const { data: project, error: projectError } = await (
+    signal ? projectLookup.abortSignal(signal) : projectLookup
+  ).maybeSingle();
 
   if (projectError) {
     throw projectError;
@@ -579,14 +581,14 @@ export async function updateBibliotecaAsset(
   const runUpdate = (payload: Partial<BibliotecaAsset>) =>
     selectBibliotecaAssetsAfterMutation<BibliotecaAsset>(
       supabaseClient,
-      (select) =>
-        supabaseClient
+      (select) => {
+        const patch = supabaseClient
           .from("assets")
           .update(payload)
           .eq("id", assetId)
-          .select(select)
-          .abortSignal(signal ?? new AbortController().signal)
-          .single(),
+          .select(select);
+        return (signal ? patch.abortSignal(signal) : patch).single();
+      },
     );
 
   let { data, error } = await runUpdate(updates);

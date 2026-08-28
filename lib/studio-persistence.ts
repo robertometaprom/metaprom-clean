@@ -27,7 +27,11 @@ import {
 import { buildStudioVideoPrompt } from "@/lib/studio-prompts";
 import { resolveVeoGenerationParams } from "@/lib/destination-generation";
 import { resolvePremiumVeoDurationSeconds } from "@/lib/video/veo-config";
-import { parseRequiredNarrativeBeats, type RequiredNarrativeBeats } from "@/lib/narrative-beats-contract";
+import {
+  buildNarrativeBeatsPromptBlock,
+  parseRequiredNarrativeBeats,
+  type RequiredNarrativeBeats,
+} from "@/lib/narrative-beats-contract";
 import type {
   CommercialProductionProfile,
   PromotionalOverlays,
@@ -571,15 +575,19 @@ async function runStudioPersistence(
     });
     let recipe: ReturnType<typeof buildCreativeRecipeV1>;
     try {
+      const premiumPrompt = buildStudioVideoPrompt(
+        input.customerIntent,
+        "premium",
+        destination,
+      );
+      const narrativeBeatsBlock = buildNarrativeBeatsPromptBlock(requiredNarrativeBeats);
       recipe = buildCreativeRecipeV1({
       reference_image_path: recovery.uploadedPaths.enhanced,
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
-      premium_prompt: buildStudioVideoPrompt(
-        input.customerIntent,
-        "premium",
-        destination,
-      ),
+      premium_prompt: narrativeBeatsBlock
+        ? `${premiumPrompt}\n\n${narrativeBeatsBlock}`
+        : premiumPrompt,
       destination,
       aspect_ratio: resolveVeoGenerationParams(destination).aspectRatio,
       preview_duration_seconds: 4,

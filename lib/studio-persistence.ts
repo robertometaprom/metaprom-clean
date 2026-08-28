@@ -531,13 +531,47 @@ async function runStudioPersistence(
         throw error;
       }
     }
-    const shareSlug = resolveShareSlug(
-      typeof teaserUpdates.share_slug === "string"
-        ? teaserUpdates.share_slug
-        : existingShareSlug,
-    );
+    emitPersistenceTelemetry({
+      stage: "pre_finalization_start",
+      projectId,
+      assetId,
+    });
+    emitPersistenceTelemetry({
+      stage: "resolve_share_slug_start",
+      projectId,
+      assetId,
+    });
+    let shareSlug: string;
+    try {
+      shareSlug = resolveShareSlug(
+        typeof teaserUpdates.share_slug === "string"
+          ? teaserUpdates.share_slug
+          : existingShareSlug,
+      );
+      emitPersistenceTelemetry({
+        stage: "resolve_share_slug_success",
+        projectId,
+        assetId,
+        result: "success",
+        errorCode: shareSlug ? "slug_present" : "slug_absent",
+      });
+    } catch (error) {
+      emitPersistenceTelemetryError(
+        "resolve_share_slug_error",
+        { projectId, assetId },
+        error,
+      );
+      throw error;
+    }
     const destination = input.projectMetadata.destination ?? null;
-    const recipe = buildCreativeRecipeV1({
+    emitPersistenceTelemetry({
+      stage: "recipe_build_start",
+      projectId,
+      assetId,
+    });
+    let recipe: ReturnType<typeof buildCreativeRecipeV1>;
+    try {
+      recipe = buildCreativeRecipeV1({
       reference_image_path: recovery.uploadedPaths.enhanced,
       customer_intention: input.customerIntent,
       teaser_prompt: input.videoPrompt,
@@ -584,6 +618,22 @@ async function runStudioPersistence(
       metaprom_watermark_source: requiresMetapromWatermark(promotionalOverlays)
         ? CANONICAL_LOGO_SOURCE : null,
     });
+      emitPersistenceTelemetry({
+        stage: "recipe_build_success",
+        projectId,
+        assetId,
+        result: "success",
+        errorCode: recipe ? "recipe_created" : "recipe_absent",
+        errorMessage: `recipeCreated=${recipe ? "YES" : "NO"} destinationPresent=${destination ? "YES" : "NO"} aspectRatio=${typeof recipe.aspect_ratio === "string" ? recipe.aspect_ratio : "none"}`,
+      });
+    } catch (error) {
+      emitPersistenceTelemetryError(
+        "recipe_build_error",
+        { projectId, assetId },
+        error,
+      );
+      throw error;
+    }
 
     teaserUpdates = {
       ...teaserUpdates,
@@ -620,6 +670,12 @@ async function runStudioPersistence(
   recovery.existingShareSlug = existingShareSlug ?? recovery.existingShareSlug;
 
   onStage?.("asset update:start", { assetId });
+  emitPersistenceTelemetry({
+    stage: "pre_finalization_complete",
+    projectId,
+    assetId,
+    result: "success",
+  });
   const asset = await finalizeStudioAsset(recovery, onStage, context);
   onStage?.("asset update:success", { assetId });
 

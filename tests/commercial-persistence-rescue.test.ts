@@ -526,3 +526,39 @@ test("reconciliation is persistence-only and does not generate, upload, create o
   assert.doesNotMatch(updateAsset, /\.single\(\)\s*\n\s*\.abortSignal/);
   assert.doesNotMatch(updateAsset, /\.maybeSingle\(\)\s*\n\s*\.abortSignal/);
 });
+
+test("pre-finalization gap telemetry is fire-and-forget and preserves error propagation", () => {
+  const persistence = readRepo("lib/studio-persistence.ts");
+  const telemetry = readRepo("lib/studio-persistence-telemetry.ts");
+  const gap = persistence.slice(
+    persistence.indexOf('stage: "post_upload_fetch_success"'),
+    persistence.indexOf("const asset = await finalizeStudioAsset"),
+  );
+
+  assert.match(telemetry, /"pre_finalization_start"/);
+  assert.match(telemetry, /"resolve_share_slug_start"/);
+  assert.match(telemetry, /"resolve_share_slug_success"/);
+  assert.match(telemetry, /"resolve_share_slug_error"/);
+  assert.match(telemetry, /"recipe_build_start"/);
+  assert.match(telemetry, /"recipe_build_success"/);
+  assert.match(telemetry, /"recipe_build_error"/);
+  assert.match(telemetry, /"pre_finalization_complete"/);
+  assert.match(telemetry, /void fetch\("\/api\/studio\/persistence-telemetry"/);
+  assert.doesNotMatch(telemetry, /await fetch\(/);
+
+  assert.match(
+    gap,
+    /post_upload_fetch_success[\s\S]*pre_finalization_start[\s\S]*resolve_share_slug_start[\s\S]*resolveShareSlug\([\s\S]*resolve_share_slug_success[\s\S]*recipe_build_start[\s\S]*buildCreativeRecipeV1\([\s\S]*recipe_build_success[\s\S]*pre_finalization_complete/,
+  );
+  assert.match(
+    gap,
+    /emitPersistenceTelemetryError\(\s*"resolve_share_slug_error"[\s\S]*?throw error;/,
+  );
+  assert.match(
+    gap,
+    /emitPersistenceTelemetryError\(\s*"recipe_build_error"[\s\S]*?throw error;/,
+  );
+  assert.doesNotMatch(persistence, /await emitPersistenceTelemetry/);
+  assert.doesNotMatch(gap, /share_slug: shareSlug[\s\S]*console\.(log|info|debug)\(shareSlug/);
+  assert.doesNotMatch(gap, /JSON\.stringify\(recipe\)/);
+});

@@ -1594,6 +1594,11 @@ export default function CreativeDirector({
     }
 
     const isAdvertising = mode === "advertising_image";
+    if (!isAdvertising && !destinationRef.current) {
+      setPhase("destination");
+      return;
+    }
+
     const analyticsRunIdForCreate = crypto.randomUUID();
     setAnalyticsRunId(analyticsRunIdForCreate);
 
@@ -1796,6 +1801,14 @@ export default function CreativeDirector({
 
       if (!hasPhoto) {
         setPhase("upload");
+        return;
+      }
+
+      if (
+        creationModeRef.current === "commercial" &&
+        !destinationRef.current
+      ) {
+        setPhase("destination");
         return;
       }
 
@@ -2375,16 +2388,17 @@ export default function CreativeDirector({
   /**
    * After Director proposal when creationMode was unset: customer picks mode.
    * Preserves full proposal + conversation; does not auto-generate.
+   * Commercial reuses the existing destination selector before Generar.
    */
   const selectCreationModeAfterProposal = useCallback((mode: CreationMode) => {
     setCreationMode(mode);
     creationModeRef.current = mode;
     setError(null);
-    // Proposal already in input / customerIntentRef. Stay on /studio.
-    // Advertising → image intent feed. Commercial → commercial intent feed
-    // (same known-mode Director handoff; destination remains optional).
-    setPhase("intent");
-  }, []);
+    if (mode === "commercial") {
+      setDirectorPanelOpen(false);
+    }
+    routeAfterCreationMode(mode);
+  }, [routeAfterCreationMode]);
 
   const handleUseDirectorProposal = useCallback((proposal: CommercialProposal) => {
     const trimmed = proposal.narrative.trim();
@@ -2419,8 +2433,14 @@ export default function CreativeDirector({
       if (!knownMode) {
         return "creation_mode";
       }
+      if (knownMode === "commercial" && !destinationRef.current) {
+        return "destination";
+      }
       return "intent";
     });
+    if (knownMode === "commercial" && !destinationRef.current) {
+      setDirectorPanelOpen(false);
+    }
   }, []);
 
   useLayoutEffect(() => {
@@ -3183,7 +3203,8 @@ export default function CreativeDirector({
                 type="submit"
                 disabled={
                   !input.trim() ||
-                  (isBatchSelection && creationMode !== "advertising_image")
+                  (isBatchSelection && creationMode !== "advertising_image") ||
+                  (creationMode === "commercial" && !destination)
                 }
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-400 px-5 py-3.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >

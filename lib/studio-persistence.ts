@@ -42,6 +42,10 @@ import {
   retryFinalAssetUpdate,
   truncatePersistenceDiagnosticText,
 } from "@/lib/studio-persistence-retry";
+import {
+  emitPersistenceTelemetry,
+  emitPersistenceTelemetryError,
+} from "@/lib/studio-persistence-telemetry";
 
 export type PersistStudioCreationInput = {
   userId: string;
@@ -220,45 +224,103 @@ async function finalizeStudioAsset(
     );
   }
   const assetId = recovery.assetId;
+  const projectId = recovery.projectId;
   const payloadBytes = approximateSerializedBytes(recovery.updates);
+  const telemetryBase = { projectId, assetId, payloadBytes };
 
   try {
     onStage?.("asset update:finalization started", { assetId, payloadBytes });
-    return await retryFinalAssetUpdate({
+    emitPersistenceTelemetry({
+      ...telemetryBase,
+      stage: "finalization_start",
+    });
+    const asset = await retryFinalAssetUpdate({
       timeoutMs: FINAL_ASSET_UPDATE_TIMEOUT_MS,
       update: async (signal, attempt) => {
+        emitPersistenceTelemetry({
+          ...telemetryBase,
+          stage: "patch_attempt_start",
+          attempt,
+        });
         onStage?.("asset update:patch dispatched", { assetId, attempt, payloadBytes });
-        const asset = await updateAssetWithShareSlugRetry(
-          assetId,
-          recovery.updates,
-          recovery.existingShareSlug,
-          onStage,
-          context,
-          signal,
-          (shareSlug) => {
-            recovery.updates = omitAlreadyPersistedImageUrl({
-              ...recovery.updates,
-              share_slug: shareSlug,
-            });
-          },
-        );
-        onStage?.("asset update:patch response", { assetId, attempt, status: "success" });
-        return asset;
+        emitPersistenceTelemetry({
+          ...telemetryBase,
+          stage: "patch_dispatched",
+          attempt,
+        });
+        try {
+          const patched = await updateAssetWithShareSlugRetry(
+            assetId,
+            recovery.updates,
+            recovery.existingShareSlug,
+            onStage,
+            context,
+            signal,
+            (shareSlug) => {
+              recovery.updates = omitAlreadyPersistedImageUrl({
+                ...recovery.updates,
+                share_slug: shareSlug,
+              });
+            },
+          );
+          onStage?.("asset update:patch response", { assetId, attempt, status: "success" });
+          emitPersistenceTelemetry({
+            ...telemetryBase,
+            stage: "patch_result",
+            attempt,
+            result: "success",
+          });
+          emitPersistenceTelemetry({
+            ...telemetryBase,
+            stage: "patch_attempt_settled",
+            attempt,
+            result: "success",
+          });
+          return patched;
+        } catch (error) {
+          emitPersistenceTelemetryError("patch_result", { ...telemetryBase, attempt }, error);
+          emitPersistenceTelemetryError(
+            "patch_attempt_settled",
+            { ...telemetryBase, attempt },
+            error,
+          );
+          throw error;
+        }
       },
-      onTimeout: (error, attempt) => onStage?.("asset update:timeout", {
-        assetId,
-        attempt,
-        status: "aborted",
-        aborted: true,
-        responseReceived: false,
-        error: safePersistenceError(error),
-      }),
-      onRetry: (error, attempt) => onStage?.("asset update:retry", {
-        assetId,
-        attempt,
-        error: safePersistenceError(error),
-      }),
+      onTimeout: (error, attempt) => {
+        onStage?.("asset update:timeout", {
+          assetId,
+          attempt,
+          status: "aborted",
+          aborted: true,
+          responseReceived: false,
+          error: safePersistenceError(error),
+        });
+        emitPersistenceTelemetryError(
+          "patch_result",
+          { ...telemetryBase, attempt },
+          error,
+        );
+      },
+      onRetry: (error, attempt) => {
+        onStage?.("asset update:retry", {
+          assetId,
+          attempt,
+          error: safePersistenceError(error),
+        });
+        emitPersistenceTelemetryError(
+          "retry_decision",
+          { ...telemetryBase, attempt },
+          error,
+        );
+      },
     });
+    emitPersistenceTelemetry({
+      ...telemetryBase,
+      stage: "final_success",
+      result: "success",
+    });
+    return asset;
   } catch (error) {
     console.error("[studio-persistence] final asset update failed", {
       projectId: recovery.projectId,
@@ -266,6 +328,7 @@ async function finalizeStudioAsset(
       uploadedPaths: recovery.uploadedPaths,
       error: safePersistenceError(error),
     });
+    emitPersistenceTelemetryError("final_failure", telemetryBase, error);
     throw new StudioPersistenceError(recovery, error);
   }
 }
@@ -424,6 +487,17 @@ async function runStudioPersistence(
       }, context.client);
       recovery.uploadedPaths.teaser = teaserUpload.path;
       onStage?.("storage upload:success", { kind: "teaser", path: teaserUpload.path });
+      emitPersistenceTelemetry({
+        stage: "teaser_upload_success",
+        projectId,
+        assetId,
+      });
+    } else {
+      emitPersistenceTelemetry({
+        stage: "teaser_upload_success",
+        projectId,
+        assetId,
+      });
     }
     recovery.updates = omitAlreadyPersistedImageUrl({
       ...recovery.updates,
@@ -433,9 +507,29 @@ async function runStudioPersistence(
     teaserUpdates = recovery.updates;
 
     if (!teaserUpdates.share_slug) {
-      const existingAsset = await fetchBibliotecaAssetById(assetId, context);
-      existingShareSlug = existingAsset?.share_slug;
-      recovery.existingShareSlug = existingShareSlug ?? null;
+      emitPersistenceTelemetry({
+        stage: "post_upload_fetch_start",
+        projectId,
+        assetId,
+      });
+      try {
+        const existingAsset = await fetchBibliotecaAssetById(assetId, context);
+        existingShareSlug = existingAsset?.share_slug;
+        recovery.existingShareSlug = existingShareSlug ?? null;
+        emitPersistenceTelemetry({
+          stage: "post_upload_fetch_success",
+          projectId,
+          assetId,
+          result: "success",
+        });
+      } catch (error) {
+        emitPersistenceTelemetryError(
+          "post_upload_fetch_error",
+          { projectId, assetId },
+          error,
+        );
+        throw error;
+      }
     }
     const shareSlug = resolveShareSlug(
       typeof teaserUpdates.share_slug === "string"

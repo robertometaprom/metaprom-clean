@@ -7,6 +7,8 @@ import { PRICING_PAGE_COPY } from "@/lib/pricing";
 
 type PaymentMethodsProps = {
   showOxxoPay: boolean;
+  title?: string;
+  stripeLabel?: string;
 };
 
 const CARD_STYLE = { minHeight: 120 };
@@ -27,7 +29,11 @@ function PaymentMark({ id }: { id: PaymentMarkId }) {
   );
 }
 
-export default function PaymentMethods({ showOxxoPay }: PaymentMethodsProps) {
+export default function PaymentMethods({
+  showOxxoPay,
+  title,
+  stripeLabel,
+}: PaymentMethodsProps) {
   const markIds: PaymentMarkId[] = showOxxoPay
     ? [...CARD_PAYMENT_MARK_IDS, "oxxo"]
     : [...CARD_PAYMENT_MARK_IDS];
@@ -46,7 +52,7 @@ export default function PaymentMethods({ showOxxoPay }: PaymentMethodsProps) {
         id="payment-methods"
         className="text-xl font-semibold tracking-tight text-[#F5F5F0] md:text-2xl"
       >
-        {PRICING_PAGE_COPY.paymentMethods.title}
+        {title ?? PRICING_PAGE_COPY.paymentMethods.title}
       </h2>
       <ul className={logoGrid}>
         {markIds.map((id) => (
@@ -60,7 +66,7 @@ export default function PaymentMethods({ showOxxoPay }: PaymentMethodsProps) {
         ))}
       </ul>
       <p className="mt-3 border border-white/10 bg-white/[0.02] px-4 py-3.5 text-center text-sm leading-snug text-white/65">
-        {PRICING_PAGE_COPY.paymentMethods.stripeLabel}
+        {stripeLabel ?? PRICING_PAGE_COPY.paymentMethods.stripeLabel}
       </p>
     </section>
   );

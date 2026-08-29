@@ -103,19 +103,17 @@ export const PRICING_BADGES: Record<PricingBadgeId, PricingBadge> = {
 export const PRICING_PAGE_COPY = {
   header: "PLANES METAPROM",
   subtitleLines: [
-    "Comerciales e imágenes publicitarias listos para usar.",
-    "Sin suscripciones.",
-    "Sin vencimientos.",
-    "Sin sistemas de créditos difíciles de entender.",
+    "Producción publicitaria continua para tu negocio.",
+    "Comerciales, imágenes ilimitadas y Director Creativo — en una membresía.",
   ],
-  philosophy: "Resultados publicitarios terminados. No créditos. No cómputo. No planes mensuales.",
+  philosophy:
+    "Metaprom AI le da a tu negocio la capacidad de producir publicidad de forma continua, no un comercial aislado.",
   unitLabel: "por unidad",
   savingsLabel: "Ahorras",
   savingsVsIndividual: "menos que comprarlos por separado",
   ctaUnavailable: "Próximamente",
   ctaComingSoon: "Próximamente",
   ctaPurchase: "Comprar",
-  neverExpireNote: "Los paquetes comprados nunca vencen.",
   assetRule:
     "Una imagen publicitaria corresponde a una pieza publicitaria terminada o a un formato.",
   paymentMethods: {
@@ -123,8 +121,8 @@ export const PRICING_PAGE_COPY = {
     stripeLabel: "🔒 Pagos procesados mediante Stripe",
   },
   footerCta: {
-    title: "¿No sabes qué paquete elegir?",
-    body: "Nuestro Director Creativo te ayudará a encontrar la mejor opción antes de comenzar tu proyecto.",
+    title: "¿No sabes qué membresía elegir?",
+    body: "Nuestro Director Creativo te ayuda a encontrar la mejor opción para tu negocio.",
     ctaLabel: "Hablar con Director",
     ctaHref: "/studio?director=1",
   },
@@ -354,13 +352,6 @@ const PRICING_FAQ_ES = {
       ],
     },
     {
-      question: "¿Los paquetes vencen?",
-      paragraphs: [
-        "No.",
-        "Tus paquetes permanecerán disponibles hasta que los utilices.",
-      ],
-    },
-    {
       question: "¿Qué se considera el mismo proyecto?",
       paragraphs: [
         "El mismo proyecto es la misma pieza publicitaria en la que ya estás trabajando: el mismo producto o servicio, la misma campaña y la misma idea creativa.",
@@ -373,7 +364,7 @@ const PRICING_FAQ_ES = {
       paragraphs: [
         "Comienza un proyecto nuevo cuando cambia el producto, el servicio, la campaña o el concepto creativo.",
         "Por ejemplo: pasar de un producto a otro, de un servicio a una promoción distinta, o de una idea creativa a una dirección completamente diferente.",
-        "En esos casos se utiliza una unidad adicional de tu paquete.",
+        "En esos casos se utiliza un comercial adicional.",
       ],
     },
   ] satisfies readonly PricingFaqItem[],
@@ -395,13 +386,6 @@ const PRICING_FAQ_EN = {
       ],
     },
     {
-      question: "Do packages expire?",
-      paragraphs: [
-        "No.",
-        "Your packages remain available until you use them.",
-      ],
-    },
-    {
       question: "What counts as the same project?",
       paragraphs: [
         "The same project is the same advertising piece you are already working on: the same product or service, the same campaign, and the same creative idea.",
@@ -414,7 +398,7 @@ const PRICING_FAQ_EN = {
       paragraphs: [
         "A new project begins when the product, service, campaign, or creative concept changes.",
         "For example: moving from one product to another, from a service to a different promotion, or from one creative idea to a completely different direction.",
-        "In those cases, an additional unit from your package is used.",
+        "In those cases, an additional commercial is used.",
       ],
     },
   ] satisfies readonly PricingFaqItem[],

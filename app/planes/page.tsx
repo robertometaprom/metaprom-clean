@@ -1,36 +1,36 @@
 import type { Metadata } from "next";
-import PlanesExperience, {
-  buildPackageCardView,
-} from "@/components/pricing/PlanesExperience";
+import PlanesExperience from "@/components/pricing/PlanesExperience";
 import { getLocale, getMessages } from "@/lib/i18n";
 import { isMexicoRequestMarket } from "@/lib/market";
 import {
-  getActivePricingCategories,
-  getAllPackagePurchasability,
-  getPackagesByCategory,
-  PRICING_PACKAGES,
+  getPackagePurchasability,
+  getPlanesOfferCopy,
+  getPricingPackageById,
+  PLANES_ONE_OFF_PRODUCT_KEY,
 } from "@/lib/pricing";
 import { publicIndexMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = publicIndexMetadata({
-  title: "Planes Metaprom — Comerciales e imágenes publicitarias",
-  description:
-    "Comerciales e imágenes publicitarias listos para usar. Sin suscripciones. Sin vencimientos. Compra solo lo que necesites.",
-  path: "/planes",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const copy = getPlanesOfferCopy(locale);
+
+  return publicIndexMetadata({
+    title: copy.metaTitle,
+    description: copy.metaDescription,
+    path: "/planes",
+  });
+}
 
 export default async function PlanesPage() {
   const locale = await getLocale();
   const messages = await getMessages(locale);
   const showOxxoPay = await isMexicoRequestMarket();
-  const purchasability = getAllPackagePurchasability(PRICING_PACKAGES);
+  const copy = getPlanesOfferCopy(locale);
+  const oneOffPackage = getPricingPackageById(PLANES_ONE_OFF_PRODUCT_KEY);
 
-  const categories = getActivePricingCategories().map((meta) => ({
-    meta,
-    packages: getPackagesByCategory(meta.id).map((pkg) =>
-      buildPackageCardView(pkg, purchasability[pkg.id], locale),
-    ),
-  }));
+  if (!oneOffPackage) {
+    throw new Error("Missing commercial_1 package for /planes one-off checkout.");
+  }
 
   return (
     <PlanesExperience
@@ -40,7 +40,8 @@ export default async function PlanesPage() {
       locale={locale}
       legal={messages.legalNav}
       showOxxoPay={showOxxoPay}
-      categories={categories}
+      copy={copy}
+      oneOffPurchasability={getPackagePurchasability(oneOffPackage)}
     />
   );
 }

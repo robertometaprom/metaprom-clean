@@ -1,9 +1,10 @@
 /**
- * /planes membership offer — UI/copy only.
+ * /planes membership offer — visual copy and selector labels.
  *
  * Golden and Premium are the two membership levels. Monthly and annual are
- * purchase modalities on each card. They must not map to Stripe Price IDs or
- * start checkout. The $180 one-off remains commercial_1.
+ * purchase modalities on each card. Backend product keys live in
+ * ./memberships.ts and are locale-independent. This file must not contain
+ * Stripe Price IDs. The $180 one-off remains commercial_1.
  */
 import type { Locale } from "@/lib/i18n";
 
@@ -31,6 +32,7 @@ export type PlanesMembershipCard = {
   coreBenefits: readonly string[];
   accumulationNote: string;
   ctaLabel: string;
+  ctaPurchase: string;
   monthly: PlanesBillingOption;
   annual: PlanesBillingOption;
 };
@@ -121,6 +123,7 @@ const PLANES_OFFER_ES: PlanesOfferCopy = {
       coreBenefits: CORE_BENEFITS_ES,
       accumulationNote: ACCUMULATION_ES,
       ctaLabel: COMING_SOON_ES,
+      ctaPurchase: "Comenzar",
       monthly: {
         cycle: "monthly",
         priceLabel: "$350 MXN",
@@ -145,6 +148,7 @@ const PLANES_OFFER_ES: PlanesOfferCopy = {
       coreBenefits: CORE_BENEFITS_ES,
       accumulationNote: ACCUMULATION_ES,
       ctaLabel: COMING_SOON_ES,
+      ctaPurchase: "Comenzar",
       monthly: {
         cycle: "monthly",
         priceLabel: "$600 MXN",
@@ -207,6 +211,7 @@ const PLANES_OFFER_EN: PlanesOfferCopy = {
       coreBenefits: CORE_BENEFITS_EN,
       accumulationNote: ACCUMULATION_EN,
       ctaLabel: COMING_SOON_EN,
+      ctaPurchase: "Get started",
       monthly: {
         cycle: "monthly",
         priceLabel: "$350 MXN",
@@ -231,6 +236,7 @@ const PLANES_OFFER_EN: PlanesOfferCopy = {
       coreBenefits: CORE_BENEFITS_EN,
       accumulationNote: ACCUMULATION_EN,
       ctaLabel: COMING_SOON_EN,
+      ctaPurchase: "Get started",
       monthly: {
         cycle: "monthly",
         priceLabel: "$600 MXN",

@@ -11,6 +11,7 @@ type PackagePurchaseButtonProps = {
   label: string;
   enabled: boolean;
   locale?: Locale;
+  variant?: "primary" | "secondary";
 };
 
 export default function PackagePurchaseButton({
@@ -18,6 +19,7 @@ export default function PackagePurchaseButton({
   label,
   enabled,
   locale = "es",
+  variant = "primary",
 }: PackagePurchaseButtonProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -93,7 +95,9 @@ export default function PackagePurchaseButton({
         onClick={handlePurchase}
         className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-sm font-medium transition ${
           enabled
-            ? "bg-[#F5F5F0] text-black hover:bg-white disabled:opacity-70"
+            ? variant === "secondary"
+              ? "border border-white/25 bg-transparent text-[#F5F5F0] hover:bg-white/10 disabled:opacity-70"
+              : "bg-[#F5F5F0] text-black hover:bg-white disabled:opacity-70"
             : "cursor-not-allowed border border-white/15 bg-transparent text-white/45"
         }`}
       >

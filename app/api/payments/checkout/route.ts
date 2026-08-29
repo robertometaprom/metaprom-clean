@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createCheckoutSession } from "@/lib/payments/create-checkout-session";
+import { createMembershipCheckoutSession } from "@/lib/payments/create-membership-checkout";
 import { getPaymentProvider } from "@/lib/payments";
 import { PaymentProviderError } from "@/lib/payments/types";
+import { recoverMembershipGrantFromCheckout } from "@/lib/payments/membership-persistence";
 import { persistPaymentResult } from "@/lib/payments/persistence";
 import {
   canBindAssetToPackage,
@@ -14,7 +16,7 @@ import type {
   PaymentMethod,
   PaymentSessionStatus,
 } from "@/lib/payments/types";
-import { getPricingPackageById } from "@/lib/pricing";
+import { getMembershipProductById, getPricingPackageById } from "@/lib/pricing";
 import { readTikTokCheckoutSnapshot } from "@/lib/analytics/cookies";
 
 export const runtime = "nodejs";
@@ -131,6 +133,62 @@ async function postWithTrace(req: Request, traceId: string) {
   }
 
   const catalogPackage = getPricingPackageById(productKey);
+  const membership = getMembershipProductById(productKey);
+  if (!catalogPackage && !membership) {
+    return jsonError("Unknown product key.", 400, traceId, { productKey });
+  }
+
+  if (membership) {
+    if (assetId) {
+      return jsonError(
+        "Memberships cannot be bound to a project asset.",
+        400,
+        traceId,
+        { assetId, productKey },
+      );
+    }
+
+    try {
+      const tiktok = readTikTokCheckoutSnapshot(req);
+      const result = await createMembershipCheckoutSession(supabase, {
+        productKey,
+        userId: user.id,
+        customerEmail: user.email ?? undefined,
+        paymentMethod,
+        tiktokTtclid: tiktok.ttclid,
+        tiktokTtp: tiktok.ttp,
+      });
+
+      logTrace(traceId, "membership checkout created", {
+        productKey: result.productKey,
+        purchaseId: result.purchaseId,
+        sessionId: result.session.sessionId,
+      });
+
+      return Response.json({
+        traceId,
+        checkoutKind: "membership",
+        productKey: result.productKey,
+        sessionId: result.session.sessionId,
+        purchaseId: result.purchaseId,
+        status: result.session.status,
+        provider: result.provider,
+        amountMxn: result.amountMxn,
+        quantity: result.quantity,
+        category: "membership",
+        redirectUrl: result.session.redirectUrl,
+        assetId: null,
+      });
+    } catch (error) {
+      const details = describeUnknownError(error);
+      logTrace(traceId, "membership createCheckoutSession failed", details);
+      if (error instanceof PaymentProviderError) {
+        return jsonError(error.message, 503, traceId, details);
+      }
+      throw error;
+    }
+  }
+
   if (!catalogPackage) {
     return jsonError("Unknown product key.", 400, traceId, { productKey });
   }
@@ -270,7 +328,30 @@ async function getWithTrace(req: Request, traceId: string) {
   let persistedAssetId =
     purchase.asset_id == null ? null : String(purchase.asset_id);
 
-  if (nextStatus !== purchase.status || nextStatus === "completed") {
+  const membership = getMembershipProductById(purchase.product_id);
+
+  if (membership) {
+    admin = createAdminClient();
+    if (nextStatus === "completed" && session.stripeInvoiceId) {
+      await recoverMembershipGrantFromCheckout(admin, {
+        sessionId: session.sessionId,
+        purchaseId: String(purchase.id),
+        status: "completed",
+        fulfillment: "membership",
+        membershipEvent: "invoice_paid",
+        stripeInvoiceId: session.stripeInvoiceId,
+        stripeSubscriptionId: session.stripeSubscriptionId,
+        stripeCustomerId: session.stripeCustomerId,
+        stripePriceId: session.stripePriceId,
+        stripeUserId: session.stripeUserId ?? user.id,
+        checkoutSessionId: session.sessionId,
+        subscriptionStatus: session.subscriptionStatus,
+        amountPaid: session.chargedAmountTotal,
+        chargedAmountTotal: session.chargedAmountTotal,
+        chargedCurrency: session.chargedCurrency,
+      });
+    }
+  } else if (nextStatus !== purchase.status || nextStatus === "completed") {
     admin = createAdminClient();
     const persisted = await persistPaymentResult(admin, provider.id, {
       sessionId: session.sessionId,
@@ -356,6 +437,49 @@ async function getWithTrace(req: Request, traceId: string) {
     }
   }
 
+  if (nextStatus === "completed" && membership && !confirmation) {
+    admin ??= createAdminClient();
+    const [grantResult, balanceResult] = await Promise.all([
+      admin
+        .from("entitlement_ledger")
+        .select("entitlement_kind, quantity, product_id")
+        .eq("user_id", user.id)
+        .eq("entry_type", "grant")
+        .eq("entitlement_kind", "commercial")
+        .contains("metadata", { stripeCheckoutSessionId: session.sessionId })
+        .maybeSingle(),
+      admin
+        .from("entitlement_balances")
+        .select("commercials_remaining")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const { data: grant, error: grantError } = grantResult;
+    const { data: balance, error: balanceError } = balanceResult;
+
+    if (grantError) {
+      throw new Error(
+        `Failed to verify membership grant for session ${session.sessionId}: ${grantError.message}`,
+      );
+    }
+
+    if (balanceError) {
+      throw new Error(
+        `Failed to load entitlement balance for membership session ${session.sessionId}: ${balanceError.message}`,
+      );
+    }
+
+    if (grant && grant.quantity === membership.commercials && balance) {
+      confirmation = {
+        quantity: membership.commercials,
+        entitlementKind: "commercial",
+        packageName: membership.name,
+        balanceAfter: balance.commercials_remaining,
+      };
+    }
+  }
+
   return Response.json({
     traceId,
     sessionId: session.sessionId,
@@ -374,7 +498,13 @@ async function getWithTrace(req: Request, traceId: string) {
               : "advertising_asset",
           packageName: pkg.name,
         }
-      : null,
+      : membership
+        ? {
+            quantity: membership.commercials,
+            entitlementKind: "commercial" as const,
+            packageName: membership.name,
+          }
+        : null,
     confirmation,
   });
 }

@@ -1,6 +1,7 @@
 import { after } from "next/server";
 
 import { getPaymentProvider } from "@/lib/payments";
+import { persistMembershipWebhook } from "@/lib/payments/membership-persistence";
 import { persistPaymentResult } from "@/lib/payments/persistence";
 import { shouldFulfillPremiumForProduct } from "@/lib/payments/purchase-integrity";
 import { fulfillPremiumVideoAfterPayment } from "@/lib/studio/premium-video-fulfillment";
@@ -29,6 +30,12 @@ export async function POST(req: Request) {
 
     if (!result) {
       return Response.json({ ok: true, ignored: true });
+    }
+
+    if (result.fulfillment === "membership") {
+      const supabase = createAdminClient();
+      await persistMembershipWebhook(supabase, result);
+      return Response.json({ ok: true, fulfillment: "membership", ...result });
     }
 
     // OXXO / async: unpaid sessions must not grant entitlements or fulfill.

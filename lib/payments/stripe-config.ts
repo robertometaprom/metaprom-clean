@@ -1,4 +1,5 @@
 import { PRICING_PACKAGES } from "@/lib/pricing/catalog";
+import { MEMBERSHIP_STRIPE_PRICE_ENV_BY_PRODUCT } from "@/lib/pricing/memberships";
 
 import { PaymentProviderError } from "./types";
 
@@ -11,6 +12,7 @@ export const PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> =
 /** Env var that holds the Stripe Price ID for a product key in the active mode. */
 export const STRIPE_PRICE_ENV_BY_PRODUCT: Record<string, string> = {
   ...PACKAGE_STRIPE_PRICE_ENV_BY_PRODUCT,
+  ...MEMBERSHIP_STRIPE_PRICE_ENV_BY_PRODUCT,
 };
 
 export function assertStripeSecretKey(secretKey: string): void {
@@ -55,7 +57,7 @@ export function getStripePriceId(productId: string): string {
 
   if (!priceId) {
     throw new PaymentProviderError(
-      `Missing ${envName}. Create a one-time Price in the active Stripe mode for this product, then set ${envName}=price_...`,
+      `Missing ${envName}. Create a Stripe Price in the active mode for this product, then set ${envName}=price_...`,
     );
   }
 

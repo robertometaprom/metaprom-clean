@@ -9,6 +9,15 @@ export type PaymentSessionStatus =
   | "failed"
   | "cancelled";
 
+export type CheckoutMode = "payment" | "subscription";
+
+export type MembershipWebhookEventKind =
+  | "checkout"
+  | "invoice_paid"
+  | "invoice_failed"
+  | "subscription_updated"
+  | "checkout_cancelled";
+
 export type CheckoutRequest = {
   /** Optional for package purchases that are not asset-bound. */
   assetId?: string;
@@ -18,6 +27,10 @@ export type CheckoutRequest = {
   paymentMethod: PaymentMethod;
   /** When set, overrides single-method selection (e.g. card + OXXO packages). */
   paymentMethodTypes?: Array<"card" | "oxxo">;
+  /** Default payment (one-off). Memberships use subscription. */
+  mode?: CheckoutMode;
+  /** Existing Stripe Customer to reuse for subscription checkout. */
+  stripeCustomerId?: string;
   customerEmail?: string;
   userId: string;
   successPath?: string;
@@ -42,6 +55,11 @@ export type CheckoutSession = {
   chargedAmountTotal?: number | null;
   /** Stripe Checkout Session currency, when retrieved. */
   chargedCurrency?: string | null;
+  checkoutMode?: CheckoutMode;
+  stripeInvoiceId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeCustomerId?: string | null;
+  subscriptionStatus?: string | null;
 };
 
 export type PaymentWebhookResult = {
@@ -58,6 +76,19 @@ export type PaymentWebhookResult = {
   chargedAmountTotal?: number | null;
   /** Stripe Checkout Session currency, when retrieved. */
   chargedCurrency?: string | null;
+  /**
+   * package (default): V1 one-off checkout.
+   * membership: recurring invoice / subscription events — do not use catalog grants.
+   */
+  fulfillment?: "package" | "membership";
+  membershipEvent?: MembershipWebhookEventKind;
+  stripeInvoiceId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeCustomerId?: string | null;
+  subscriptionStatus?: string | null;
+  billingReason?: string | null;
+  amountPaid?: number | null;
+  checkoutSessionId?: string | null;
 };
 
 export type PaymentWebhookPayload = {

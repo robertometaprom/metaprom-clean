@@ -3,6 +3,7 @@ import PlanesExperience from "@/components/pricing/PlanesExperience";
 import { getLocale, getMessages } from "@/lib/i18n";
 import { isMexicoRequestMarket } from "@/lib/market";
 import {
+  getAllMembershipPurchasability,
   getPackagePurchasability,
   getPlanesOfferCopy,
   getPricingPackageById,
@@ -42,6 +43,7 @@ export default async function PlanesPage() {
       showOxxoPay={showOxxoPay}
       copy={copy}
       oneOffPurchasability={getPackagePurchasability(oneOffPackage)}
+      membershipPurchasability={getAllMembershipPurchasability()}
     />
   );
 }

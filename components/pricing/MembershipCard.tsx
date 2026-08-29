@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import PackagePurchaseButton from "@/components/pricing/PackagePurchaseButton";
+import type { Locale } from "@/lib/i18n";
 import {
+  getMembershipProductForSelector,
   PLANES_DEFAULT_BILLING_CYCLE,
+  type MembershipProductId,
+  type MembershipPurchasability,
   type PlanesBillingCycle,
   type PlanesMembershipCard,
 } from "@/lib/pricing";
@@ -13,6 +18,8 @@ type MembershipCardProps = {
   monthlyLabel: string;
   annualLabel: string;
   selectorAriaLabel: string;
+  locale: Locale;
+  purchasability: Record<MembershipProductId, MembershipPurchasability>;
 };
 
 function CycleButton({
@@ -46,11 +53,16 @@ export default function MembershipCard({
   monthlyLabel,
   annualLabel,
   selectorAriaLabel,
+  locale,
+  purchasability,
 }: MembershipCardProps) {
   const [cycle, setCycle] = useState<PlanesBillingCycle>(
     PLANES_DEFAULT_BILLING_CYCLE,
   );
   const option = plan[cycle];
+  const product = getMembershipProductForSelector(plan.id, cycle);
+  const enabled = Boolean(purchasability[product.id]?.purchasable);
+  const ctaLabel = enabled ? plan.ctaPurchase : plan.ctaLabel;
 
   return (
     <article
@@ -58,7 +70,8 @@ export default function MembershipCard({
       data-billing-cycle={cycle}
       data-price={option.priceLabel}
       data-commercials={option.commercialsLabel}
-      data-membership-cta="non-transactional"
+      data-membership-cta={enabled ? "transactional" : "non-transactional"}
+      data-membership-product={product.id}
       className={`relative flex h-full flex-col rounded-sm border p-6 md:p-8 ${
         featured
           ? "border-white/35 bg-white/[0.07] shadow-[0_0_80px_rgba(245,245,240,0.06)] md:p-10"
@@ -129,19 +142,29 @@ export default function MembershipCard({
         {plan.accumulationNote}
       </p>
 
-      <div className="mt-8">
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className={`inline-flex w-full cursor-not-allowed items-center justify-center rounded-full px-6 py-3.5 text-sm font-medium ${
-            featured
-              ? "bg-[#F5F5F0] text-black opacity-80"
-              : "border border-white/15 bg-transparent text-white/45"
-          }`}
-        >
-          {plan.ctaLabel}
-        </button>
+      <div className={enabled ? "" : "mt-8"}>
+        {enabled ? (
+          <PackagePurchaseButton
+            productKey={product.id}
+            label={ctaLabel}
+            enabled
+            locale={locale}
+            variant={featured ? "primary" : "secondary"}
+          />
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            className={`inline-flex w-full cursor-not-allowed items-center justify-center rounded-full px-6 py-3.5 text-sm font-medium ${
+              featured
+                ? "bg-[#F5F5F0] text-black opacity-80"
+                : "border border-white/15 bg-transparent text-white/45"
+            }`}
+          >
+            {ctaLabel}
+          </button>
+        )}
       </div>
     </article>
   );

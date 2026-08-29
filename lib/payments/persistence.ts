@@ -11,6 +11,8 @@ import {
 import { shouldEmitTikTokOnFunnelInsert, tiktokPurchaseEventId } from "@/lib/tiktok/ids";
 import { resolveTikTokPurchaseMoney } from "@/lib/tiktok/purchase-value";
 
+import { resolveMembershipByStripePriceId } from "@/lib/pricing/memberships";
+
 import {
   isCommercialWorkflowAsset,
   loadOwnedAssetById,
@@ -162,6 +164,9 @@ function resolveGrantPackageOrThrow(
     });
 
     if (!pkg) {
+      if (resolveMembershipByStripePriceId(stripePriceId)) {
+        return null;
+      }
       throw new Error(
         `Stripe Price ${stripePriceId} does not map to a Metaprom catalog package.`,
       );

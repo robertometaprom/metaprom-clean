@@ -8,7 +8,11 @@ import MetapromLogo from "@/components/studio/MetapromLogo";
 import LegalLinks from "@/components/legal/LegalLinks";
 import PublicSiteLinks from "@/components/public/PublicSiteLinks";
 import type { Locale, Messages } from "@/lib/i18n";
-import type { PackagePurchasability } from "@/lib/pricing";
+import type {
+  MembershipProductId,
+  MembershipPurchasability,
+  PackagePurchasability,
+} from "@/lib/pricing";
 import {
   getPlanesMembershipOrder,
   getPricingFaq,
@@ -25,6 +29,10 @@ type PlanesExperienceProps = {
   showOxxoPay: boolean;
   copy: PlanesOfferCopy;
   oneOffPurchasability: PackagePurchasability;
+  membershipPurchasability: Record<
+    MembershipProductId,
+    MembershipPurchasability
+  >;
 };
 
 export default function PlanesExperience({
@@ -36,6 +44,7 @@ export default function PlanesExperience({
   showOxxoPay,
   copy,
   oneOffPurchasability,
+  membershipPurchasability,
 }: PlanesExperienceProps) {
   const pricingFaq = getPricingFaq(locale);
   const memberships = getPlanesMembershipOrder(copy);
@@ -112,6 +121,8 @@ export default function PlanesExperience({
                 monthlyLabel={copy.billing.monthlyLabel}
                 annualLabel={copy.billing.annualLabel}
                 selectorAriaLabel={copy.billing.selectorAriaLabel}
+                locale={locale}
+                purchasability={membershipPurchasability}
               />
             ))}
           </div>

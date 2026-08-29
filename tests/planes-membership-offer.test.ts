@@ -199,7 +199,8 @@ test("/planes UI renders two membership cards with a billing selector and keeps 
 
   assert.match(card, /data-plan=\{plan\.id\}/);
   assert.match(card, /data-billing-cycle=\{cycle\}/);
-  assert.match(card, /data-membership-cta="non-transactional"/);
+  assert.match(card, /data-membership-cta=\{enabled \? "transactional" : "non-transactional"\}/);
+  assert.match(card, /data-membership-product=\{product\.id\}/);
   assert.match(card, /PLANES_DEFAULT_BILLING_CYCLE/);
   assert.match(card, /useState<PlanesBillingCycle>/);
   assert.match(card, /aria-pressed=\{selected\}/);
@@ -214,23 +215,29 @@ test("/planes UI renders two membership cards with a billing selector and keeps 
   assert.doesNotMatch(offer, /createCheckout|checkout-session|webhook/);
 });
 
-test("membership CTAs are non-transactional and do not reuse Stripe prices", () => {
+test("membership CTAs stay coming-soon until a recurring Price mapping exists and never reuse one-off prices", () => {
   const card = readRepo("components/pricing/MembershipCard.tsx");
   const offer = readRepo("lib/pricing/planes-offer.ts");
   const page = readRepo("app/planes/page.tsx");
   const experience = readRepo("components/pricing/PlanesExperience.tsx");
+  const memberships = readRepo("lib/pricing/memberships.ts");
 
+  assert.match(card, /getMembershipProductForSelector/);
+  assert.match(card, /PackagePurchaseButton/);
+  assert.match(card, /productKey=\{product\.id\}/);
   assert.match(card, /disabled/);
   assert.match(card, /aria-disabled="true"/);
-  assert.doesNotMatch(card, /PackagePurchaseButton/);
-  assert.doesNotMatch(card, /productKey/);
-  assert.doesNotMatch(card, /\/api\/payments\/checkout/);
   assert.doesNotMatch(card, /STRIPE_PRICE_ID_COMMERCIAL/);
 
+  assert.doesNotMatch(offer, /STRIPE_PRICE_ID/);
+  assert.doesNotMatch(offer, /price_/);
   assert.doesNotMatch(offer, /STRIPE_PRICE_ID_COMMERCIAL_5|COMMERCIAL_10|COMMERCIAL_20/);
   assert.doesNotMatch(page, /STRIPE_PRICE_ID/);
   assert.match(page, /commercial_1 package for \/planes one-off checkout/);
   assert.match(experience, /productKey=\{PLANES_ONE_OFF_PRODUCT_KEY\}/);
+
+  assert.match(memberships, /STRIPE_PRICE_ID_GOLDEN_MONTHLY/);
+  assert.doesNotMatch(memberships, /STRIPE_PRICE_ID_COMMERCIAL_1/);
 });
 
 test("old package-grid and anti-membership copy is gone from /planes surfaces", () => {

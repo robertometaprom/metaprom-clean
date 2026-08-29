@@ -76,3 +76,55 @@ export async function grantPackageEntitlementFromPurchase(
     purchaseId,
   };
 }
+
+/**
+ * Grant an explicit commercial quantity once per purchase row.
+ * Used by membership invoice fulfillment so renewals can add credits
+ * without going through the V1 package catalog.
+ */
+export async function grantCommercialCreditsFromPurchase(
+  supabase: SupabaseClient,
+  input: {
+    userId: string;
+    purchaseId: string | number;
+    productId: string;
+    quantity: number;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<GrantPackageResult> {
+  const purchaseId =
+    typeof input.purchaseId === "string"
+      ? Number(input.purchaseId)
+      : input.purchaseId;
+
+  if (!Number.isFinite(purchaseId)) {
+    throw new Error(`Invalid purchase id for entitlement grant: ${input.purchaseId}`);
+  }
+
+  if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
+    throw new Error(`Invalid grant quantity: ${input.quantity}`);
+  }
+
+  const { data, error } = await supabase.rpc("grant_package_entitlement", {
+    p_user_id: input.userId,
+    p_purchase_id: purchaseId,
+    p_product_id: input.productId,
+    p_entitlement_kind: "commercial",
+    p_quantity: input.quantity,
+    p_metadata: input.metadata ?? {},
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to grant membership entitlement for purchase ${purchaseId}: ${error.message}`,
+    );
+  }
+
+  return {
+    granted: Boolean(data),
+    kind: "commercial",
+    quantity: input.quantity,
+    productId: input.productId,
+    purchaseId,
+  };
+}

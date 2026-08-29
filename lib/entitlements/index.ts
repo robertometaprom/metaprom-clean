@@ -30,6 +30,7 @@ export { revokeUndeliveredAdvertisingPersist } from "./revoke-undelivered-persis
 export { ADVERTISING_ASSET_FULFILLMENT_OPERATIONAL } from "./flags";
 export {
   entitlementKindForCategory,
+  grantCommercialCreditsFromPurchase,
   grantPackageEntitlementFromPurchase,
   resolvePackageForProductId,
 } from "./grant";

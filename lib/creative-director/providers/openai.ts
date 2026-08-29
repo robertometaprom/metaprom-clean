@@ -8,10 +8,7 @@ import type {
   DirectorModification,
 } from "../types";
 import { CreativeDirectorError } from "../types";
-import {
-  parseCommercialProductionProfile,
-  type CommercialProductionProfile,
-} from "../../commercial-production-profile";
+import { parseCommercialProductionProfile } from "../../commercial-production-profile";
 import { parsePromotionalOverlays } from "../../promotional-overlay-contract";
 import { parseOverlayStyle } from "../../overlay-style-contract";
 import {
@@ -143,46 +140,76 @@ type ParsedProviderPayload = {
   proposal?: CommercialProposal;
 };
 
-function isCommercialProposal(value: unknown): value is CommercialProposal {
-  if (!value || typeof value !== "object") return false;
+const PROPOSAL_STRING_FIELDS = [
+  "summary",
+  "openingHook",
+  "productHeroMoment",
+  "emotionalTone",
+  "pacing",
+  "callToAction",
+  "narrative",
+  "visualGenerationIntent",
+] as const;
 
-  const proposal = value as Record<string, unknown>;
-  return (
-    typeof proposal.summary === "string" &&
-    typeof proposal.openingHook === "string" &&
-    typeof proposal.productHeroMoment === "string" &&
-    typeof proposal.emotionalTone === "string" &&
-    typeof proposal.pacing === "string" &&
-    typeof proposal.callToAction === "string" &&
-    typeof proposal.narrative === "string" &&
-    typeof proposal.visualGenerationIntent === "string" &&
-    isNarrativeContract(proposal.requiredNarrativeBeats, proposal.visualGenerationIntent) &&
-    isProductionProfile(proposal.productionProfile) &&
-    isPromotionalOverlays(proposal.promotionalOverlays) &&
-    isOverlayStyle(proposal.overlayStyle)
-  );
-}
+class InvalidClosedProposalError extends CreativeDirectorError {
+  readonly conversational: CreativeDirectorResponse;
+  readonly validatorDetail: string;
 
-function isProductionProfile(value: unknown): value is CommercialProductionProfile {
-  try { parseCommercialProductionProfile(value); return true; } catch { return false; }
-}
-
-function isNarrativeContract(beats: unknown, visualIntent: unknown): boolean {
-  if (typeof visualIntent !== "string") return false;
-  try {
-    assertVisualIntentPreservesNarrativeBeats(visualIntent, parseRequiredNarrativeBeats(beats));
-    return true;
-  } catch {
-    return false;
+  constructor(
+    conversational: CreativeDirectorResponse,
+    validatorDetail: string,
+  ) {
+    super(
+      `Creative Director provider returned an invalid closed commercial proposal contract: ${validatorDetail}`,
+    );
+    this.name = "InvalidClosedProposalError";
+    this.conversational = conversational;
+    this.validatorDetail = validatorDetail;
   }
 }
 
-function isOverlayStyle(value: unknown): boolean {
-  try { parseOverlayStyle(value); return true; } catch { return false; }
-}
+function commercialProposalContractFailure(value: unknown): string | null {
+  if (!value || typeof value !== "object") {
+    return "proposal must be an object.";
+  }
 
-function isPromotionalOverlays(value: unknown): boolean {
-  try { return parsePromotionalOverlays(value) !== null; } catch { return false; }
+  const proposal = value as Record<string, unknown>;
+  for (const field of PROPOSAL_STRING_FIELDS) {
+    if (typeof proposal[field] !== "string") {
+      return `proposal.${field} must be a string.`;
+    }
+  }
+
+  try {
+    assertVisualIntentPreservesNarrativeBeats(
+      proposal.visualGenerationIntent as string,
+      parseRequiredNarrativeBeats(proposal.requiredNarrativeBeats),
+    );
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    parseCommercialProductionProfile(proposal.productionProfile);
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    if (parsePromotionalOverlays(proposal.promotionalOverlays) === null) {
+      return "proposal.promotionalOverlays must be an object.";
+    }
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    parseOverlayStyle(proposal.overlayStyle);
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  return null;
 }
 
 function parseProviderResponse(raw: string): CreativeDirectorResponse {
@@ -220,22 +247,7 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
       )
     : undefined;
 
-  if (parsed.proposal && !isCommercialProposal(parsed.proposal)) {
-    throw new CreativeDirectorError(
-      "Creative Director provider returned an invalid closed commercial proposal contract.",
-    );
-  }
-  const proposal = parsed.proposal
-    ? {
-        ...parsed.proposal,
-        requiredNarrativeBeats: parseRequiredNarrativeBeats(parsed.proposal.requiredNarrativeBeats),
-        productionProfile: parseCommercialProductionProfile(parsed.proposal.productionProfile),
-        promotionalOverlays: parsePromotionalOverlays(parsed.proposal.promotionalOverlays)!,
-        overlayStyle: parseOverlayStyle(parsed.proposal.overlayStyle),
-      }
-    : undefined;
-
-  return {
+  const conversational: CreativeDirectorResponse = {
     message: parsed.message.trim(),
     needsClarification,
     clarifyingQuestions:
@@ -244,7 +256,26 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
         : undefined,
     modifications:
       modifications && modifications.length > 0 ? modifications : undefined,
-    proposal,
+  };
+
+  if (!parsed.proposal) {
+    return conversational;
+  }
+
+  const proposalFailure = commercialProposalContractFailure(parsed.proposal);
+  if (proposalFailure) {
+    throw new InvalidClosedProposalError(conversational, proposalFailure);
+  }
+
+  return {
+    ...conversational,
+    proposal: {
+      ...parsed.proposal,
+      requiredNarrativeBeats: parseRequiredNarrativeBeats(parsed.proposal.requiredNarrativeBeats),
+      productionProfile: parseCommercialProductionProfile(parsed.proposal.productionProfile),
+      promotionalOverlays: parsePromotionalOverlays(parsed.proposal.promotionalOverlays)!,
+      overlayStyle: parseOverlayStyle(parsed.proposal.overlayStyle),
+    },
   };
 }
 
@@ -280,6 +311,9 @@ export function createOpenAICreativeDirectorProvider(
         try {
           return parseProviderResponse(content);
         } catch (error) {
+          if (error instanceof InvalidClosedProposalError && attempt === 1) {
+            return error.conversational;
+          }
           validationFailure = error instanceof Error ? error : new Error(String(error));
         }
       }

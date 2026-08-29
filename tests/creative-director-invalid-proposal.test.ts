@@ -11,6 +11,11 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import type OpenAI from "openai";
 
+import type { DirectorDiagnosticEvent } from "../lib/creative-director/diagnostics.ts";
+import {
+  DIRECTOR_DIAG_PREFIX,
+  recordDirectorHttp200,
+} from "../lib/creative-director/diagnostics.ts";
 import { createOpenAICreativeDirectorProvider } from "../lib/creative-director/providers/openai.ts";
 import { CreativeDirectorError } from "../lib/creative-director/types.ts";
 
@@ -111,12 +116,63 @@ function payload(body: Record<string, unknown>): string {
   return JSON.stringify(body);
 }
 
+function parseDirectorDiagnostic(args: unknown[]): DirectorDiagnosticEvent | null {
+  const text = args
+    .map((arg) => (typeof arg === "string" ? arg : ""))
+    .join(" ");
+  const marker = `${DIRECTOR_DIAG_PREFIX} `;
+  const index = text.indexOf(marker);
+  if (index === -1) return null;
+  return JSON.parse(text.slice(index + marker.length)) as DirectorDiagnosticEvent;
+}
+
+async function withDirectorDiagnostics<T>(
+  run: () => Promise<T>,
+): Promise<{ result: T; events: DirectorDiagnosticEvent[] }> {
+  const events: DirectorDiagnosticEvent[] = [];
+  const original = console.info;
+  console.info = ((...args: unknown[]) => {
+    const event = parseDirectorDiagnostic(args);
+    if (event) events.push(event);
+  }) as typeof console.info;
+  try {
+    const result = await run();
+    return { result, events };
+  } finally {
+    console.info = original;
+  }
+}
+
+function diagnosticEventsOf(
+  events: DirectorDiagnosticEvent[],
+  name: DirectorDiagnosticEvent["event"],
+): DirectorDiagnosticEvent[] {
+  return events.filter((event) => event.event === name);
+}
+
+function assertDiagnosticsHaveNoCustomerContent(
+  events: DirectorDiagnosticEvent[],
+): void {
+  const serialized = JSON.stringify(events);
+  assert.doesNotMatch(serialized, /Quiero un comercial de mi panadería/);
+  assert.doesNotMatch(serialized, /Te propongo un comercial breve/);
+  assert.doesNotMatch(serialized, /A bakery owner photographs a pastry box/);
+  assert.doesNotMatch(serialized, /visualGenerationIntent/);
+  assert.doesNotMatch(serialized, /requiredNarrativeBeats/);
+  assert.doesNotMatch(serialized, /"narrative"/);
+  assert.doesNotMatch(serialized, /invalid-class/);
+  assert.doesNotMatch(serialized, /Hazlo extraordinario/);
+  assert.doesNotMatch(serialized, /Your previous structured proposal failed validation/);
+}
+
 test("1 — valid message + valid proposal succeeds unchanged", async () => {
   const { provider, calls } = providerFrom([
     payload({ message: VALID_MESSAGE, proposal: VALID_PROPOSAL }),
   ]);
 
-  const response = await provider.generate(REQUEST);
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate(REQUEST),
+  );
 
   assert.equal(response.message, VALID_MESSAGE);
   assert.ok(response.proposal);
@@ -124,6 +180,14 @@ test("1 — valid message + valid proposal succeeds unchanged", async () => {
   assert.deepEqual(response.proposal?.requiredNarrativeBeats, [...DIRECTOR_BEATS]);
   assert.equal(response.proposal?.productionProfile.fidelity_class, "protected");
   assert.equal(calls.length, 1);
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    { event: "director.parse_outcome", outcome: "valid_proposal" },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    { event: "director.provider_final", final: "returned_with_proposal", attempt: 0 },
+  ]);
+  assert.equal(diagnosticEventsOf(events, "director.provider_attempt").length, 0);
+  assertDiagnosticsHaveNoCustomerContent(events);
 });
 
 test("2 — valid message + no proposal succeeds unchanged", async () => {
@@ -131,11 +195,25 @@ test("2 — valid message + no proposal succeeds unchanged", async () => {
     payload({ message: VALID_MESSAGE }),
   ]);
 
-  const response = await provider.generate(REQUEST);
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate(REQUEST),
+  );
 
   assert.equal(response.message, VALID_MESSAGE);
   assert.equal(response.proposal, undefined);
   assert.equal(calls.length, 1);
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    { event: "director.parse_outcome", outcome: "missing_proposal" },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    {
+      event: "director.provider_final",
+      final: "returned_without_proposal",
+      attempt: 0,
+    },
+  ]);
+  assert.equal(diagnosticEventsOf(events, "director.provider_attempt").length, 0);
+  assertDiagnosticsHaveNoCustomerContent(events);
 });
 
 test("3 — attempt 1 invalid proposal + attempt 2 valid proposal succeeds with proposal", async () => {
@@ -144,7 +222,9 @@ test("3 — attempt 1 invalid proposal + attempt 2 valid proposal succeeds with 
     payload({ message: VALID_MESSAGE, proposal: VALID_PROPOSAL }),
   ]);
 
-  const response = await provider.generate(REQUEST);
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate(REQUEST),
+  );
 
   assert.equal(response.message, VALID_MESSAGE);
   assert.ok(response.proposal);
@@ -157,19 +237,67 @@ test("3 — attempt 1 invalid proposal + attempt 2 valid proposal succeeds with 
     JSON.stringify(response.proposal),
     /invalid-class/,
   );
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    {
+      event: "director.parse_outcome",
+      outcome: "invalid_proposal",
+      validatorCode: "production_profile",
+    },
+    { event: "director.parse_outcome", outcome: "valid_proposal" },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_attempt"), [
+    {
+      event: "director.provider_attempt",
+      attempt: 0,
+      retryReason: "invalid_proposal",
+    },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    { event: "director.provider_final", final: "returned_with_proposal", attempt: 1 },
+  ]);
+  assertDiagnosticsHaveNoCustomerContent(events);
 });
 
 test("4 — exhausted invalid proposal + valid message succeeds with message and no proposal", async () => {
   const invalidTurn = payload({ message: VALID_MESSAGE, proposal: INVALID_PROPOSAL });
   const { provider, calls } = providerFrom([invalidTurn, invalidTurn]);
 
-  const response = await provider.generate(REQUEST);
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate(REQUEST),
+  );
 
   assert.equal(response.message, VALID_MESSAGE);
   assert.equal(response.proposal, undefined);
   assert.equal(calls.length, 2);
   assert.doesNotMatch(JSON.stringify(response), /invalid-class/);
   assert.doesNotMatch(JSON.stringify(response), /INVALID_PROPOSAL/);
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    {
+      event: "director.parse_outcome",
+      outcome: "invalid_proposal",
+      validatorCode: "production_profile",
+    },
+    {
+      event: "director.parse_outcome",
+      outcome: "invalid_proposal",
+      validatorCode: "production_profile",
+    },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_attempt"), [
+    {
+      event: "director.provider_attempt",
+      attempt: 0,
+      retryReason: "invalid_proposal",
+    },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    {
+      event: "director.provider_final",
+      final: "fallback_invalid_proposal",
+      attempt: 1,
+    },
+  ]);
+  assertDiagnosticsHaveNoCustomerContent(events);
 });
 
 test("5 — invalid or missing conversational message still fails", async () => {
@@ -177,18 +305,42 @@ test("5 — invalid or missing conversational message still fails", async () => 
     payload({ proposal: VALID_PROPOSAL }),
     payload({ proposal: INVALID_PROPOSAL }),
   ]);
-  await assert.rejects(
-    () => missing.provider.generate(REQUEST),
-    (error: unknown) => {
-      assert.ok(error instanceof CreativeDirectorError);
-      assert.equal(
-        error.message,
-        "Creative Director provider response missing required message field.",
-      );
-      return true;
-    },
-  );
+  const missingDiagnostics = await withDirectorDiagnostics(async () => {
+    await assert.rejects(
+      () => missing.provider.generate(REQUEST),
+      (error: unknown) => {
+        assert.ok(error instanceof CreativeDirectorError);
+        assert.equal(
+          error.message,
+          "Creative Director provider response missing required message field.",
+        );
+        return true;
+      },
+    );
+  });
   assert.equal(missing.calls.length, 2);
+  assert.deepEqual(
+    diagnosticEventsOf(missingDiagnostics.events, "director.parse_outcome"),
+    [
+      { event: "director.parse_outcome", outcome: "missing_message" },
+      { event: "director.parse_outcome", outcome: "missing_message" },
+    ],
+  );
+  assert.deepEqual(
+    diagnosticEventsOf(missingDiagnostics.events, "director.provider_attempt"),
+    [
+      {
+        event: "director.provider_attempt",
+        attempt: 0,
+        retryReason: "missing_message",
+      },
+    ],
+  );
+  assert.deepEqual(
+    diagnosticEventsOf(missingDiagnostics.events, "director.provider_final"),
+    [{ event: "director.provider_final", final: "thrown", attempt: 1 }],
+  );
+  assertDiagnosticsHaveNoCustomerContent(missingDiagnostics.events);
 
   const emptyThenMissing = providerFrom([
     payload({ message: "", proposal: VALID_PROPOSAL }),
@@ -267,6 +419,124 @@ test("7 — invalid proposal is never returned to the client", async () => {
   const serialized = JSON.stringify(response);
   assert.doesNotMatch(serialized, /not-a-supported-origin/);
   assert.doesNotMatch(serialized, /"proposal"/);
+});
+
+test("D — invalid proposal then missing proposal retries and returns without proposal", async () => {
+  const { provider, calls } = providerFrom([
+    payload({ message: VALID_MESSAGE, proposal: INVALID_PROPOSAL }),
+    payload({ message: VALID_MESSAGE }),
+  ]);
+
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate(REQUEST),
+  );
+
+  assert.equal(response.message, VALID_MESSAGE);
+  assert.equal(response.proposal, undefined);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    {
+      event: "director.parse_outcome",
+      outcome: "invalid_proposal",
+      validatorCode: "production_profile",
+    },
+    { event: "director.parse_outcome", outcome: "missing_proposal" },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_attempt"), [
+    {
+      event: "director.provider_attempt",
+      attempt: 0,
+      retryReason: "invalid_proposal",
+    },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    {
+      event: "director.provider_final",
+      final: "returned_without_proposal",
+      attempt: 1,
+    },
+  ]);
+  assertDiagnosticsHaveNoCustomerContent(events);
+});
+
+test("F — malformed JSON exhausted still throws without leaking content", async () => {
+  const { provider, calls } = providerFrom(["{not-json", "{still-not-json"]);
+
+  const { events } = await withDirectorDiagnostics(async () => {
+    await assert.rejects(
+      () => provider.generate(REQUEST),
+      (error: unknown) => {
+        assert.ok(error instanceof CreativeDirectorError);
+        assert.equal(
+          error.message,
+          "Creative Director provider returned invalid JSON.",
+        );
+        return true;
+      },
+    );
+  });
+
+  assert.equal(calls.length, 2);
+  assert.deepEqual(diagnosticEventsOf(events, "director.parse_outcome"), [
+    { event: "director.parse_outcome", outcome: "invalid_json" },
+    { event: "director.parse_outcome", outcome: "invalid_json" },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_attempt"), [
+    {
+      event: "director.provider_attempt",
+      attempt: 0,
+      retryReason: "invalid_json",
+    },
+  ]);
+  assert.deepEqual(diagnosticEventsOf(events, "director.provider_final"), [
+    { event: "director.provider_final", final: "thrown", attempt: 1 },
+  ]);
+  assertDiagnosticsHaveNoCustomerContent(events);
+});
+
+test("director.http_200 logs only allowlisted success-state fields", () => {
+  const events: DirectorDiagnosticEvent[] = [];
+  const original = console.info;
+  console.info = ((...args: unknown[]) => {
+    const event = parseDirectorDiagnostic(args);
+    if (event) events.push(event);
+  }) as typeof console.info;
+  try {
+    recordDirectorHttp200({
+      proposalPresent: true,
+      needsClarification: false,
+      anonymousMode: true,
+      postGuardReplaced: false,
+    });
+  } finally {
+    console.info = original;
+  }
+
+  assert.deepEqual(events, [
+    {
+      event: "director.http_200",
+      proposalPresent: true,
+      needsClarification: false,
+      anonymousMode: true,
+      postGuardReplaced: false,
+    },
+  ]);
+  assertDiagnosticsHaveNoCustomerContent(events);
+
+  const route = readFileSync(join(ROOT, "app/api/creative-director/route.ts"), "utf8");
+  const createIndex = route.indexOf("createCreativeProposal(");
+  const firstHttp200 = route.indexOf("recordDirectorHttp200(", createIndex);
+  const postGuardRespond = route.indexOf('postGuard?.action === "respond"', createIndex);
+  assert.ok(createIndex > 0);
+  assert.ok(firstHttp200 > createIndex);
+  assert.ok(postGuardRespond > createIndex);
+  assert.match(route, /proposalPresent: Boolean\(/);
+  assert.match(route, /needsClarification: .+\.needsClarification === true/);
+  assert.match(route, /anonymousMode: preGuard\.anonymousMode/);
+  assert.match(route, /postGuardReplaced: true/);
+  assert.match(route, /postGuardReplaced: false/);
+  assert.doesNotMatch(route, /recordDirectorHttp200\([\s\S]{0,240}message:/);
+  assert.doesNotMatch(route, /recordDirectorHttp200\([\s\S]{0,240}proposal:/);
 });
 
 test("true CreativeDirectorError failures still map to HTTP 500 at the route", () => {

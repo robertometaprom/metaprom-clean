@@ -15,6 +15,11 @@ import {
   assertVisualIntentPreservesNarrativeBeats,
   parseRequiredNarrativeBeats,
 } from "../../narrative-beats-contract";
+import {
+  classifyDirectorRetryReason,
+  recordDirectorDiagnostic,
+  type DirectorValidatorCode,
+} from "../diagnostics";
 
 const DEFAULT_MODEL =
   process.env.OPENAI_CREATIVE_DIRECTOR_MODEL ?? "gpt-4.1";
@@ -168,15 +173,21 @@ class InvalidClosedProposalError extends CreativeDirectorError {
   }
 }
 
-function commercialProposalContractFailure(value: unknown): string | null {
+function commercialProposalContractFailure(value: unknown): {
+  detail: string;
+  code: DirectorValidatorCode;
+} | null {
   if (!value || typeof value !== "object") {
-    return "proposal must be an object.";
+    return { detail: "proposal must be an object.", code: "unknown" };
   }
 
   const proposal = value as Record<string, unknown>;
   for (const field of PROPOSAL_STRING_FIELDS) {
     if (typeof proposal[field] !== "string") {
-      return `proposal.${field} must be a string.`;
+      return {
+        detail: `proposal.${field} must be a string.`,
+        code: "string_field",
+      };
     }
   }
 
@@ -186,27 +197,42 @@ function commercialProposalContractFailure(value: unknown): string | null {
       parseRequiredNarrativeBeats(proposal.requiredNarrativeBeats),
     );
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return {
+      detail: error instanceof Error ? error.message : String(error),
+      code: "beats",
+    };
   }
 
   try {
     parseCommercialProductionProfile(proposal.productionProfile);
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return {
+      detail: error instanceof Error ? error.message : String(error),
+      code: "production_profile",
+    };
   }
 
   try {
     if (parsePromotionalOverlays(proposal.promotionalOverlays) === null) {
-      return "proposal.promotionalOverlays must be an object.";
+      return {
+        detail: "proposal.promotionalOverlays must be an object.",
+        code: "overlays",
+      };
     }
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return {
+      detail: error instanceof Error ? error.message : String(error),
+      code: "overlays",
+    };
   }
 
   try {
     parseOverlayStyle(proposal.overlayStyle);
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return {
+      detail: error instanceof Error ? error.message : String(error),
+      code: "overlay_style",
+    };
   }
 
   return null;
@@ -218,12 +244,20 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
   try {
     parsed = JSON.parse(raw) as ParsedProviderPayload;
   } catch {
+    recordDirectorDiagnostic({
+      event: "director.parse_outcome",
+      outcome: "invalid_json",
+    });
     throw new CreativeDirectorError(
       "Creative Director provider returned invalid JSON.",
     );
   }
 
   if (!parsed.message || typeof parsed.message !== "string") {
+    recordDirectorDiagnostic({
+      event: "director.parse_outcome",
+      outcome: "missing_message",
+    });
     throw new CreativeDirectorError(
       "Creative Director provider response missing required message field.",
     );
@@ -259,14 +293,27 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
   };
 
   if (!parsed.proposal) {
+    recordDirectorDiagnostic({
+      event: "director.parse_outcome",
+      outcome: "missing_proposal",
+    });
     return conversational;
   }
 
   const proposalFailure = commercialProposalContractFailure(parsed.proposal);
   if (proposalFailure) {
-    throw new InvalidClosedProposalError(conversational, proposalFailure);
+    recordDirectorDiagnostic({
+      event: "director.parse_outcome",
+      outcome: "invalid_proposal",
+      validatorCode: proposalFailure.code,
+    });
+    throw new InvalidClosedProposalError(conversational, proposalFailure.detail);
   }
 
+  recordDirectorDiagnostic({
+    event: "director.parse_outcome",
+    outcome: "valid_proposal",
+  });
   return {
     ...conversational,
     proposal: {
@@ -306,17 +353,50 @@ export function createOpenAICreativeDirectorProvider(
         const content = response.choices[0]?.message?.content?.trim();
         if (!content) {
           validationFailure = new CreativeDirectorError("Creative Director provider returned an empty response.");
+          if (attempt === 0) {
+            recordDirectorDiagnostic({
+              event: "director.provider_attempt",
+              attempt: 0,
+              retryReason: "empty",
+            });
+          }
           continue;
         }
         try {
-          return parseProviderResponse(content);
+          const parsed = parseProviderResponse(content);
+          recordDirectorDiagnostic({
+            event: "director.provider_final",
+            final: parsed.proposal
+              ? "returned_with_proposal"
+              : "returned_without_proposal",
+            attempt: attempt === 0 ? 0 : 1,
+          });
+          return parsed;
         } catch (error) {
           if (error instanceof InvalidClosedProposalError && attempt === 1) {
+            recordDirectorDiagnostic({
+              event: "director.provider_final",
+              final: "fallback_invalid_proposal",
+              attempt: 1,
+            });
             return error.conversational;
           }
           validationFailure = error instanceof Error ? error : new Error(String(error));
+          if (attempt === 0) {
+            const retryReason = classifyDirectorRetryReason(validationFailure);
+            recordDirectorDiagnostic({
+              event: "director.provider_attempt",
+              attempt: 0,
+              ...(retryReason ? { retryReason } : {}),
+            });
+          }
         }
       }
+      recordDirectorDiagnostic({
+        event: "director.provider_final",
+        final: "thrown",
+        attempt: 1,
+      });
       throw validationFailure ?? new CreativeDirectorError("Creative Director proposal validation failed.");
     },
   };

@@ -3,6 +3,7 @@ import {
   createCreativeProposal,
   CreativeDirectorError,
 } from "@/lib/creative-director";
+import { recordDirectorHttp200 } from "@/lib/creative-director/diagnostics";
 import type { CreateCreativeProposalInput } from "@/lib/creative-director";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -152,12 +153,24 @@ export async function POST(req: Request) {
     });
 
     if (postGuard?.action === "respond") {
+      recordDirectorHttp200({
+        proposalPresent: Boolean(postGuard.response.proposal),
+        needsClarification: postGuard.response.needsClarification === true,
+        anonymousMode: preGuard.anonymousMode,
+        postGuardReplaced: true,
+      });
       return Response.json({
         ...postGuard.response,
         requiresRegistration: postGuard.requiresRegistration,
       });
     }
 
+    recordDirectorHttp200({
+      proposalPresent: Boolean(response.proposal),
+      needsClarification: response.needsClarification === true,
+      anonymousMode: preGuard.anonymousMode,
+      postGuardReplaced: false,
+    });
     return Response.json(response);
   } catch (error) {
     console.error("Creative Director route error:", error);

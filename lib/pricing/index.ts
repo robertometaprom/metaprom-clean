@@ -7,9 +7,13 @@
  */
 
 export {
+  getPlanesBillingOption,
   getPlanesMembershipOrder,
   getPlanesOfferCopy,
+  PLANES_DEFAULT_BILLING_CYCLE,
   PLANES_ONE_OFF_PRODUCT_KEY,
+  type PlanesBillingCycle,
+  type PlanesBillingOption,
   type PlanesMembershipCard,
   type PlanesMembershipId,
   type PlanesOfferCopy,

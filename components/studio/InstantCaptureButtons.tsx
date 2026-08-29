@@ -17,6 +17,9 @@ type InstantCaptureButtonsProps = {
   size?: "default" | "compact";
   galleryLabel?: string;
   cameraLabel?: string;
+  /** Optional peer action. When omitted, camera/gallery stay the only choices. */
+  skipPhotoLabel?: string;
+  onSkipPhoto?: () => void;
   className?: string;
 };
 
@@ -30,15 +33,20 @@ export default function InstantCaptureButtons({
   size = "default",
   galleryLabel,
   cameraLabel,
+  skipPhotoLabel,
+  onSkipPhoto,
   className = "",
 }: InstantCaptureButtonsProps) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const [locale, setLocale] = useState<"es" | "en">("es");
 
   useEffect(() => {
     setMobile(isMobileDevice());
+    const match = document.cookie.match(/(?:^|;\s*)locale=([^;]+)/);
+    setLocale(match?.[1] === "en" ? "en" : "es");
   }, []);
 
   const handleGalleryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -72,12 +80,17 @@ export default function InstantCaptureButtons({
   const layoutClass =
     layout === "stack"
       ? `flex flex-col ${size === "compact" ? "gap-2" : "gap-3"}`
-      : `flex flex-col ${size === "compact" ? "gap-2" : "gap-3"} sm:flex-row`;
+      : `flex flex-col ${size === "compact" ? "gap-2" : "gap-3"} sm:flex-row${
+          onSkipPhoto ? " sm:flex-wrap" : ""
+        }`;
 
   const resolvedCameraLabel =
     cameraLabel ?? (mobile ? "Abrir cámara" : "Tomar foto");
   const resolvedGalleryLabel =
     galleryLabel ?? (mobile ? "Elegir de galería" : "Subir imagen");
+  const resolvedSkipPhotoLabel =
+    skipPhotoLabel ??
+    (locale === "en" ? "Generate without photo" : "Generar sin foto");
 
   const iconClass = size === "compact" ? "h-4 w-4" : "h-5 w-5";
   const iconTone = variant === "dark" ? "text-white/60" : "text-violet-600";
@@ -110,6 +123,17 @@ export default function InstantCaptureButtons({
     </button>
   );
 
+  const skipPhotoButton = onSkipPhoto ? (
+    <button
+      type="button"
+      onClick={onSkipPhoto}
+      className={baseButton}
+    >
+      <SkipPhotoIcon className={`${iconClass} ${iconTone}`} />
+      {resolvedSkipPhotoLabel}
+    </button>
+  ) : null;
+
   return (
     <>
       <input
@@ -134,11 +158,13 @@ export default function InstantCaptureButtons({
           <>
             {galleryButton}
             {cameraButton}
+            {skipPhotoButton}
           </>
         ) : (
           <>
             {cameraButton}
             {galleryButton}
+            {skipPhotoButton}
           </>
         )}
       </div>
@@ -170,6 +196,14 @@ function UploadIcon({ className }: { className?: string }) {
   return (
     <svg className={className ?? "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+  );
+}
+
+function SkipPhotoIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className ?? "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
     </svg>
   );
 }

@@ -3588,6 +3588,11 @@ export default function CreativeDirector({
                   current === "welcome" ? "upload" : current,
                 );
               }}
+              onSkipPhoto={() => {
+                setPhase((current) =>
+                  current === "welcome" ? "upload" : current,
+                );
+              }}
             />
             {sourceFiles.length > 0 ? (
               <p

@@ -1,3 +1,4 @@
+import { boundConversationHistoryForModel } from "../studio/director-session";
 import { getCreativeDirectorSystemPrompt } from "./prompt";
 import { getCreativeDirectorProvider } from "./provider";
 import type {
@@ -50,12 +51,19 @@ export async function createCreativeProposal(
     return buildValidationBlockedResponse(preValidation);
   }
 
+  const modelContext: ProjectContext = {
+    ...projectContext,
+    conversationHistory: boundConversationHistoryForModel(
+      projectContext.conversationHistory,
+    ),
+  };
+
   const response = await provider.generate({
     systemPrompt: getCreativeDirectorSystemPrompt({
       anonymousMode: options.anonymousMode,
     }),
     customerMessage,
-    projectContext,
+    projectContext: modelContext,
   });
 
   if (!response.proposal) {

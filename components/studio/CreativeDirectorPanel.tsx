@@ -27,6 +27,19 @@ import {
   getCompanionWelcomeMessage,
   type CompanionMoment,
 } from "@/lib/studio/creative-director-companion";
+import { RATE_LIMITED_CODE } from "@/lib/security/cost-control-messages";
+import {
+  resolveDirectorComposerAction,
+} from "@/lib/studio/director-execution-approval";
+import {
+  countDirectorUserInteractions,
+  DIRECTOR_GENERIC_CONTINUATION_ERROR,
+  DIRECTOR_SESSION_LIMIT_CODE,
+  getDirectorRemainingInteractionsNotice,
+  getDirectorSessionCopy,
+  getDirectorSessionLocale,
+  isDirectorSessionLimitReached,
+} from "@/lib/studio/director-session";
 
 type PanelMessage = {
   id: string;
@@ -43,6 +56,8 @@ export type CreativeDirectorPanelProps = {
   onClose: () => void;
   projectContext: ProjectContext;
   onUseProposal: (proposal: CommercialProposal) => void;
+  /** Start a fresh Director conversation without clearing project / Preview / assets. */
+  onStartFreshDirectorSession?: () => void;
   /** Milestone companion moment requested by Studio orchestration. */
   pendingCompanionMoment?: CompanionMoment | null;
   onCompanionMomentHandled?: (moment: CompanionMoment) => void;
@@ -94,16 +109,30 @@ async function requestCreativeDirector(input: {
     body: JSON.stringify(input),
   });
 
-  const payload = (await response.json()) as
-    | CreativeDirectorResponse
-    | { error?: string };
+  let payload: CreativeDirectorResponse | { error?: string; code?: string };
+  try {
+    payload = (await response.json()) as
+      | CreativeDirectorResponse
+      | { error?: string; code?: string };
+  } catch {
+    throw new Error(DIRECTOR_GENERIC_CONTINUATION_ERROR);
+  }
 
   if (!response.ok) {
     const errorMessage =
       "error" in payload && typeof payload.error === "string"
         ? payload.error
         : "Creative Director request failed.";
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage) as Error & {
+      code?: string;
+      status?: number;
+    };
+    error.code =
+      "code" in payload && typeof payload.code === "string"
+        ? payload.code
+        : undefined;
+    error.status = response.status;
+    throw error;
   }
 
   return payload as CreativeDirectorResponse;
@@ -119,6 +148,7 @@ export default function CreativeDirectorPanel({
   onClose,
   projectContext,
   onUseProposal,
+  onStartFreshDirectorSession,
   pendingCompanionMoment = null,
   onCompanionMomentHandled,
   sessionKey,
@@ -278,12 +308,43 @@ export default function CreativeDirectorPanel({
     [projectContext],
   );
 
+  const handleUseProposal = useCallback(
+    (proposal: CommercialProposal, narrative: string) => {
+      const trimmed = narrative.trim();
+      if (!trimmed) return;
+      // Handoff only — parent transitions Studio phase to intent; never navigate.
+      onUseProposal({ ...proposal, narrative: trimmed });
+      onClose();
+    },
+    [onClose, onUseProposal],
+  );
+
   const handleSend = useCallback(
     async (event?: FormEvent) => {
       event?.preventDefault();
 
       const trimmed = composerValue.trim();
       if (!trimmed || isLoading) return;
+
+      const decision = resolveDirectorComposerAction({
+        composerText: trimmed,
+        messages,
+        editedProposalText,
+        editingProposalId,
+      });
+
+      if (decision.type === "session_limit") {
+        setComposerValue("");
+        setError(null);
+        return;
+      }
+
+      if (decision.type === "accept_proposal") {
+        setComposerValue("");
+        setError(null);
+        handleUseProposal(decision.proposal, decision.narrative);
+        return;
+      }
 
       const customerMessage: PanelMessage = {
         id: createMessageId(),
@@ -317,28 +378,56 @@ export default function CreativeDirectorPanel({
         if (response.requiresRegistration) {
           setRegistrationRequired(true);
         }
-      } catch {
-        setError(
-          "No pude continuar la conversación. Intenta enviarlo de nuevo.",
-        );
+      } catch (caught) {
+        const code =
+          caught instanceof Error && "code" in caught
+            ? typeof (caught as { code?: unknown }).code === "string"
+              ? (caught as { code: string }).code
+              : undefined
+            : undefined;
+        const status =
+          caught instanceof Error && "status" in caught
+            ? typeof (caught as { status?: unknown }).status === "number"
+              ? (caught as { status: number }).status
+              : undefined
+            : undefined;
+        const serverMessage =
+          caught instanceof Error ? caught.message : "";
+
         setMessages((current) => current.slice(0, -1));
+
+        if (code === DIRECTOR_SESSION_LIMIT_CODE) {
+          setError(null);
+          setComposerValue("");
+          return;
+        }
+
+        if (
+          code === RATE_LIMITED_CODE ||
+          status === 400 ||
+          status === 413 ||
+          status === 429
+        ) {
+          setError(serverMessage || DIRECTOR_GENERIC_CONTINUATION_ERROR);
+          setComposerValue(trimmed);
+          return;
+        }
+
+        setError(DIRECTOR_GENERIC_CONTINUATION_ERROR);
         setComposerValue(trimmed);
       } finally {
         setIsLoading(false);
       }
     },
-    [buildRequestContext, composerValue, isLoading, messages],
-  );
-
-  const handleUseProposal = useCallback(
-    (proposal: CommercialProposal, narrative: string) => {
-      const trimmed = narrative.trim();
-      if (!trimmed) return;
-      // Handoff only — parent transitions Studio phase to intent; never navigate.
-      onUseProposal({ ...proposal, narrative: trimmed });
-      onClose();
-    },
-    [onClose, onUseProposal],
+    [
+      buildRequestContext,
+      composerValue,
+      editedProposalText,
+      editingProposalId,
+      handleUseProposal,
+      isLoading,
+      messages,
+    ],
   );
 
   const handleStartEditing = useCallback(
@@ -360,6 +449,15 @@ export default function CreativeDirectorPanel({
 
   const shouldShowRegistrationInvite =
     showRegistrationInvite || registrationRequired;
+
+  const userInteractionCount = countDirectorUserInteractions(messages);
+  const sessionLimitReached = isDirectorSessionLimitReached(userInteractionCount);
+  const remainingNotice = getDirectorRemainingInteractionsNotice(
+    userInteractionCount,
+  );
+  const sessionCopy = getDirectorSessionCopy(getDirectorSessionLocale());
+  const composerLocked =
+    isLoading || registrationRequired || sessionLimitReached;
 
   const headerSubtitle = activeCompanionMoment
     ? getCompanionHeaderSubtitle(activeCompanionMoment)
@@ -560,6 +658,30 @@ export default function CreativeDirectorPanel({
               </div>
             ) : null}
 
+            {sessionLimitReached ? (
+              <div
+                className="space-y-3 rounded-xl border border-white/15 bg-white/5 px-4 py-4 text-sm text-white/85"
+                role="status"
+              >
+                <p className="font-medium text-white">{sessionCopy.limitTitle}</p>
+                <p>{sessionCopy.limitBody}</p>
+                <p className="text-white/70">{sessionCopy.newSessionContext}</p>
+                {onStartFreshDirectorSession ? (
+                  <button
+                    type="button"
+                    onClick={onStartFreshDirectorSession}
+                    className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-3 text-sm font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+                  >
+                    {sessionCopy.newSession}
+                  </button>
+                ) : null}
+              </div>
+            ) : remainingNotice !== null ? (
+              <p className="text-sm text-white/65" role="status">
+                {sessionCopy.remaining(remainingNotice)}
+              </p>
+            ) : null}
+
             {shouldShowRegistrationInvite ? (
               <div className="space-y-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4">
                 <p className="text-sm leading-relaxed text-white/85">
@@ -593,6 +715,8 @@ export default function CreativeDirectorPanel({
               {photoActions ? (
                 <div aria-label="Acciones de foto">{photoActions}</div>
               ) : null}
+              {sessionLimitReached ? null : (
+                <>
               <label htmlFor="creative-director-composer" className="sr-only">
                 Escribe tu mensaje al Director Creativo
               </label>
@@ -609,19 +733,21 @@ export default function CreativeDirectorPanel({
                 }}
                 rows={3}
                 placeholder="Escribe aquí..."
-                disabled={isLoading || registrationRequired}
+                disabled={composerLocked}
                 className="w-full resize-none rounded-2xl border border-white/15 bg-black/35 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-fuchsia-300/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/20 disabled:cursor-not-allowed disabled:opacity-60 md:py-3"
               />
               <button
                 type="submit"
                 disabled={
-                  !composerValue.trim() || isLoading || registrationRequired
+                  !composerValue.trim() || composerLocked
                 }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-3 text-sm font-semibold text-white transition hover:from-violet-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40 md:py-3.5"
               >
                 Enviar
                 <span aria-hidden="true">→</span>
               </button>
+                </>
+              )}
             </form>
 
             {secondaryActions ? (

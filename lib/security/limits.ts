@@ -6,7 +6,23 @@ export const MAX_DRAFT_FORM_BYTES = 52 * 1024 * 1024;
 
 export const MAX_CUSTOMER_MESSAGE_LENGTH = 2_000;
 
+/**
+ * Bounded window sent to the Director model. Incoming payloads may be larger;
+ * trim to this before the model. Do not use this as the customer session quota.
+ */
 export const MAX_CONVERSATION_HISTORY_MESSAGES = 20;
+
+/**
+ * Defensive incoming conversationHistory cap (abuse / payload).
+ * Large enough for 40 user turns plus Director/companion messages.
+ */
+export const MAX_CONVERSATION_HISTORY_PAYLOAD_MESSAGES = 120;
+
+/** Customer-facing Director session quota: USER interactions only. */
+export const DIRECTOR_SESSION_MAX_USER_INTERACTIONS = 40;
+
+/** Remaining-count notices start after this many USER interactions. */
+export const DIRECTOR_SESSION_WARNING_AFTER_USER_INTERACTIONS = 32;
 
 export const MAX_CONVERSATION_MESSAGE_LENGTH = 2_000;
 

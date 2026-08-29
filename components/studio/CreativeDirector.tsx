@@ -2400,6 +2400,14 @@ export default function CreativeDirector({
     routeAfterCreationMode(mode);
   }, [routeAfterCreationMode]);
 
+  const startFreshDirectorSession = useCallback(() => {
+    // Conversation only — project, Preview, destination, and assets stay.
+    setDirectorMessages([]);
+    setPendingCompanionMoment(null);
+    setDirectorSessionKey(`director-${Date.now()}`);
+    setDirectorPanelOpen(true);
+  }, []);
+
   const handleUseDirectorProposal = useCallback((proposal: CommercialProposal) => {
     const trimmed = proposal.narrative.trim();
     if (!trimmed) return;
@@ -3550,6 +3558,7 @@ export default function CreativeDirector({
         onClose={handleCloseDirectorPanel}
         projectContext={creativeDirectorProjectContext}
         onUseProposal={handleUseDirectorProposal}
+        onStartFreshDirectorSession={startFreshDirectorSession}
         pendingCompanionMoment={pendingCompanionMoment}
         onCompanionMomentHandled={handleCompanionMomentHandled}
         sessionKey={directorSessionKey}

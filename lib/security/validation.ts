@@ -1,7 +1,7 @@
 import type { ConversationMessage, ProjectContext } from "@/lib/creative-director/types";
 import { MAX_BATCH_SOURCE_FILES } from "@/lib/instant-capture";
 import {
-  MAX_CONVERSATION_HISTORY_MESSAGES,
+  MAX_CONVERSATION_HISTORY_PAYLOAD_MESSAGES,
   MAX_CONVERSATION_MESSAGE_LENGTH,
   MAX_CUSTOMER_MESSAGE_LENGTH,
 } from "@/lib/security/limits";
@@ -119,9 +119,9 @@ export function sanitizeConversationHistory(
     throw new Error("conversationHistory must be an array.");
   }
 
-  if (history.length > MAX_CONVERSATION_HISTORY_MESSAGES) {
+  if (history.length > MAX_CONVERSATION_HISTORY_PAYLOAD_MESSAGES) {
     throw new Error(
-      `conversationHistory must contain at most ${MAX_CONVERSATION_HISTORY_MESSAGES} messages.`,
+      `conversationHistory must contain at most ${MAX_CONVERSATION_HISTORY_PAYLOAD_MESSAGES} messages.`,
     );
   }
 

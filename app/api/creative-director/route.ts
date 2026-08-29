@@ -12,6 +12,7 @@ import {
 import {
   ANON_DIRECTOR_RATE_LIMIT,
   AUTH_DIRECTOR_RATE_LIMIT,
+  DIRECTOR_SESSION_MAX_USER_INTERACTIONS,
   MAX_JSON_BODY_BYTES,
 } from "@/lib/security/limits";
 import { enforceSoftCostControl } from "@/lib/security/cost-control";
@@ -21,12 +22,19 @@ import {
   readJsonBodyWithLimit,
   sanitizeProjectContext,
 } from "@/lib/security/validation";
+import {
+  countDirectorUserInteractions,
+  DIRECTOR_SESSION_LIMIT_CODE,
+  getDirectorSessionCopy,
+} from "@/lib/studio/director-session";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-function jsonError(message: string, status: number) {
-  return Response.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return Response.json(code ? { error: message, code } : { error: message }, {
+    status,
+  });
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -95,6 +103,19 @@ export async function POST(req: Request) {
 
   if (!parsed.ok) {
     return jsonError(parsed.error, parsed.status ?? 400);
+  }
+
+  const userInteractions = countDirectorUserInteractions(
+    parsed.input.projectContext?.conversationHistory ?? [],
+  );
+
+  if (userInteractions >= DIRECTOR_SESSION_MAX_USER_INTERACTIONS) {
+    const copy = getDirectorSessionCopy("es");
+    return jsonError(
+      `${copy.limitTitle} ${copy.limitBody} ${copy.newSessionContext}`,
+      400,
+      DIRECTOR_SESSION_LIMIT_CODE,
+    );
   }
 
   const preGuard = evaluateAnonymousDirectorGuard({

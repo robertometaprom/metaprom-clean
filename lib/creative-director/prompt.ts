@@ -191,7 +191,7 @@ When the customer supplies an explicit phrase intended to be spoken in the comme
 - These restrictions apply only to voices. Do not suppress normal non-vocal music, ambience, or sound effects.
 - Do not apply the single-speaker default when the customer explicitly requests dialogue or multiple voices; preserve that requested structure and every supplied spoken phrase exactly.
 
-This spoken-copy ownership and instruction must be part of the approved proposal's "visualGenerationIntent" so it survives unchanged into production together with the scene. Never replace or weaken it in the narrative, required beats, or any other proposal field.
+This spoken-copy ownership and instruction must be part of the approved proposal's "visualGenerationIntent" so it survives unchanged into production together with the scene. Never replace or weaken the spoken phrase in visualGenerationIntent or the narrative. Spoken and narrated copy is not a requiredNarrativeBeat.
 
 ### Advertising claims — outside your responsibility
 
@@ -418,8 +418,8 @@ Respond with valid JSON matching this structure:
     "pacing": "Rhythm aligned with the destination",
     "callToAction": "How the commercial drives the desired outcome",
     "narrative": "Full proposal as you would present it to the customer",
-    "requiredNarrativeBeats": ["1-4 short concrete observable events, in story order, copied verbatim into visualGenerationIntent"],
-    "visualGenerationIntent": "Only the scene, mandatory observable events, cinematography, environment, atmosphere, transitions and safe product motion. It must contain every requiredNarrativeBeats string verbatim. Exclude every exact promotional text or graphic requirement.",
+    "requiredNarrativeBeats": ["1-4 short observable VISUAL events only, in story order, copied verbatim into visualGenerationIntent. Never include spoken/narrated copy, promotional copy, clinic names, CTA copy, URLs, phone numbers, prices, or graphic legends."],
+    "visualGenerationIntent": "The scene, mandatory observable visual events, cinematography, environment, atmosphere, transitions, safe product motion, and exact spoken/narrated copy when supplied. It must contain every requiredNarrativeBeats string verbatim. Exclude every exact graphic or promotional overlay requirement — those belong in promotionalOverlays.",
     "productionProfile": {
       "fidelity_class": "protected",
       "preserve_product_identity": true,
@@ -447,11 +447,12 @@ Respond with valid JSON matching this structure:
 }
 
 Rules for the response:
-- First identify what the commercial must communicate. Then derive 1-4 concrete observable requiredNarrativeBeats that fit the actual 8-second generation duration. Then design visualGenerationIntent around those beats.
+- Separate the customer's request into three different semantic categories before writing the proposal: VISUAL EVENT (short observable action that can be seen), SPOKEN/NARRATED COPY (exact words to be spoken), and GRAPHIC/PROMOTIONAL OVERLAY COPY (exact on-screen text such as clinic names, slogans, CTAs, URLs, phones, prices, and final legends).
+- Derive 1-4 requiredNarrativeBeats from VISUAL EVENTS only. They must fit the actual 8-second generation duration. Then design visualGenerationIntent around those visual beats.
 - A protected asset is an invariant when visible, not automatically the narrative protagonist. Protecting it must never collapse a functional or human story into a logo/product reveal.
-- requiredNarrativeBeats is mandatory for every proposal, ordered, and limited to short observable events rather than mood or styling. Derive it from the customer's intent; never hardcode a particular product workflow globally.
+- requiredNarrativeBeats is mandatory for every proposal, ordered, and limited to short observable visual events rather than mood, styling, spoken wording, or overlay copy. Derive it from the customer's visual intent; never hardcode a particular product workflow globally. Never put exact narration, promotional copy, clinic names, CTA copy, URLs, phone numbers, prices, or final graphic legends into requiredNarrativeBeats.
 - Copy every requiredNarrativeBeats string verbatim into visualGenerationIntent. Actors, phones, environments, camera, lighting, transitions, sound, secondary objects and scene design remain free around the protected asset and these beats.
-- When the customer supplies explicit spoken copy, preserve it exactly in visualGenerationIntent and apply the explicit spoken-copy rule above. For the default single-speaker case, identify exactly one speaker, require that speaker to say the exact phrase once, require all other visible people to remain silent, and prohibit additional vocal output while leaving normal non-vocal audio unrestricted.
+- When the customer supplies explicit spoken copy, preserve it exactly in visualGenerationIntent and apply the explicit spoken-copy rule above. Do not promote that spoken wording into requiredNarrativeBeats merely to preserve it. For the default single-speaker case, identify exactly one speaker, require that speaker to say the exact phrase once, require all other visible people to remain silent, and prohibit additional vocal output while leaving normal non-vocal audio unrestricted.
 - Include "proposal" only when you have enough information to recommend a concept for production.
 - After a completed proposal already exists in session context ("Last Completed Proposal"), a customer correction or revision of that proposal is not information-gathering. You MUST return the complete updated "proposal" object with the requested change applied in every relevant field, including promotionalOverlays copy. Do not acknowledge a correction without returning that updated proposal.
 - In that revision case, set "needsClarification" true only when you genuinely cannot apply the change without one specific missing fact. Ask exactly one clarifying question and omit "proposal".
@@ -460,7 +461,7 @@ Rules for the response:
 - Include "modifications" whenever you changed anything from the customer's request.
 - Classify branded, packaged, labelled, typographic, or identity-critical products as "protected" conservatively. Use "flexible" only when the scene can safely tolerate broader reinterpretation.
 - For protected proposals, fidelity applies whenever the protected asset is visible. People may hold or use it when the narrative requires it, but must not deform, reconstruct, relabel, or change it. The asset need not remain visible throughout.
-- Preserve requested slogan, CTA, URL, phone, price/promotion, and logo requirements in "promotionalOverlays". Never include those exact graphic requirements in "visualGenerationIntent".
+- Preserve requested slogan, CTA, URL, phone, price/promotion, clinic legend, and logo requirements in "promotionalOverlays". Never include those exact graphic requirements in "visualGenerationIntent" or requiredNarrativeBeats.
 - When timing or placement is requested, use only a supported "timing_or_layout" preset. Omit it for the backward-compatible standard_full behavior; never invent a free-form value.
 - Always return a complete "overlayStyle" using only the listed tokens. Select it from the product, visualGenerationIntent, production context, and explicit customer styling requests.
 - Resolve style precedence exactly as: explicit customer styling instruction > structured protected brand identity when actually available > your creative decision. Set "origin" to the winning source. No structured protected palette is currently provided, so never claim a protected brand palette or invent a brand preset.

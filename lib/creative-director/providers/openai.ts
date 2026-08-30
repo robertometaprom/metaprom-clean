@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { CreativeDirectorError } from "../types";
 import {
+  classifyBeatsDiagnosticSubcode,
   classifyDirectorRetryReason,
   recordDirectorDiagnostic,
 } from "../diagnostics";
@@ -226,10 +227,15 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
 
   const parsedProposal = parseClosedCommercialProposal(parsed.proposal);
   if ("failure" in parsedProposal) {
+    const beatsSubcode =
+      parsedProposal.failure.code === "beats"
+        ? classifyBeatsDiagnosticSubcode(parsedProposal.failure.detail)
+        : undefined;
     recordDirectorDiagnostic({
       event: "director.parse_outcome",
       outcome: "invalid_proposal",
       validatorCode: parsedProposal.failure.code,
+      ...(beatsSubcode ? { validatorSubcode: beatsSubcode } : {}),
     });
     throw new InvalidClosedProposalError(
       conversational,

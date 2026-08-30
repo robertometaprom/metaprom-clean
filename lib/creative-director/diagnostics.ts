@@ -22,6 +22,11 @@ export type DirectorValidatorCode =
   | "overlay_style"
   | "unknown";
 
+/** Server-only beats split. Does not change validation behavior. */
+export type DirectorBeatsSubcode =
+  | "invalid_beat_array"
+  | "missing_verbatim_beat";
+
 export type DirectorRetryReason =
   | "empty"
   | "invalid_json"
@@ -39,6 +44,7 @@ export type DirectorParseOutcomeEvent = {
   event: "director.parse_outcome";
   outcome: DirectorParseOutcome;
   validatorCode?: DirectorValidatorCode;
+  validatorSubcode?: DirectorBeatsSubcode;
 };
 
 export type DirectorProviderAttemptEvent = {
@@ -84,6 +90,11 @@ const VALIDATOR_CODES = new Set<DirectorValidatorCode>([
   "unknown",
 ]);
 
+const BEATS_SUBCODES = new Set<DirectorBeatsSubcode>([
+  "invalid_beat_array",
+  "missing_verbatim_beat",
+]);
+
 const RETRY_REASONS = new Set<DirectorRetryReason>([
   "empty",
   "invalid_json",
@@ -111,6 +122,12 @@ function allowlistDirectorDiagnostic(
       };
       if (event.validatorCode && VALIDATOR_CODES.has(event.validatorCode)) {
         payload.validatorCode = event.validatorCode;
+      }
+      if (
+        event.validatorSubcode &&
+        BEATS_SUBCODES.has(event.validatorSubcode)
+      ) {
+        payload.validatorSubcode = event.validatorSubcode;
       }
       return payload;
     }
@@ -170,6 +187,23 @@ export function recordDirectorHttp200(fields: {
     anonymousMode: fields.anonymousMode,
     postGuardReplaced: fields.postGuardReplaced,
   });
+}
+
+export function classifyBeatsDiagnosticSubcode(
+  detail: string,
+): DirectorBeatsSubcode | undefined {
+  if (typeof detail !== "string" || !detail) return undefined;
+  if (
+    detail.startsWith(
+      "visualGenerationIntent is missing required narrative beat",
+    )
+  ) {
+    return "missing_verbatim_beat";
+  }
+  if (detail.includes("required_narrative_beats")) {
+    return "invalid_beat_array";
+  }
+  return undefined;
 }
 
 export function classifyDirectorRetryReason(

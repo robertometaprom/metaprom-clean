@@ -247,6 +247,16 @@ export default function CinematicReveal({
     </div>
   );
 
+  const offerReplayControl = (
+    <button
+      type="button"
+      onClick={() => setStage("playback")}
+      className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/25 bg-black/55 px-5 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition hover:bg-black/70 active:scale-[0.98]"
+    >
+      Reproducir
+    </button>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -365,6 +375,7 @@ export default function CinematicReveal({
                       AVANCE · METAPROM
                     </span>
                   </div>
+                  {offerReplayControl}
                 </div>
               }
               mediaFooter={
@@ -425,6 +436,7 @@ export default function CinematicReveal({
                       AVANCE · METAPROM
                     </span>
                   </div>
+                  {offerReplayControl}
                 </div>
                 <p className="bg-white/[0.04] px-4 py-2.5 text-xs text-white/40">
                   Vista previa gratuita · La versión HD es tu comercial final

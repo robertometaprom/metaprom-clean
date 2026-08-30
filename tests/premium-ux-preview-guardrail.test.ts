@@ -87,6 +87,21 @@ test("Preview playback remains inline with browser download deterrents", () => {
   assert.match(biblioteca, /controlsList="nodownload noremoteplayback"/);
 });
 
+test("offer-stage replay re-enters existing playback on the same videoUrl", () => {
+  const reveal = readRepo("components/studio/CinematicReveal.tsx");
+
+  assert.match(reveal, /onClick=\{\(\) => setStage\("playback"\)\}/);
+  assert.match(reveal, /\{offerReplayControl\}/);
+  assert.match(
+    reveal,
+    /const handleVideoEnded = \(\) => \{\s*videoRef\.current\?\.pause\(\);\s*setStage\("offer"\);\s*\};/,
+  );
+  assert.match(reveal, /if \(playbackInitiatedRef\.current\) return;/);
+  assert.match(reveal, /video\.currentTime = 0;/);
+  assert.doesNotMatch(reveal, /controls(?!List)/);
+  assert.doesNotMatch(reveal, /fetch\(|\/api\/studio|generateVideo|createPreview/);
+});
+
 test("paid Premium viewing and download controls remain intact", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
   const biblioteca = readRepo("components/biblioteca/Biblioteca.tsx");

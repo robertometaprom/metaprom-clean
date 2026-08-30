@@ -453,6 +453,9 @@ Rules for the response:
 - Copy every requiredNarrativeBeats string verbatim into visualGenerationIntent. Actors, phones, environments, camera, lighting, transitions, sound, secondary objects and scene design remain free around the protected asset and these beats.
 - When the customer supplies explicit spoken copy, preserve it exactly in visualGenerationIntent and apply the explicit spoken-copy rule above. For the default single-speaker case, identify exactly one speaker, require that speaker to say the exact phrase once, require all other visible people to remain silent, and prohibit additional vocal output while leaving normal non-vocal audio unrestricted.
 - Include "proposal" only when you have enough information to recommend a concept for production.
+- After a completed proposal already exists in session context ("Last Completed Proposal"), a customer correction or revision of that proposal is not information-gathering. You MUST return the complete updated "proposal" object with the requested change applied in every relevant field, including promotionalOverlays copy. Do not acknowledge a correction without returning that updated proposal.
+- In that revision case, set "needsClarification" true only when you genuinely cannot apply the change without one specific missing fact. Ask exactly one clarifying question and omit "proposal".
+- Never claim a correction was applied unless the returned "proposal" contains that exact correction.
 - Set "needsClarification" to true when you need more information; include specific "clarifyingQuestions".
 - Include "modifications" whenever you changed anything from the customer's request.
 - Classify branded, packaged, labelled, typographic, or identity-critical products as "protected" conservatively. Use "flexible" only when the scene can safely tolerate broader reinterpretation.

@@ -1,3 +1,5 @@
+import { DIRECTOR_REVISION_RETRY_INSTRUCTION } from "./revision";
+
 /**
  * Minimal Director proposal-card observability.
  * Structured Vercel logs only — no customer, prompt, or proposal content.
@@ -24,7 +26,8 @@ export type DirectorRetryReason =
   | "empty"
   | "invalid_json"
   | "invalid_proposal"
-  | "missing_message";
+  | "missing_message"
+  | "missing_revision_proposal";
 
 export type DirectorProviderFinal =
   | "returned_with_proposal"
@@ -86,6 +89,7 @@ const RETRY_REASONS = new Set<DirectorRetryReason>([
   "invalid_json",
   "invalid_proposal",
   "missing_message",
+  "missing_revision_proposal",
 ]);
 
 const PROVIDER_FINALS = new Set<DirectorProviderFinal>([
@@ -186,6 +190,9 @@ export function classifyDirectorRetryReason(
     "Creative Director provider response missing required message field."
   ) {
     return "missing_message";
+  }
+  if (message === DIRECTOR_REVISION_RETRY_INSTRUCTION) {
+    return "missing_revision_proposal";
   }
   return undefined;
 }

@@ -1,3 +1,4 @@
+import { directorTurnBlocksProposalActions } from "../creative-director/revision";
 import type { CommercialProposal } from "../creative-director/types";
 import {
   countDirectorUserInteractions,
@@ -31,6 +32,8 @@ export type DirectorComposerMessage = {
   role: "customer" | "director";
   content?: string;
   proposal?: CommercialProposal;
+  needsClarification?: boolean;
+  revisionApplyFailed?: boolean;
 };
 
 export type DirectorComposerAction =
@@ -58,7 +61,7 @@ export function isDirectorExecutionApproval(text: string): boolean {
   return EXECUTION_APPROVAL_UTTERANCES.has(normalized);
 }
 
-export function findLatestExecutableProposal(
+export function findLatestCompletedProposal(
   messages: ReadonlyArray<DirectorComposerMessage>,
 ): CommercialProposal | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -70,6 +73,28 @@ export function findLatestExecutableProposal(
   }
 
   return null;
+}
+
+export function findLatestDirectorMessage(
+  messages: ReadonlyArray<DirectorComposerMessage>,
+): DirectorComposerMessage | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "director") {
+      return messages[index] ?? null;
+    }
+  }
+
+  return null;
+}
+
+export function findLatestExecutableProposal(
+  messages: ReadonlyArray<DirectorComposerMessage>,
+): CommercialProposal | null {
+  if (directorTurnBlocksProposalActions(findLatestDirectorMessage(messages))) {
+    return null;
+  }
+
+  return findLatestCompletedProposal(messages);
 }
 
 export function resolveDirectorComposerAction(input: {

@@ -8,18 +8,12 @@ import type {
   DirectorModification,
 } from "../types";
 import { CreativeDirectorError } from "../types";
-import { parseCommercialProductionProfile } from "../../commercial-production-profile";
-import { parsePromotionalOverlays } from "../../promotional-overlay-contract";
-import { parseOverlayStyle } from "../../overlay-style-contract";
-import {
-  assertVisualIntentPreservesNarrativeBeats,
-  parseRequiredNarrativeBeats,
-} from "../../narrative-beats-contract";
 import {
   classifyDirectorRetryReason,
   recordDirectorDiagnostic,
-  type DirectorValidatorCode,
 } from "../diagnostics";
+import { parseClosedCommercialProposal } from "../proposal-contract";
+import { DIRECTOR_REVISION_RETRY_INSTRUCTION } from "../revision";
 
 const DEFAULT_MODEL =
   process.env.OPENAI_CREATIVE_DIRECTOR_MODEL ?? "gpt-4.1";
@@ -108,6 +102,12 @@ function formatProjectContext(context: ProjectContext): string {
     sections.push(`## Previous Preview\n${previewParts.join("\n")}`);
   }
 
+  if (context.lastCompletedProposal) {
+    sections.push(
+      `## Last Completed Proposal\n${JSON.stringify(context.lastCompletedProposal)}`,
+    );
+  }
+
   if (context.conversationHistory && context.conversationHistory.length > 0) {
     const history = context.conversationHistory
       .map(
@@ -145,17 +145,6 @@ type ParsedProviderPayload = {
   proposal?: CommercialProposal;
 };
 
-const PROPOSAL_STRING_FIELDS = [
-  "summary",
-  "openingHook",
-  "productHeroMoment",
-  "emotionalTone",
-  "pacing",
-  "callToAction",
-  "narrative",
-  "visualGenerationIntent",
-] as const;
-
 class InvalidClosedProposalError extends CreativeDirectorError {
   readonly conversational: CreativeDirectorResponse;
   readonly validatorDetail: string;
@@ -171,71 +160,6 @@ class InvalidClosedProposalError extends CreativeDirectorError {
     this.conversational = conversational;
     this.validatorDetail = validatorDetail;
   }
-}
-
-function commercialProposalContractFailure(value: unknown): {
-  detail: string;
-  code: DirectorValidatorCode;
-} | null {
-  if (!value || typeof value !== "object") {
-    return { detail: "proposal must be an object.", code: "unknown" };
-  }
-
-  const proposal = value as Record<string, unknown>;
-  for (const field of PROPOSAL_STRING_FIELDS) {
-    if (typeof proposal[field] !== "string") {
-      return {
-        detail: `proposal.${field} must be a string.`,
-        code: "string_field",
-      };
-    }
-  }
-
-  try {
-    assertVisualIntentPreservesNarrativeBeats(
-      proposal.visualGenerationIntent as string,
-      parseRequiredNarrativeBeats(proposal.requiredNarrativeBeats),
-    );
-  } catch (error) {
-    return {
-      detail: error instanceof Error ? error.message : String(error),
-      code: "beats",
-    };
-  }
-
-  try {
-    parseCommercialProductionProfile(proposal.productionProfile);
-  } catch (error) {
-    return {
-      detail: error instanceof Error ? error.message : String(error),
-      code: "production_profile",
-    };
-  }
-
-  try {
-    if (parsePromotionalOverlays(proposal.promotionalOverlays) === null) {
-      return {
-        detail: "proposal.promotionalOverlays must be an object.",
-        code: "overlays",
-      };
-    }
-  } catch (error) {
-    return {
-      detail: error instanceof Error ? error.message : String(error),
-      code: "overlays",
-    };
-  }
-
-  try {
-    parseOverlayStyle(proposal.overlayStyle);
-  } catch (error) {
-    return {
-      detail: error instanceof Error ? error.message : String(error),
-      code: "overlay_style",
-    };
-  }
-
-  return null;
 }
 
 function parseProviderResponse(raw: string): CreativeDirectorResponse {
@@ -300,14 +224,17 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
     return conversational;
   }
 
-  const proposalFailure = commercialProposalContractFailure(parsed.proposal);
-  if (proposalFailure) {
+  const parsedProposal = parseClosedCommercialProposal(parsed.proposal);
+  if ("failure" in parsedProposal) {
     recordDirectorDiagnostic({
       event: "director.parse_outcome",
       outcome: "invalid_proposal",
-      validatorCode: proposalFailure.code,
+      validatorCode: parsedProposal.failure.code,
     });
-    throw new InvalidClosedProposalError(conversational, proposalFailure.detail);
+    throw new InvalidClosedProposalError(
+      conversational,
+      parsedProposal.failure.detail,
+    );
   }
 
   recordDirectorDiagnostic({
@@ -316,13 +243,7 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
   });
   return {
     ...conversational,
-    proposal: {
-      ...parsed.proposal,
-      requiredNarrativeBeats: parseRequiredNarrativeBeats(parsed.proposal.requiredNarrativeBeats),
-      productionProfile: parseCommercialProductionProfile(parsed.proposal.productionProfile),
-      promotionalOverlays: parsePromotionalOverlays(parsed.proposal.promotionalOverlays)!,
-      overlayStyle: parseOverlayStyle(parsed.proposal.overlayStyle),
-    },
+    proposal: parsedProposal.proposal,
   };
 }
 
@@ -364,6 +285,22 @@ export function createOpenAICreativeDirectorProvider(
         }
         try {
           const parsed = parseProviderResponse(content);
+          if (
+            attempt === 0 &&
+            !parsed.proposal &&
+            !parsed.needsClarification &&
+            request.projectContext.lastCompletedProposal
+          ) {
+            validationFailure = new CreativeDirectorError(
+              DIRECTOR_REVISION_RETRY_INSTRUCTION,
+            );
+            recordDirectorDiagnostic({
+              event: "director.provider_attempt",
+              attempt: 0,
+              retryReason: "missing_revision_proposal",
+            });
+            continue;
+          }
           recordDirectorDiagnostic({
             event: "director.provider_final",
             final: parsed.proposal

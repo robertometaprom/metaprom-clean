@@ -29,6 +29,13 @@ import {
 } from "@/lib/studio/creative-director-companion";
 import { RATE_LIMITED_CODE } from "@/lib/security/cost-control-messages";
 import {
+  DIRECTOR_REVISION_RETRY_ACTION,
+  directorTurnBlocksProposalActions,
+  resolveDirectorRevisionResponse,
+} from "@/lib/creative-director/revision";
+import {
+  findLatestCompletedProposal,
+  findLatestDirectorMessage,
   resolveDirectorComposerAction,
 } from "@/lib/studio/director-execution-approval";
 import {
@@ -47,6 +54,8 @@ type PanelMessage = {
   content: string;
   proposal?: CommercialProposal;
   modifications?: DirectorModification[];
+  needsClarification?: boolean;
+  revisionApplyFailed?: boolean;
 };
 
 export type SerializablePanelMessage = PanelMessage;
@@ -301,10 +310,16 @@ export default function CreativeDirectorPanel({
   }, [isLoading]);
 
   const buildRequestContext = useCallback(
-    (history: PanelMessage[]): ProjectContext => ({
-      ...projectContext,
-      conversationHistory: toConversationHistory(history),
-    }),
+    (history: PanelMessage[]): ProjectContext => {
+      const lastCompletedProposal = findLatestCompletedProposal(history);
+      return {
+        ...projectContext,
+        conversationHistory: toConversationHistory(history),
+        ...(lastCompletedProposal
+          ? { lastCompletedProposal }
+          : {}),
+      };
+    },
     [projectContext],
   );
 
@@ -320,10 +335,10 @@ export default function CreativeDirectorPanel({
   );
 
   const handleSend = useCallback(
-    async (event?: FormEvent) => {
+    async (event?: FormEvent, overrideText?: string) => {
       event?.preventDefault();
 
-      const trimmed = composerValue.trim();
+      const trimmed = (overrideText ?? composerValue).trim();
       if (!trimmed || isLoading) return;
 
       const decision = resolveDirectorComposerAction({
@@ -365,12 +380,20 @@ export default function CreativeDirectorPanel({
           projectContext: buildRequestContext(messages),
         });
 
+        const priorProposal = findLatestCompletedProposal(messages);
+        const resolved = resolveDirectorRevisionResponse({
+          lastCompletedProposal: priorProposal,
+          response,
+        });
+
         const directorMessage: PanelMessage = {
           id: createMessageId(),
           role: "director",
-          content: response.message,
-          proposal: response.proposal,
-          modifications: response.modifications,
+          content: resolved.message,
+          proposal: resolved.proposal,
+          modifications: resolved.modifications,
+          needsClarification: resolved.needsClarification,
+          revisionApplyFailed: resolved.revisionApplyFailed,
         };
 
         setMessages((current) => [...current, directorMessage]);
@@ -439,6 +462,10 @@ export default function CreativeDirectorPanel({
   );
 
   const latestProposalMessageId = useMemo(() => {
+    if (directorTurnBlocksProposalActions(findLatestDirectorMessage(messages))) {
+      return null;
+    }
+
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       if (messages[index]?.proposal) {
         return messages[index]?.id ?? null;
@@ -446,6 +473,14 @@ export default function CreativeDirectorPanel({
     }
     return null;
   }, [messages]);
+
+  const handleRetryRevision = useCallback(() => {
+    const lastCustomer = [...messages]
+      .reverse()
+      .find((message) => message.role === "customer");
+    if (!lastCustomer?.content.trim() || isLoading) return;
+    void handleSend(undefined, lastCustomer.content);
+  }, [handleSend, isLoading, messages]);
 
   const shouldShowRegistrationInvite =
     showRegistrationInvite || registrationRequired;
@@ -618,6 +653,17 @@ export default function CreativeDirectorPanel({
                           }}
                           isLatest={message.id === latestProposalMessageId}
                         />
+                      ) : null}
+
+                      {message.revisionApplyFailed ? (
+                        <button
+                          type="button"
+                          onClick={handleRetryRevision}
+                          disabled={isLoading}
+                          className="rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {DIRECTOR_REVISION_RETRY_ACTION}
+                        </button>
                       ) : null}
                     </>
                   ) : (

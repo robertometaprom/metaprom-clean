@@ -1,6 +1,7 @@
 import { boundConversationHistoryForModel } from "../studio/director-session";
 import { getCreativeDirectorSystemPrompt } from "./prompt";
 import { getCreativeDirectorProvider } from "./provider";
+import { resolveDirectorRevisionResponse } from "./revision";
 import type {
   CreateCreativeProposalInput,
   CreateCreativeProposalOptions,
@@ -67,7 +68,10 @@ export async function createCreativeProposal(
   });
 
   if (!response.proposal) {
-    return response;
+    return resolveDirectorRevisionResponse({
+      lastCompletedProposal: projectContext.lastCompletedProposal,
+      response,
+    });
   }
 
   const postValidation = await validateCreativeRequest(
@@ -80,10 +84,16 @@ export async function createCreativeProposal(
   );
 
   if (postValidation.isValid) {
-    return response;
+    return resolveDirectorRevisionResponse({
+      lastCompletedProposal: projectContext.lastCompletedProposal,
+      response,
+    });
   }
 
-  return buildValidationBlockedResponse(postValidation, response);
+  return resolveDirectorRevisionResponse({
+    lastCompletedProposal: projectContext.lastCompletedProposal,
+    response: buildValidationBlockedResponse(postValidation, response),
+  });
 }
 
 function buildValidationBlockedResponse(

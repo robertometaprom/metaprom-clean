@@ -55,6 +55,8 @@ export type ProjectContext = {
   workflow?: string;
   previousPreview?: PreviousPreviewContext;
   conversationHistory?: ConversationMessage[];
+  /** Last valid completed proposal in this session, when the customer is revising it. */
+  lastCompletedProposal?: CommercialProposal;
 };
 
 /** Structured commercial proposal produced by the Creative Director. */
@@ -99,6 +101,11 @@ export type CreativeDirectorResponse = {
   modifications?: DirectorModification[];
   /** Anonymous session ended — client should invite free account creation. */
   requiresRegistration?: boolean;
+  /**
+   * A completed proposal existed and this revision could not safely update it.
+   * The prior proposal must not be executed as though it already contains the correction.
+   */
+  revisionApplyFailed?: boolean;
 };
 
 export type CreateCreativeProposalInput = {

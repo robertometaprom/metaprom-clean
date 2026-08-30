@@ -1,3 +1,4 @@
+import { tryParseClosedCommercialProposal } from "@/lib/creative-director/proposal-contract";
 import type { ConversationMessage, ProjectContext } from "@/lib/creative-director/types";
 import { MAX_BATCH_SOURCE_FILES } from "@/lib/instant-capture";
 import {
@@ -273,6 +274,13 @@ export function sanitizeProjectContext(
     next.conversationHistory = sanitizeConversationHistory(
       record.conversationHistory,
     );
+  }
+
+  if (record.lastCompletedProposal !== undefined && record.lastCompletedProposal !== null) {
+    const parsed = tryParseClosedCommercialProposal(record.lastCompletedProposal);
+    if (parsed) {
+      next.lastCompletedProposal = parsed;
+    }
   }
 
   return next;

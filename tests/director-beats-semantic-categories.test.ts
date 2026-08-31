@@ -428,6 +428,83 @@ test("failed safe revision stays recovery and never executes FONCIONAL", () => {
   assert.equal(DIRECTOR_REVISION_RETRY_ACTION, "Reintentar corrección");
 });
 
+test("missing_verbatim_beat retry receives beats-specific repair instruction and returns a valid proposal", async () => {
+  const { client, calls } = mockOpenAI([
+    payload({
+      message: "Te propongo este comercial en el consultorio.",
+      proposal: PRODUCTION_FAILURE_SHAPE,
+    }),
+    payload({
+      message: "Te propongo este comercial en el consultorio.",
+      proposal: INITIAL_PROPOSAL,
+    }),
+  ]);
+  const provider = createOpenAICreativeDirectorProvider({ client });
+
+  const { result: response, events } = await withDirectorDiagnostics(() =>
+    provider.generate({
+      systemPrompt: CREATIVE_DIRECTOR_SYSTEM_PROMPT,
+      customerMessage: INITIAL_REQUEST,
+      projectContext: {},
+    }),
+  );
+
+  const retryMessage = calls[1]?.messages?.find(
+    (message) =>
+      message.role === "user" &&
+      typeof message.content === "string" &&
+      message.content.includes("requiredNarrativeBeats[0]"),
+  )?.content;
+  assert.ok(retryMessage);
+  assert.match(retryMessage!, /VERBATIM/i);
+  assert.match(retryMessage!, /Do not paraphrase/);
+  assert.match(retryMessage!, /Do not shorten/);
+  assert.match(retryMessage!, /Do not semantically rewrite/);
+  assert.match(retryMessage!, /Preserve the exact string/);
+  assert.match(retryMessage!, /VISUAL EVENTS/);
+  assert.match(retryMessage!, /SPOKEN\/NARRATED COPY/);
+  assert.match(retryMessage!, /GRAPHIC\/PROMOTIONAL COPY/);
+  assert.match(retryMessage!, /promotionalOverlays only/);
+  assert.match(
+    retryMessage!,
+    /Do NOT move promotional overlay copy into requiredNarrativeBeats/,
+  );
+  for (const beat of PRODUCTION_FAILURE_SHAPE.requiredNarrativeBeats) {
+    assert.ok(retryMessage!.includes(JSON.stringify(beat)));
+  }
+
+  assert.ok(response.proposal);
+  assert.equal(commercialProposalContractFailure(response.proposal), null);
+  for (const beat of response.proposal!.requiredNarrativeBeats) {
+    assert.ok(response.proposal!.visualGenerationIntent.includes(beat));
+  }
+  assertVisualBeatsOnly(response.proposal!);
+  assertOverlayHeadline(response.proposal!, CLINIC_FONCIONAL);
+  assert.ok(response.proposal!.visualGenerationIntent.includes(NARRATION));
+
+  const parseEvents = events.filter(
+    (event) => event.event === "director.parse_outcome",
+  );
+  assert.deepEqual(parseEvents[0], {
+    event: "director.parse_outcome",
+    outcome: "invalid_proposal",
+    validatorCode: "beats",
+    validatorSubcode: "missing_verbatim_beat",
+  });
+  assert.deepEqual(parseEvents[1], {
+    event: "director.parse_outcome",
+    outcome: "valid_proposal",
+  });
+  assert.deepEqual(
+    events.find((event) => event.event === "director.provider_final"),
+    {
+      event: "director.provider_final",
+      final: "returned_with_proposal",
+      attempt: 1,
+    },
+  );
+});
+
 test("beats diagnostic subcodes stay server-only and do not leak customer copy", async () => {
   const { client } = mockOpenAI([
     payload({

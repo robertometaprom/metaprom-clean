@@ -149,10 +149,12 @@ type ParsedProviderPayload = {
 class InvalidClosedProposalError extends CreativeDirectorError {
   readonly conversational: CreativeDirectorResponse;
   readonly validatorDetail: string;
+  readonly requiredNarrativeBeats?: string[];
 
   constructor(
     conversational: CreativeDirectorResponse,
     validatorDetail: string,
+    options?: { requiredNarrativeBeats?: string[] },
   ) {
     super(
       `Creative Director provider returned an invalid closed commercial proposal contract: ${validatorDetail}`,
@@ -160,7 +162,56 @@ class InvalidClosedProposalError extends CreativeDirectorError {
     this.name = "InvalidClosedProposalError";
     this.conversational = conversational;
     this.validatorDetail = validatorDetail;
+    this.requiredNarrativeBeats = options?.requiredNarrativeBeats;
   }
+}
+
+function buildMissingVerbatimBeatRetryInstruction(
+  requiredNarrativeBeats: string[],
+): string {
+  const beatLines = requiredNarrativeBeats
+    .map(
+      (beat, index) =>
+        `  requiredNarrativeBeats[${index}]: ${JSON.stringify(beat)}`,
+    )
+    .join("\n");
+
+  return `Your previous structured proposal failed validation because visualGenerationIntent did not contain every requiredNarrativeBeat string verbatim.
+
+Repair requirement:
+- Copy EVERY requiredNarrativeBeats[i] string VERBATIM into visualGenerationIntent.
+- Do not paraphrase any requiredNarrativeBeat.
+- Do not shorten it.
+- Do not semantically rewrite it.
+- Preserve the exact string of each beat.
+- Each requiredNarrativeBeats entry must appear verbatim inside visualGenerationIntent.
+
+Preserve the existing semantic separation:
+- VISUAL EVENTS → requiredNarrativeBeats and visualGenerationIntent
+- SPOKEN/NARRATED COPY → visualGenerationIntent only
+- GRAPHIC/PROMOTIONAL COPY → promotionalOverlays only
+- Do NOT move promotional overlay copy into requiredNarrativeBeats.
+
+Required beats to copy verbatim:
+${beatLines}
+
+Return a corrected complete JSON response.`;
+}
+
+function buildProviderRetryInstruction(validationFailure: Error): string {
+  if (
+    validationFailure instanceof InvalidClosedProposalError &&
+    classifyBeatsDiagnosticSubcode(validationFailure.validatorDetail) ===
+      "missing_verbatim_beat" &&
+    validationFailure.requiredNarrativeBeats &&
+    validationFailure.requiredNarrativeBeats.length > 0
+  ) {
+    return buildMissingVerbatimBeatRetryInstruction(
+      validationFailure.requiredNarrativeBeats,
+    );
+  }
+
+  return `Your previous structured proposal failed validation: ${validationFailure.message}. Return a corrected complete JSON response.`;
 }
 
 function parseProviderResponse(raw: string): CreativeDirectorResponse {
@@ -237,9 +288,23 @@ function parseProviderResponse(raw: string): CreativeDirectorResponse {
       validatorCode: parsedProposal.failure.code,
       ...(beatsSubcode ? { validatorSubcode: beatsSubcode } : {}),
     });
+    const requiredNarrativeBeats =
+      beatsSubcode === "missing_verbatim_beat" &&
+      parsed.proposal &&
+      typeof parsed.proposal === "object" &&
+      Array.isArray(
+        (parsed.proposal as Record<string, unknown>).requiredNarrativeBeats,
+      )
+        ? (
+            (parsed.proposal as Record<string, unknown>)
+              .requiredNarrativeBeats as unknown[]
+          ).filter((beat): beat is string => typeof beat === "string")
+        : undefined;
+
     throw new InvalidClosedProposalError(
       conversational,
       parsedProposal.failure.detail,
+      { requiredNarrativeBeats },
     );
   }
 
@@ -270,10 +335,14 @@ export function createOpenAICreativeDirectorProvider(
           messages: [
             { role: "system", content: request.systemPrompt },
             { role: "user", content: buildUserMessage(request) },
-            ...(validationFailure ? [{
-              role: "user" as const,
-              content: `Your previous structured proposal failed validation: ${validationFailure.message}. Return a corrected complete JSON response.`,
-            }] : []),
+            ...(validationFailure
+              ? [
+                  {
+                    role: "user" as const,
+                    content: buildProviderRetryInstruction(validationFailure),
+                  },
+                ]
+              : []),
           ],
           response_format: { type: "json_object" },
         });

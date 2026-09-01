@@ -309,7 +309,7 @@ export default function CreativeDirector({
   const [directorMessages, setDirectorMessages] = useState<
     SerializablePanelMessage[]
   >([]);
-  const [directorV2Api, setDirectorV2Api] = useState(false);
+  const [directorV2Api, setDirectorV2Api] = useState(true);
   const [directorV2DryRun, setDirectorV2DryRun] = useState(false);
   /** Brief confirmation after Director “Usar esta propuesta” — not a session reset. */
   const [directorProposalApplied, setDirectorProposalApplied] = useState(false);

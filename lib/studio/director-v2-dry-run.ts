@@ -1,6 +1,9 @@
 import { parseClosedCommercialProposal } from "../creative-director/proposal-contract";
 import type { CommercialProposal } from "../creative-director/types";
 
+export const DIRECTOR_V1_QUERY_PARAM = "directorV1";
+export const DIRECTOR_V1_QUERY_VALUE = "1";
+
 export const DIRECTOR_V2_DRY_RUN_QUERY_PARAM = "directorV2DryRun";
 export const DIRECTOR_V2_DRY_RUN_QUERY_VALUE = "1";
 
@@ -24,6 +27,11 @@ function toSearchParams(params: URLSearchParams | string): URLSearchParams {
   return typeof params === "string" ? new URLSearchParams(params) : params;
 }
 
+export function isDirectorV1SearchParam(params: URLSearchParams | string): boolean {
+  const searchParams = toSearchParams(params);
+  return searchParams.get(DIRECTOR_V1_QUERY_PARAM) === DIRECTOR_V1_QUERY_VALUE;
+}
+
 export function isDirectorV2DryRunSearchParam(
   params: URLSearchParams | string,
 ): boolean {
@@ -41,16 +49,18 @@ export function isDirectorV2SearchParam(params: URLSearchParams | string): boole
 
 export function resolveDirectorV2Mode(params: URLSearchParams | string): DirectorV2Mode {
   const dryRun = isDirectorV2DryRunSearchParam(params);
-  const realV2 = isDirectorV2SearchParam(params);
-  return {
-    useV2Api: dryRun || realV2,
-    dryRun,
-  };
+  if (dryRun) {
+    return { useV2Api: true, dryRun: true };
+  }
+  if (isDirectorV1SearchParam(params)) {
+    return { useV2Api: false, dryRun: false };
+  }
+  return { useV2Api: true, dryRun: false };
 }
 
 export function readDirectorV2ModeFromLocation(): DirectorV2Mode {
   if (typeof window === "undefined") {
-    return { useV2Api: false, dryRun: false };
+    return { useV2Api: true, dryRun: false };
   }
   return resolveDirectorV2Mode(window.location.search);
 }

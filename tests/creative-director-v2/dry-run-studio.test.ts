@@ -19,6 +19,9 @@ import {
   DIRECTOR_V2_DRY_RUN_VALID_MESSAGE,
   DIRECTOR_V2_QUERY_PARAM,
   DIRECTOR_V2_QUERY_VALUE,
+  DIRECTOR_V1_QUERY_PARAM,
+  DIRECTOR_V1_QUERY_VALUE,
+  isDirectorV1SearchParam,
   isDirectorV2DryRunSearchParam,
   isDirectorV2SearchParam,
   resolveCreativeDirectorApiPath,
@@ -73,9 +76,11 @@ const VALID_PROPOSAL = {
   },
 } as CommercialProposal;
 
-// 1. /studio without query parameter remains V1.
-test("1 — default Studio Director API path is V1", () => {
-  assert.equal(resolveCreativeDirectorApiPath(false), CREATIVE_DIRECTOR_V1_API_PATH);
+// 1. /studio without query parameter defaults to V2.
+test("1 — default Studio Director API path is V2", () => {
+  assert.deepEqual(resolveDirectorV2Mode(""), { useV2Api: true, dryRun: false });
+  assert.deepEqual(resolveDirectorV2Mode("?foo=bar"), { useV2Api: true, dryRun: false });
+  assert.equal(resolveCreativeDirectorApiPath(true), CREATIVE_DIRECTOR_V2_API_PATH);
   assert.equal(
     isDirectorV2DryRunSearchParam(""),
     false,
@@ -95,6 +100,9 @@ test("1 — default Studio Director API path is V1", () => {
     /resolveCreativeDirectorApiPath\(directorV2Api\)/,
   );
   assert.match(panel, /directorV2Api = false/);
+
+  const studio = readRepo("components/studio/CreativeDirector.tsx");
+  assert.match(studio, /\[directorV2Api, setDirectorV2Api\] = useState\(true\)/);
 });
 
 // 2. directorV2DryRun=1 selects /api/creative-director-v2.
@@ -255,6 +263,33 @@ test("12 — directorV2=1 real mode does not auto-invoke generation", () => {
 test("directorV2DryRun=1 takes precedence over directorV2=1 for handoff firewall", () => {
   const mode = resolveDirectorV2Mode(
     `?${DIRECTOR_V2_QUERY_PARAM}=${DIRECTOR_V2_QUERY_VALUE}&${DIRECTOR_V2_DRY_RUN_QUERY_PARAM}=${DIRECTOR_V2_DRY_RUN_QUERY_VALUE}`,
+  );
+  assert.deepEqual(mode, { useV2Api: true, dryRun: true });
+});
+
+test("directorV1=1 selects V1 API for rollback", () => {
+  assert.equal(
+    isDirectorV1SearchParam(`?${DIRECTOR_V1_QUERY_PARAM}=${DIRECTOR_V1_QUERY_VALUE}`),
+    true,
+  );
+  assert.equal(
+    isDirectorV1SearchParam(`?${DIRECTOR_V1_QUERY_PARAM}=0`),
+    false,
+  );
+
+  const mode = resolveDirectorV2Mode(`?${DIRECTOR_V1_QUERY_PARAM}=${DIRECTOR_V1_QUERY_VALUE}`);
+  assert.deepEqual(mode, { useV2Api: false, dryRun: false });
+  assert.equal(resolveCreativeDirectorApiPath(mode.useV2Api), CREATIVE_DIRECTOR_V1_API_PATH);
+});
+
+test("directorV1=1 rollback preserves onUseProposal handoff", () => {
+  const studio = readRepo("components/studio/CreativeDirector.tsx");
+  assert.match(studio, /onUseProposal=\{handleUseDirectorProposal\}/);
+});
+
+test("directorV2DryRun=1 takes precedence over directorV1=1 for dry-run safety", () => {
+  const mode = resolveDirectorV2Mode(
+    `?${DIRECTOR_V1_QUERY_PARAM}=${DIRECTOR_V1_QUERY_VALUE}&${DIRECTOR_V2_DRY_RUN_QUERY_PARAM}=${DIRECTOR_V2_DRY_RUN_QUERY_VALUE}`,
   );
   assert.deepEqual(mode, { useV2Api: true, dryRun: true });
 });

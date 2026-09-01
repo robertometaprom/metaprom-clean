@@ -1089,13 +1089,6 @@ export default function CreativeDirector({
             projectId: savedProjectIdRef.current ?? undefined,
             assetId: result.assetId,
           });
-
-          if (result.premiumVideoUrl) {
-            onOpenLibrary?.({
-              projectId: savedProjectIdRef.current ?? undefined,
-              assetId: result.assetId,
-            });
-          }
         })
         .catch((paymentError) => {
           if (cancelled) return;
@@ -1114,7 +1107,7 @@ export default function CreativeDirector({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [onLibraryUpdated, onOpenLibrary]);
+  }, [onLibraryUpdated]);
 
   useEffect(() => {
     return () => {
@@ -2181,7 +2174,6 @@ export default function CreativeDirector({
         projectId: savedProjectIdRef.current ?? undefined,
         assetId: savedAssetIdRef.current ?? undefined,
       });
-      handleOpenLibrary();
     }
   };
 
@@ -3495,26 +3487,46 @@ export default function CreativeDirector({
             key="ready"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-md space-y-4 rounded-3xl border border-neutral-200 bg-white p-8 shadow-lg"
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-lg sm:p-8"
           >
-            <Checkout
-              purchaseId={checkoutAssetId}
-              price={HD_COMMERCIAL_PRICE}
-              currency="MXN"
-              provider={checkoutProvider}
-              previewVideoUrl={videoUrl}
-              isUnlocked
-              error={checkoutMessage}
-              onSuccess={handleCheckoutSuccess}
-              onCancel={() => setPhase("preview")}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                ¡Tu comercial está listo!
+              </h2>
+              <p className="text-sm text-neutral-500">
+                Tu comercial HD ya está listo para usar.
+              </p>
+            </div>
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              className="mx-auto aspect-video w-full max-h-[70vh] rounded-2xl border border-neutral-200 bg-black object-contain"
             />
-            <button
-              type="button"
-              onClick={handleDownloadVideo}
-              className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-            >
-              Descargar comercial HD
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleOpenLibrary}
+                className="rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white transition hover:from-violet-600 hover:to-purple-700"
+              >
+                Ver en mi Biblioteca
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadVideo}
+                className="rounded-2xl border border-violet-200 bg-violet-50 py-4 text-base font-semibold text-violet-700 transition hover:bg-violet-100"
+              >
+                Descargar comercial HD
+              </button>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="rounded-2xl py-3 text-sm font-semibold text-neutral-500 transition hover:text-neutral-800"
+              >
+                Crear otro comercial
+              </button>
+            </div>
           </motion.div>
         )}
         </AnimatePresence>

@@ -65,6 +65,74 @@ test("premium completion still transitions to existing ready behavior", () => {
   assert.match(director, /setPremiumProgressComplete\(true\)/);
 });
 
+test("ready state is a dedicated Premium delivery surface", () => {
+  const director = readRepo("components/studio/CreativeDirector.tsx");
+  const readyMatch = director.match(
+    /key="ready"[\s\S]*?<\/motion\.div>\s*\)\}/,
+  );
+
+  assert.ok(readyMatch, "ready block should exist");
+  const readyBlock = readyMatch[0];
+
+  assert.match(readyBlock, /¡Tu comercial está listo!/);
+  assert.match(readyBlock, /Tu comercial HD ya está listo para usar\./);
+  assert.match(readyBlock, /<video[\s\S]*src=\{videoUrl\}[\s\S]*controls[\s\S]*playsInline/);
+  assert.doesNotMatch(readyBlock, /<Checkout/);
+  assert.doesNotMatch(readyBlock, /isUnlocked/);
+  assert.doesNotMatch(readyBlock, /Produce tu comercial completo/);
+  assert.doesNotMatch(readyBlock, /AVANCE/);
+  assert.doesNotMatch(readyBlock, /CinematicReveal/);
+  assert.match(readyBlock, /Ver en mi Biblioteca/);
+  assert.match(readyBlock, /onClick=\{handleOpenLibrary\}/);
+  assert.match(readyBlock, /Descargar comercial HD/);
+  assert.match(readyBlock, /onClick=\{handleDownloadVideo\}/);
+  assert.match(readyBlock, /Crear otro comercial/);
+  assert.match(readyBlock, /onClick=\{resetFlow\}/);
+  assert.doesNotMatch(readyBlock, /Volver/);
+  assert.doesNotMatch(readyBlock, /setPhase\("preview"\)/);
+  assert.doesNotMatch(readyBlock, /autoPlay/);
+});
+
+test("successful Premium completion does not auto-open Biblioteca", () => {
+  const director = readRepo("components/studio/CreativeDirector.tsx");
+  const checkoutSuccessMatch = director.match(
+    /const handleCheckoutSuccess = \([\s\S]*?\n  \};/,
+  );
+
+  assert.ok(checkoutSuccessMatch, "handleCheckoutSuccess should exist");
+  const checkoutSuccess = checkoutSuccessMatch[0];
+
+  assert.match(checkoutSuccess, /setPhase\("ready"\)/);
+  assert.match(checkoutSuccess, /onLibraryUpdated\?\.\(/);
+  assert.doesNotMatch(checkoutSuccess, /handleOpenLibrary\(\)/);
+  assert.doesNotMatch(checkoutSuccess, /onOpenLibrary\?\.\(/);
+
+  const stripeRedirectMatch = director.match(
+    /setPhase\(result\.premiumVideoUrl \? "ready" : "processing_premium"\);[\s\S]*?onLibraryUpdated\?\.\(/,
+  );
+
+  assert.ok(stripeRedirectMatch, "stripe redirect completion block should exist");
+  const stripeRedirectTail = director.slice(
+    director.indexOf('setPhase(result.premiumVideoUrl ? "ready" : "processing_premium")'),
+  );
+  const stripeRedirectBlock = stripeRedirectTail.slice(
+    0,
+    stripeRedirectTail.indexOf(".catch((paymentError) =>"),
+  );
+
+  assert.match(stripeRedirectBlock, /onLibraryUpdated\?\.\(/);
+  assert.doesNotMatch(stripeRedirectBlock, /onOpenLibrary\?\.\(/);
+});
+
+test("Biblioteca component is untouched by Premium delivery UX", () => {
+  const biblioteca = readRepo("components/biblioteca/Biblioteca.tsx");
+  const director = readRepo("components/studio/CreativeDirector.tsx");
+
+  assert.doesNotMatch(director, /components\/biblioteca\/Biblioteca/);
+  assert.match(biblioteca, /premiumUrl && \(/);
+  assert.match(biblioteca, /metaprom-\$\{asset\.id\}-comercial-hd\.mp4/);
+});
+
 test("handoff is one-shot and does not introduce duplicate checkout or generation", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
   const biblioteca = readRepo("components/biblioteca/Biblioteca.tsx");

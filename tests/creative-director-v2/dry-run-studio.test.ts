@@ -17,8 +17,12 @@ import {
   DIRECTOR_V2_DRY_RUN_QUERY_PARAM,
   DIRECTOR_V2_DRY_RUN_QUERY_VALUE,
   DIRECTOR_V2_DRY_RUN_VALID_MESSAGE,
+  DIRECTOR_V2_QUERY_PARAM,
+  DIRECTOR_V2_QUERY_VALUE,
   isDirectorV2DryRunSearchParam,
+  isDirectorV2SearchParam,
   resolveCreativeDirectorApiPath,
+  resolveDirectorV2Mode,
   validateDirectorV2DryRunProposal,
 } from "../../lib/studio/director-v2-dry-run.ts";
 
@@ -88,9 +92,9 @@ test("1 — default Studio Director API path is V1", () => {
   const panel = readRepo("components/studio/CreativeDirectorPanel.tsx");
   assert.match(
     panel,
-    /resolveCreativeDirectorApiPath\(directorV2DryRun\)/,
+    /resolveCreativeDirectorApiPath\(directorV2Api\)/,
   );
-  assert.match(panel, /directorV2DryRun = false/);
+  assert.match(panel, /directorV2Api = false/);
 });
 
 // 2. directorV2DryRun=1 selects /api/creative-director-v2.
@@ -107,7 +111,8 @@ test("2 — directorV2DryRun=1 selects creative-director-v2 API", () => {
   );
 
   const studio = readRepo("components/studio/CreativeDirector.tsx");
-  assert.match(studio, /readDirectorV2DryRunFromLocation/);
+  assert.match(studio, /readDirectorV2ModeFromLocation/);
+  assert.match(studio, /directorV2Api=\{directorV2Api\}/);
   assert.match(studio, /directorV2DryRun=\{directorV2DryRun\}/);
 });
 
@@ -196,12 +201,62 @@ test("10 — Director V1 regression wiring remains intact", () => {
   assert.match(studio, /onUseProposal=\{handleUseDirectorProposal\}/);
   assert.match(
     panel,
-    /resolveCreativeDirectorApiPath\(directorV2DryRun\)/,
+    /resolveCreativeDirectorApiPath\(directorV2Api\)/,
   );
   assert.match(
     panel,
     /decision\.type === "accept_proposal"[\s\S]*handleUseProposal\(decision\.proposal, decision\.narrative\)/,
   );
+});
+
+// 11. directorV2=1 selects V2 API and enables real handoff.
+test("11 — directorV2=1 selects creative-director-v2 API with real handoff", () => {
+  assert.equal(
+    isDirectorV2SearchParam(`?${DIRECTOR_V2_QUERY_PARAM}=${DIRECTOR_V2_QUERY_VALUE}`),
+    true,
+  );
+  assert.equal(
+    isDirectorV2SearchParam(`?${DIRECTOR_V2_QUERY_PARAM}=0`),
+    false,
+  );
+
+  const mode = resolveDirectorV2Mode(`?${DIRECTOR_V2_QUERY_PARAM}=${DIRECTOR_V2_QUERY_VALUE}`);
+  assert.deepEqual(mode, { useV2Api: true, dryRun: false });
+  assert.equal(resolveCreativeDirectorApiPath(mode.useV2Api), CREATIVE_DIRECTOR_V2_API_PATH);
+
+  const panel = readRepo("components/studio/CreativeDirectorPanel.tsx");
+  assert.match(
+    panel,
+    /if \(directorV2DryRun\) \{[\s\S]*validateDirectorV2DryRunProposal[\s\S]*return;\s*\}[\s\S]*onUseProposal\(\{ \.\.\.proposal, narrative: trimmed \}\)/,
+  );
+  assert.doesNotMatch(
+    panel,
+    /if \(directorV2Api\) \{[\s\S]*validateDirectorV2DryRunProposal/,
+  );
+});
+
+// 12. directorV2=1 does not auto-invoke generation.
+test("12 — directorV2=1 real mode does not auto-invoke generation", () => {
+  const panel = readRepo("components/studio/CreativeDirectorPanel.tsx");
+  const studio = readRepo("components/studio/CreativeDirector.tsx");
+  const dryRun = readRepo("lib/studio/director-v2-dry-run.ts");
+
+  assert.doesNotMatch(panel, /runCreation/);
+  assert.doesNotMatch(dryRun, /runCreation/);
+
+  const handoffMatch = studio.match(
+    /const handleUseDirectorProposal = useCallback\([\s\S]*?\}, \[\]\);/,
+  );
+  assert.ok(handoffMatch, "handleUseDirectorProposal must exist");
+  assert.doesNotMatch(handoffMatch[0], /runCreation/);
+  assert.match(handoffMatch[0], /setPhase/);
+});
+
+test("directorV2DryRun=1 takes precedence over directorV2=1 for handoff firewall", () => {
+  const mode = resolveDirectorV2Mode(
+    `?${DIRECTOR_V2_QUERY_PARAM}=${DIRECTOR_V2_QUERY_VALUE}&${DIRECTOR_V2_DRY_RUN_QUERY_PARAM}=${DIRECTOR_V2_DRY_RUN_QUERY_VALUE}`,
+  );
+  assert.deepEqual(mode, { useV2Api: true, dryRun: true });
 });
 
 test("V2 dry-run shows visible test indicator only in dry-run mode", () => {

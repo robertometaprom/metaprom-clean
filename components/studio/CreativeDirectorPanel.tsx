@@ -97,7 +97,9 @@ export type CreativeDirectorPanelProps = {
   accountActions?: ReactNode;
   /** When true, desktop Director stage shifts left to clear the Biblioteca panel. */
   libraryOpen?: boolean;
-  /** Test-only: route Director traffic to V2 API and block generation handoff. */
+  /** Route Director traffic to /api/creative-director-v2. */
+  directorV2Api?: boolean;
+  /** Test-only: block generation handoff and show dry-run indicator. */
   directorV2DryRun?: boolean;
 };
 
@@ -181,6 +183,7 @@ export default function CreativeDirectorPanel({
   photoActions = null,
   accountActions = null,
   libraryOpen = false,
+  directorV2Api = false,
   directorV2DryRun = false,
 }: CreativeDirectorPanelProps) {
   const stageZ = stackLayer === "elevated" ? "z-[120]" : "z-50";
@@ -400,7 +403,7 @@ export default function CreativeDirectorPanel({
             customerMessage: trimmed,
             projectContext: buildRequestContext(messages),
           },
-          resolveCreativeDirectorApiPath(directorV2DryRun),
+          resolveCreativeDirectorApiPath(directorV2Api),
         );
 
         const priorProposal = findLatestCompletedProposal(messages);
@@ -470,7 +473,7 @@ export default function CreativeDirectorPanel({
       composerValue,
       editedProposalText,
       editingProposalId,
-      directorV2DryRun,
+      directorV2Api,
       handleUseProposal,
       isLoading,
       messages,

@@ -95,8 +95,9 @@ test("Director V2 dry-run Studio wiring is isolated from generation", () => {
   );
 
   assert.match(panel, /creative-director-v2|resolveCreativeDirectorApiPath/);
+  assert.match(panel, /directorV2Api/);
   assert.match(panel, /directorV2DryRun/);
-  assert.match(director, /readDirectorV2DryRunFromLocation/);
+  assert.match(director, /readDirectorV2ModeFromLocation/);
   assert.match(dryRun, /parseClosedCommercialProposal/);
 
   for (const source of [panel, dryRun]) {

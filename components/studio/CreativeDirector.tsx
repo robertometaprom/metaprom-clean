@@ -123,7 +123,7 @@ import type {
 import type { ConversationMessage } from "@/lib/creative-director/types";
 import { createClient } from "@/lib/supabase/client";
 import type { SerializablePanelMessage } from "@/components/studio/CreativeDirectorPanel";
-import { readDirectorV2DryRunFromLocation } from "@/lib/studio/director-v2-dry-run";
+import { readDirectorV2ModeFromLocation } from "@/lib/studio/director-v2-dry-run";
 
 /** Commercial Multi-Photo remains out of scope for Batch V1. */
 const COMMERCIAL_BATCH_BLOCKED_MESSAGE =
@@ -309,6 +309,7 @@ export default function CreativeDirector({
   const [directorMessages, setDirectorMessages] = useState<
     SerializablePanelMessage[]
   >([]);
+  const [directorV2Api, setDirectorV2Api] = useState(false);
   const [directorV2DryRun, setDirectorV2DryRun] = useState(false);
   /** Brief confirmation after Director “Usar esta propuesta” — not a session reset. */
   const [directorProposalApplied, setDirectorProposalApplied] = useState(false);
@@ -402,7 +403,9 @@ export default function CreativeDirector({
   }, [sourcePreviewUrls]);
 
   useEffect(() => {
-    setDirectorV2DryRun(readDirectorV2DryRunFromLocation());
+    const mode = readDirectorV2ModeFromLocation();
+    setDirectorV2Api(mode.useV2Api);
+    setDirectorV2DryRun(mode.dryRun);
   }, []);
 
   const revokeBlobUrl = useCallback((url: string | null | undefined) => {
@@ -3564,6 +3567,7 @@ export default function CreativeDirector({
         onClose={handleCloseDirectorPanel}
         projectContext={creativeDirectorProjectContext}
         onUseProposal={handleUseDirectorProposal}
+        directorV2Api={directorV2Api}
         directorV2DryRun={directorV2DryRun}
         onStartFreshDirectorSession={startFreshDirectorSession}
         pendingCompanionMoment={pendingCompanionMoment}

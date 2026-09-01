@@ -71,7 +71,7 @@ test("commercial font identity is pinned and embedded without system fallback", 
   assert.doesNotMatch(css.slice(0, css.indexOf("base64,")), /Arial|sans-serif|https?:/i);
 });
 
-test("Premium command composes a pre-rendered deterministic overlay", () => {
+test("Premium command loops the promotional PNG input and preserves scale2ref overlay", () => {
   const args = buildCommercialVideoFfmpegArgs({
     inputPath: "/tmp/input.mp4",
     outputPath: "/tmp/output.mp4",
@@ -81,7 +81,7 @@ test("Premium command composes a pre-rendered deterministic overlay", () => {
   });
   const command = args.join(" ");
 
-  assert.match(command, /-i \/tmp\/promotion\.png/);
+  assert.match(command, /-loop 1 -i \/tmp\/promotion\.png/);
   assert.match(command, /\[1:v\]\[0:v\]scale2ref=w=main_w:h=main_h/);
   assert.match(command, /\[base\]\[promotion\]overlay=0:0:format=auto\[v\]/);
   assert.doesNotMatch(command, /drawtext/);

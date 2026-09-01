@@ -17,10 +17,14 @@ export function buildCommercialVideoFfmpegArgs(
 ): string[] {
   const args = ["-y", "-i", input.inputPath];
 
+  if (input.watermarkPath) args.push("-i", input.watermarkPath);
+  if (input.promotionalOverlayPath) {
+    args.push("-loop", "1", "-i", input.promotionalOverlayPath);
+  }
+
   const overlayPaths = [input.watermarkPath, input.promotionalOverlayPath].filter(
     (path): path is string => Boolean(path),
   );
-  for (const overlayPath of overlayPaths) args.push("-i", overlayPath);
 
   args.push("-t", String(input.maxSeconds));
 

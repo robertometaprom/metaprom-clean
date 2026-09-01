@@ -535,24 +535,26 @@ export default function CreativeDirectorPanel({
         <div
           className={
             isEmbedded
-              ? "flex max-h-[min(58vh,28rem)] flex-col text-left sm:max-h-[min(64vh,32rem)] lg:max-h-[min(70vh,36rem)]"
-              : `flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)] ${libraryInteractionShiftClass}`
+              ? "flex h-[min(calc(100dvh-10rem),78vh)] flex-col text-left sm:h-[min(calc(100dvh-9rem),82vh)] lg:h-[min(calc(100dvh-8rem),86vh)]"
+              : `flex h-[min(calc(100dvh-5.5rem),92vh)] flex-col text-left sm:h-[min(calc(100dvh-6rem),93vh)] lg:h-[min(calc(100dvh-7.5rem),94vh)] ${libraryInteractionShiftClass}`
           }
         >
           {directorV2DryRun ? (
             <div
-              className="mb-3 rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs text-amber-100"
+              className="mb-2 shrink-0 rounded-lg border border-amber-400/40 bg-amber-950/50 px-2.5 py-1.5 text-xs text-amber-100 sm:flex sm:items-baseline sm:gap-2"
               role="status"
               data-testid="director-v2-dry-run-indicator"
             >
-              <p className="font-semibold uppercase tracking-[0.14em]">
+              <p className="font-semibold uppercase tracking-[0.12em]">
                 DIRECTOR V2 — DRY RUN
               </p>
-              <p className="mt-0.5 text-amber-100/85">Generación desactivada</p>
+              <p className="mt-0.5 text-amber-100/85 sm:mt-0">
+                Generación desactivada
+              </p>
             </div>
           ) : null}
 
-          <header className="mb-2 flex items-start justify-between gap-3 md:mb-3">
+          <header className="mb-2 flex shrink-0 items-start justify-between gap-3 md:mb-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-300/90">
                 Director Creativo
@@ -734,7 +736,7 @@ export default function CreativeDirectorPanel({
             ) : null}
           </div>
 
-          <div className="mt-2 space-y-2 md:mt-4 md:space-y-3">
+          <div className="mt-2 shrink-0 space-y-2 md:mt-4 md:space-y-3">
             {error ? (
               <div className="rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
                 <p>{error}</p>
@@ -852,7 +854,7 @@ export default function CreativeDirectorPanel({
 
   return (
     <div
-      className={`fixed inset-0 ${stageZ} overflow-y-auto bg-[#07070c]`}
+      className={`fixed inset-0 ${stageZ} overflow-hidden bg-[#07070c]`}
       role="dialog"
       aria-modal="true"
       aria-label="Director Creativo"

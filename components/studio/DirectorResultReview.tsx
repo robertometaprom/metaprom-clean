@@ -80,7 +80,7 @@ export default function DirectorResultReview({
             </div>
 
             <div className="relative z-[2] w-full min-w-0 flex-1 lg:-ml-4 lg:basis-[58%] lg:self-center">
-              <div className="director-work-surface relative mx-auto w-full max-w-md px-1 py-2 sm:px-2 lg:mx-0 lg:max-w-lg lg:px-0">
+              <div className="director-work-surface relative mx-auto w-full max-w-md px-1 py-2 sm:px-2 lg:mx-0 lg:max-w-2xl lg:px-0">
                 {director}
               </div>
             </div>

@@ -54,8 +54,11 @@ export default function DirectorStage({
     ? "sm:-translate-x-[200px]"
     : "";
   // Talking: clear StudioShell header + breath as one unit. Working: frozen.
+  const workSurfaceWidthClass = isTalking
+    ? "max-w-md lg:max-w-2xl"
+    : "max-w-md lg:max-w-lg";
   const stageRowClass = isTalking
-    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-1.5 px-4 pb-4 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:pb-10 ${libraryDesktopShiftClass}`
+    ? `relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col items-center gap-1.5 px-4 pb-4 ${DIRECTOR_TALKING_TOP_INSET_CLASS} sm:gap-3 sm:px-8 sm:pb-8 lg:flex-row lg:items-stretch lg:justify-center lg:gap-0 lg:px-6 lg:pb-10 ${libraryDesktopShiftClass}`
     : `relative mx-auto flex min-h-[min(78vh,44rem)] w-full max-w-6xl flex-col items-center gap-2 px-4 py-6 sm:min-h-[min(82vh,48rem)] sm:gap-3 sm:px-8 sm:py-8 lg:min-h-[min(86vh,52rem)] lg:flex-row lg:items-center lg:justify-center lg:gap-0 lg:px-6 lg:py-10 ${libraryDesktopShiftClass}`;
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +97,13 @@ export default function DirectorStage({
 
       <div className={stageRowClass}>
         {/* Director — large, composited, no image frame */}
-        <div className="relative flex w-full max-w-[22rem] shrink-0 justify-center sm:max-w-[26rem] lg:max-w-[32rem] lg:basis-[48%] lg:justify-end">
+        <div
+          className={`relative flex w-full shrink-0 justify-center ${
+            isTalking
+              ? "max-w-[20rem] sm:max-w-[22rem] lg:max-w-[26rem] lg:basis-[42%] lg:justify-end"
+              : "max-w-[22rem] sm:max-w-[26rem] lg:max-w-[32rem] lg:basis-[48%] lg:justify-end"
+          }`}
+        >
           <div className="relative director-artwork-breath w-full">
             <div
               aria-hidden="true"
@@ -119,9 +128,21 @@ export default function DirectorStage({
         </div>
 
         {/* Work / progress surface — close to Director face / upper torso */}
-        <div className="relative z-[2] w-full min-w-0 flex-1 lg:-ml-6 lg:basis-[52%] lg:self-center lg:pb-10 lg:pl-0">
-          <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-lg">
-            <div className="director-work-surface relative px-1 py-1.5 sm:px-2 sm:py-3 lg:px-0 lg:py-2">
+        <div
+          className={`relative z-[2] w-full min-w-0 flex-1 lg:-ml-6 lg:pl-0 ${
+            isTalking
+              ? "lg:basis-[58%] lg:self-stretch lg:pb-6"
+              : "lg:basis-[52%] lg:self-center lg:pb-10"
+          }`}
+        >
+          <div
+            className={`relative mx-auto flex h-full w-full flex-col lg:mx-0 ${workSurfaceWidthClass}`}
+          >
+            <div
+              className={`director-work-surface relative flex min-h-0 flex-1 flex-col px-1 py-1.5 sm:px-2 sm:py-3 lg:px-0 ${
+                isTalking ? "lg:py-1" : "lg:py-2"
+              }`}
+            >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={mode}
@@ -129,7 +150,7 @@ export default function DirectorStage({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="relative"
+                  className={isTalking ? "relative flex min-h-0 flex-1 flex-col" : "relative"}
                 >
                   {children}
                 </motion.div>

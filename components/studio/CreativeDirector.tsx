@@ -2690,24 +2690,6 @@ export default function CreativeDirector({
               longWait={premiumProgress.longWait}
             />
           </DirectorStage>
-          <div className="mx-auto max-w-2xl space-y-4 px-6">
-            <Checkout
-              purchaseId={checkoutAssetId}
-              price={HD_COMMERCIAL_PRICE}
-              currency="MXN"
-              provider={checkoutProvider}
-              previewVideoUrl={videoUrl}
-              error={null}
-              onSuccess={handleCheckoutSuccess}
-              onCancel={() => setPhase("preview")}
-            />
-            {!checkoutAssetId && showRegistrationInvite && (
-              <GoogleSignInButton
-                redirectTo={authRedirectToRef.current}
-                label="Crear cuenta gratuita para continuar"
-              />
-            )}
-          </div>
         </motion.div>
       ) : (
         <div className="mx-auto max-w-2xl bg-[#ececec] px-6 pb-36 pt-8">

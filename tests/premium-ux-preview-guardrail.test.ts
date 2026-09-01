@@ -35,6 +35,36 @@ test("the existing Premium state machine and Director progress stage are reused"
   assert.match(director, /premiumPhaseActive/);
 });
 
+test("Preview and Checkout Premium CTAs use production-oriented copy", () => {
+  const reveal = readRepo("components/studio/CinematicReveal.tsx");
+  const checkout = readRepo("components/checkout/Checkout.tsx");
+
+  assert.match(reveal, /Produce tu comercial completo/);
+  assert.doesNotMatch(reveal, /Desbloquear comercial completo/);
+  assert.match(checkout, /Produce tu comercial completo/);
+  assert.doesNotMatch(checkout, /Desbloquea el comercial completo/);
+});
+
+test("premium production phase hides checkout payment surface", () => {
+  const director = readRepo("components/studio/CreativeDirector.tsx");
+  const premiumStageMatch = director.match(
+    /key="premium-director-stage"[\s\S]*?<\/motion\.div>\s*\) : \(/,
+  );
+
+  assert.ok(premiumStageMatch, "premium-director-stage block should exist");
+  assert.doesNotMatch(premiumStageMatch[0], /<Checkout/);
+  assert.match(director, /directorStageActive =[\s\S]*premiumPhaseActive/);
+  assert.match(director, /setDirectorPanelOpen\(false\)/);
+});
+
+test("premium completion still transitions to existing ready behavior", () => {
+  const director = readRepo("components/studio/CreativeDirector.tsx");
+
+  assert.match(director, /setPhase\(result\.premiumVideoUrl \? "ready" : "processing_premium"\)/);
+  assert.match(director, /phase === "ready" && videoUrl/);
+  assert.match(director, /setPremiumProgressComplete\(true\)/);
+});
+
 test("handoff is one-shot and does not introduce duplicate checkout or generation", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
   const biblioteca = readRepo("components/biblioteca/Biblioteca.tsx");

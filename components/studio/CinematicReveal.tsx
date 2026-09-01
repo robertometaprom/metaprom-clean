@@ -211,7 +211,7 @@ export default function CinematicReveal({
         onClick={onUnlock}
         className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-4 text-base font-semibold text-white shadow-lg shadow-violet-900/50 transition hover:from-violet-600 hover:to-purple-700 active:scale-[0.98]"
       >
-        Desbloquear comercial completo
+        Produce tu comercial completo
       </button>
       <p className="text-2xl font-bold tracking-tight text-violet-300">
         {formatPriceMxn(priceMxn, "es")}

@@ -150,7 +150,7 @@ export default function Checkout({
             disabled={isLoading}
             className="w-full rounded-2xl bg-neutral-900 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isLoading ? "Procesando..." : "Desbloquea el comercial completo"}
+            {isLoading ? "Procesando..." : "Produce tu comercial completo"}
           </button>
           <p className="text-center text-xs text-neutral-400">
             Pago procesado por {provider.label}

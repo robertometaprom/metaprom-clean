@@ -47,6 +47,10 @@ import {
   getDirectorSessionLocale,
   isDirectorSessionLimitReached,
 } from "@/lib/studio/director-session";
+import {
+  resolveCreativeDirectorApiPath,
+  validateDirectorV2DryRunProposal,
+} from "@/lib/studio/director-v2-dry-run";
 
 type PanelMessage = {
   id: string;
@@ -93,6 +97,8 @@ export type CreativeDirectorPanelProps = {
   accountActions?: ReactNode;
   /** When true, desktop Director stage shifts left to clear the Biblioteca panel. */
   libraryOpen?: boolean;
+  /** Test-only: route Director traffic to V2 API and block generation handoff. */
+  directorV2DryRun?: boolean;
 };
 
 function createMessageId(): string {
@@ -106,11 +112,14 @@ function toConversationHistory(messages: PanelMessage[]): ConversationMessage[] 
   }));
 }
 
-async function requestCreativeDirector(input: {
-  customerMessage: string;
-  projectContext: ProjectContext;
-}): Promise<CreativeDirectorResponse> {
-  const response = await fetch("/api/creative-director", {
+async function requestCreativeDirector(
+  input: {
+    customerMessage: string;
+    projectContext: ProjectContext;
+  },
+  apiPath: string,
+): Promise<CreativeDirectorResponse> {
+  const response = await fetch(apiPath, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -172,6 +181,7 @@ export default function CreativeDirectorPanel({
   photoActions = null,
   accountActions = null,
   libraryOpen = false,
+  directorV2DryRun = false,
 }: CreativeDirectorPanelProps) {
   const stageZ = stackLayer === "elevated" ? "z-[120]" : "z-50";
   const isEmbedded = presentation === "embedded";
@@ -327,11 +337,21 @@ export default function CreativeDirectorPanel({
     (proposal: CommercialProposal, narrative: string) => {
       const trimmed = narrative.trim();
       if (!trimmed) return;
+
+      if (directorV2DryRun) {
+        const validation = validateDirectorV2DryRunProposal({
+          ...proposal,
+          narrative: trimmed,
+        });
+        appendDirectorMessage(validation.message);
+        return;
+      }
+
       // Handoff only — parent transitions Studio phase to intent; never navigate.
       onUseProposal({ ...proposal, narrative: trimmed });
       onClose();
     },
-    [onClose, onUseProposal],
+    [appendDirectorMessage, directorV2DryRun, onClose, onUseProposal],
   );
 
   const handleSend = useCallback(
@@ -375,10 +395,13 @@ export default function CreativeDirectorPanel({
       setEditingProposalId(null);
 
       try {
-        const response = await requestCreativeDirector({
-          customerMessage: trimmed,
-          projectContext: buildRequestContext(messages),
-        });
+        const response = await requestCreativeDirector(
+          {
+            customerMessage: trimmed,
+            projectContext: buildRequestContext(messages),
+          },
+          resolveCreativeDirectorApiPath(directorV2DryRun),
+        );
 
         const priorProposal = findLatestCompletedProposal(messages);
         const resolved = resolveDirectorRevisionResponse({
@@ -447,6 +470,7 @@ export default function CreativeDirectorPanel({
       composerValue,
       editedProposalText,
       editingProposalId,
+      directorV2DryRun,
       handleUseProposal,
       isLoading,
       messages,
@@ -515,6 +539,19 @@ export default function CreativeDirectorPanel({
               : `flex max-h-[min(72vh,36rem)] flex-col text-left sm:max-h-[min(76vh,40rem)] ${libraryInteractionShiftClass}`
           }
         >
+          {directorV2DryRun ? (
+            <div
+              className="mb-3 rounded-xl border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-xs text-amber-100"
+              role="status"
+              data-testid="director-v2-dry-run-indicator"
+            >
+              <p className="font-semibold uppercase tracking-[0.14em]">
+                DIRECTOR V2 — DRY RUN
+              </p>
+              <p className="mt-0.5 text-amber-100/85">Generación desactivada</p>
+            </div>
+          ) : null}
+
           <header className="mb-2 flex items-start justify-between gap-3 md:mb-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-300/90">

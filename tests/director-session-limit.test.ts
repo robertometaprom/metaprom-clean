@@ -150,7 +150,7 @@ test("40 user interactions do not produce the generic Director continuation erro
   assert.match(panel, /requestCreativeDirector/);
   assert.ok(
     panel.indexOf('if (decision.type === "session_limit")') <
-      panel.indexOf("requestCreativeDirector({"),
+      panel.indexOf("await requestCreativeDirector("),
   );
 });
 

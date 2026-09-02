@@ -67,7 +67,7 @@ export async function saveStudioDraft(input: {
   originalFile?: File | null;
   enhancedDataUrl?: string | null;
   teaserVideoBlob?: Blob | null;
-}): Promise<{ resumeToken: string; shareSlug: string | null }> {
+}): Promise<{ resumeToken: string }> {
   const formData = new FormData();
   formData.append("payload", JSON.stringify(input.payload));
 
@@ -95,17 +95,14 @@ export async function saveStudioDraft(input: {
   });
 
   const body = (await response.json()) as
-    | { resumeToken?: string; shareSlug?: string | null; error?: string };
+    | { resumeToken?: string; error?: string };
 
   if (!response.ok || !body.resumeToken) {
     throw new Error(body.error || "No pudimos guardar tu borrador.");
   }
 
   storeResumeToken(body.resumeToken);
-  return {
-    resumeToken: body.resumeToken,
-    shareSlug: body.shareSlug ?? null,
-  };
+  return { resumeToken: body.resumeToken };
 }
 
 export async function fetchStudioDraft(

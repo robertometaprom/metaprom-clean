@@ -17,10 +17,6 @@ export {
   createUniqueShareSlug,
   isValidShareSlug,
   isShareSlugUniqueViolation,
-  isShareSlugTakenInAssets,
-  isShareSlugTakenInStudioDrafts,
-  isShareSlugTakenAcrossTables,
-  reserveShareSlugAcrossTables,
   SHARE_SLUG_LENGTH,
 } from "./share-slug";
 export {

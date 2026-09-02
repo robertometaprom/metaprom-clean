@@ -111,3 +111,38 @@ test("authenticated Preview does not show anonymous save invitation wiring", () 
     "save invite must not be always-on",
   );
 });
+
+test("mobile Preview layout keeps video prominent with save CTA directly below", () => {
+  const reveal = readRepo("components/studio/CinematicReveal.tsx");
+  const review = readRepo("components/studio/DirectorResultReview.tsx");
+  const invite = readRepo("components/studio/AnonymousPreviewSaveInvite.tsx");
+
+  assert.match(reveal, /preview-offer-media/);
+  assert.match(reveal, /max-h-\[min\(42vh,72vw\)\]/);
+  assert.match(reveal, /pointer-events-none h-full w-full object-contain/);
+  assert.match(reveal, /overflow-y-auto overscroll-y-contain/);
+  assert.match(reveal, /if \(stage === "offer"\)[\s\S]*document\.body\.style\.overflow = ""/);
+  assert.match(reveal, /if \(reviewMode\) return false;/);
+  assert.doesNotMatch(invite, /Compartir|ShareCommercialActions|share_slug/);
+
+  assert.match(review, /preview-media-footer/);
+  assert.match(
+    review,
+    /\{media\}[\s\S]*preview-media-footer[\s\S]*\{mediaFooter\}/,
+    "save invitation must render directly under preview media on mobile",
+  );
+  assert.match(review, /justify-start lg:flex-1 lg:basis-\[46%\] lg:justify-center/);
+  assert.match(review, /min-h-0[\s\S]*lg:min-h-\[100dvh\]/);
+  assert.match(review, /lg:flex-1 lg:flex-row/);
+  assert.doesNotMatch(
+    review,
+    /flex-1 flex-col justify-center lg:basis-\[46%\]/,
+    "mobile preview column must not vertically center and push CTAs below fold",
+  );
+
+  assert.match(reveal, /Produce tu comercial completo/);
+  assert.match(
+    readRepo("components/studio/DirectorReviewInvite.tsx"),
+    /DIRECTOR_REVIEW_ADJUST_LABEL/,
+  );
+});

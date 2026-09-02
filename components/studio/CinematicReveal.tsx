@@ -79,7 +79,18 @@ export default function CinematicReveal({
   }, [onStageChange, stage]);
 
   useEffect(() => {
+    if (stage === "offer") {
+      document.body.style.overflow = "";
+      return;
+    }
+
     document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [stage]);
+
+  useEffect(() => {
     return () => {
       document.body.style.overflow = "";
       if (document.fullscreenElement) {
@@ -103,8 +114,9 @@ export default function CinematicReveal({
   }, [stage, initialStage]);
 
   const enterFullscreen = useCallback(async () => {
+    if (reviewMode) return false;
     return requestCinematicFullscreen(containerRef.current, videoRef.current);
-  }, []);
+  }, [reviewMode]);
 
   const startPlayback = useCallback(async () => {
     if (playbackInitiatedRef.current) return;
@@ -374,11 +386,14 @@ export default function CinematicReveal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: EASE }}
-            className="pointer-events-auto absolute inset-0 z-10 overflow-y-auto"
+            className="pointer-events-auto absolute inset-0 z-10 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
           >
             <DirectorResultReview
               media={
-                <div className="relative aspect-[9/16] max-h-[42vh] w-full bg-neutral-900 sm:max-h-[48vh] lg:max-h-[min(62vh,36rem)]">
+                <div
+                  className="relative mx-auto aspect-[9/16] w-full max-h-[min(42vh,72vw)] bg-neutral-900 sm:max-h-[48vh] lg:max-h-[min(62vh,36rem)]"
+                  data-testid="preview-offer-media"
+                >
                   <video
                     src={videoUrl}
                     muted
@@ -389,7 +404,7 @@ export default function CinematicReveal({
                     disablePictureInPicture
                     draggable={false}
                     onContextMenu={(event) => event.preventDefault()}
-                    className="h-full w-full object-cover"
+                    className="pointer-events-none h-full w-full object-contain"
                   />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="rounded-lg bg-black/55 px-3 py-1.5 text-[10px] font-bold tracking-[0.2em] text-white/75 backdrop-blur-sm">

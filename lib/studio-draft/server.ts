@@ -16,6 +16,12 @@ import {
   type StudioDraftResponse,
 } from "@/lib/studio-draft/types";
 import {
+  createUniqueShareSlug,
+  isShareSlugTakenAcrossTables,
+  isShareSlugUniqueViolation,
+  reserveShareSlugAcrossTables,
+} from "@/lib/preview/share-slug";
+import {
   assertValidResumeToken,
   isValidResumeToken,
   sanitizeConversationHistory,
@@ -54,19 +60,33 @@ async function uploadDraftObject(input: {
   return path;
 }
 
-async function createSignedDraftUrl(path: string | null): Promise<string | null> {
+async function createSignedDraftUrl(
+  path: string | null,
+  ttlSeconds = DRAFT_SIGNED_URL_TTL_SECONDS,
+): Promise<string | null> {
   if (!path) return null;
 
   const admin = createAdminClient();
   const { data, error } = await admin.storage
     .from(STUDIO_DRAFTS_BUCKET)
-    .createSignedUrl(path, DRAFT_SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(path, ttlSeconds);
 
   if (error || !data?.signedUrl) {
     throw error ?? new Error("Failed to create signed draft URL.");
   }
 
   return data.signedUrl;
+}
+
+export async function createSignedStudioDraftUrlServer(
+  path: string,
+  ttlSeconds: number,
+): Promise<string> {
+  const signedUrl = await createSignedDraftUrl(path, ttlSeconds);
+  if (!signedUrl) {
+    throw new Error("Failed to create signed draft URL.");
+  }
+  return signedUrl;
 }
 
 async function downloadDraftObject(path: string): Promise<Buffer> {
@@ -120,7 +140,7 @@ export async function saveStudioDraftServer(input: {
   enhancedBuffer?: Buffer | null;
   enhancedContentType?: string;
   teaserBuffer?: Buffer | null;
-}): Promise<{ resumeToken: string }> {
+}): Promise<{ resumeToken: string; shareSlug: string | null }> {
   const admin = createAdminClient();
   const resumeToken = input.payload.resumeToken?.trim()
     ? assertValidResumeToken(input.payload.resumeToken, "resumeToken")
@@ -182,6 +202,21 @@ export async function saveStudioDraftServer(input: {
     });
   }
 
+  let shareSlug = existing?.share_slug ?? null;
+
+  if (teaserPath && !shareSlug) {
+    const adminForSlug = createAdminClient();
+    shareSlug = await createUniqueShareSlug(
+      async (candidate) => {
+        await reserveShareSlugAcrossTables(adminForSlug, candidate);
+      },
+      {
+        isTaken: (candidate) =>
+          isShareSlugTakenAcrossTables(adminForSlug, candidate),
+      },
+    );
+  }
+
   const row = {
     resume_token: resumeToken,
     phase: input.payload.phase,
@@ -198,6 +233,7 @@ export async function saveStudioDraftServer(input: {
     original_content_type: originalContentType,
     enhanced_path: enhancedPath,
     teaser_path: teaserPath,
+    share_slug: shareSlug,
     conversation_history: conversationHistory,
     pending_action: input.payload.pendingAction ?? null,
     updated_at: now,
@@ -209,13 +245,52 @@ export async function saveStudioDraftServer(input: {
       .update(row)
       .eq("resume_token", resumeToken);
 
-    if (error) throw error;
+    if (error) {
+      if (shareSlug && !existing.share_slug && isShareSlugUniqueViolation(error)) {
+        const retrySlug = await createUniqueShareSlug(
+          async (candidate) => {
+            await reserveShareSlugAcrossTables(admin, candidate);
+          },
+          {
+            isTaken: (candidate) =>
+              isShareSlugTakenAcrossTables(admin, candidate),
+          },
+        );
+        const { error: retryError } = await admin
+          .from("studio_drafts")
+          .update({ ...row, share_slug: retrySlug })
+          .eq("resume_token", resumeToken);
+        if (retryError) throw retryError;
+        shareSlug = retrySlug;
+      } else {
+        throw error;
+      }
+    }
   } else {
     const { error } = await admin.from("studio_drafts").insert(row);
-    if (error) throw error;
+    if (error) {
+      if (shareSlug && isShareSlugUniqueViolation(error)) {
+        const retrySlug = await createUniqueShareSlug(
+          async (candidate) => {
+            await reserveShareSlugAcrossTables(admin, candidate);
+          },
+          {
+            isTaken: (candidate) =>
+              isShareSlugTakenAcrossTables(admin, candidate),
+          },
+        );
+        const { error: retryError } = await admin
+          .from("studio_drafts")
+          .insert({ ...row, share_slug: retrySlug });
+        if (retryError) throw retryError;
+        shareSlug = retrySlug;
+      } else {
+        throw error;
+      }
+    }
   }
 
-  return { resumeToken };
+  return { resumeToken, shareSlug };
 }
 
 async function getStudioDraftRow(
@@ -375,6 +450,7 @@ export async function claimStudioDraftServer(
       // Commercial unchanged (never bills advertising). Advertising Image credit
       // is consumed at successful generation persist, not at claim/Finalizar.
       billAdvertisingAsset: false,
+      preservedShareSlug: draft.share_slug,
     });
 
     await deleteDraftObjects([

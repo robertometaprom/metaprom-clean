@@ -27,6 +27,8 @@ export type PublicPreviewPageResult =
   | { kind: "not_found" }
   | { kind: "unavailable" };
 
+export type PublicPreviewStorageSource = "library" | "studio_drafts";
+
 /**
  * Server-side resolution result. Never expose via the public API.
  */
@@ -42,6 +44,8 @@ export type ResolvedPublicCommercial = {
   visibility: PreviewVisibility;
   createdAt: string;
   updatedAt: string;
+  /** Server-only hint for signing the correct private bucket. */
+  storageSource?: PublicPreviewStorageSource;
 };
 
 export function isPubliclyAccessiblePreview(

@@ -19,7 +19,14 @@ import {
 import {
   uploadLibraryObjectServer,
 } from "@/lib/library-storage-server";
-import { generateShareSlug, isShareSlugUniqueViolation } from "@/lib/preview/share-slug";
+import {
+  createUniqueShareSlug,
+  isShareSlugTakenInAssets,
+  isShareSlugTakenAcrossTables,
+  isShareSlugUniqueViolation,
+  isValidShareSlug,
+  reserveShareSlugAcrossTables,
+} from "@/lib/preview/share-slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Mode } from "@/lib/prompts";
@@ -96,6 +103,8 @@ export async function persistStudioCreationServer(input: {
    * When false, skip (Commercial). When omitted, inferred from teaser presence.
    */
   billAdvertisingAsset?: boolean;
+  /** When claiming an anonymous draft, preserve its public share slug on the asset. */
+  preservedShareSlug?: string | null;
 }): Promise<PersistStudioCreationResult> {
   const billAdvertising = shouldBillAdvertisingAsset({
     billAdvertisingAsset: input.billAdvertisingAsset,
@@ -224,7 +233,28 @@ export async function persistStudioCreationServer(input: {
 
   // Commercial (teaser) and Advertising Image (enhanced-only) both get a
   // public share_slug via existing assets.share_slug / visibility columns.
-  let shareSlug = generateShareSlug();
+  const admin = createAdminClient();
+  let shareSlug: string | null = null;
+
+  if (
+    input.preservedShareSlug &&
+    isValidShareSlug(input.preservedShareSlug) &&
+    !(await isShareSlugTakenInAssets(admin, input.preservedShareSlug))
+  ) {
+    shareSlug = input.preservedShareSlug;
+  }
+
+  if (!shareSlug) {
+    shareSlug = await createUniqueShareSlug(
+      async (candidate) => {
+        await reserveShareSlugAcrossTables(admin, candidate);
+      },
+      {
+        isTaken: (candidate) => isShareSlugTakenAcrossTables(admin, candidate),
+      },
+    );
+  }
+
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const updatesWithShare = {
       ...assetUpdates,
@@ -289,7 +319,14 @@ export async function persistStudioCreationServer(input: {
       };
     }
 
-    shareSlug = generateShareSlug();
+    shareSlug = await createUniqueShareSlug(
+      async (candidate) => {
+        await reserveShareSlugAcrossTables(admin, candidate);
+      },
+      {
+        isTaken: (candidate) => isShareSlugTakenAcrossTables(admin, candidate),
+      },
+    );
   }
 
   throw new Error("Unable to assign a unique share slug.");

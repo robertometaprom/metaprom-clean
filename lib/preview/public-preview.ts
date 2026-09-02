@@ -16,11 +16,15 @@ import {
   type PublicPreviewPageResult,
   type ResolvedPublicCommercial,
 } from "@/lib/preview/types";
+import { createSignedStudioDraftUrlServer } from "@/lib/studio-draft/server";
 
-const RESOLVED_COMMERCIAL_SELECT =
+const RESOLVED_ASSET_SELECT =
   "share_slug, teaser_video_path, image_path, ai_instructions, industry, visibility, created_at, updated_at";
 
-type ResolvedCommercialRow = {
+const RESOLVED_DRAFT_SELECT =
+  "share_slug, teaser_path, enhanced_path, customer_intent, industry, created_at, updated_at";
+
+type ResolvedAssetRow = {
   share_slug: string;
   teaser_video_path: string | null;
   image_path: string | null;
@@ -31,7 +35,17 @@ type ResolvedCommercialRow = {
   updated_at: string;
 };
 
-function resolvePreviewKind(row: ResolvedCommercialRow): PublicPreviewKind | null {
+type ResolvedDraftRow = {
+  share_slug: string;
+  teaser_path: string;
+  enhanced_path: string | null;
+  customer_intent: string | null;
+  industry: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function resolvePreviewKind(row: ResolvedAssetRow): PublicPreviewKind | null {
   if (row.teaser_video_path) {
     return "commercial";
   }
@@ -43,8 +57,8 @@ function resolvePreviewKind(row: ResolvedCommercialRow): PublicPreviewKind | nul
   return null;
 }
 
-function mapResolvedCommercialRow(
-  row: ResolvedCommercialRow,
+function mapResolvedAssetRow(
+  row: ResolvedAssetRow,
 ): ResolvedPublicCommercial | null {
   const kind = resolvePreviewKind(row);
   if (!kind) {
@@ -62,7 +76,41 @@ function mapResolvedCommercialRow(
     visibility: row.visibility,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    storageSource: "library",
   };
+}
+
+function mapResolvedDraftRow(
+  row: ResolvedDraftRow,
+): ResolvedPublicCommercial | null {
+  if (!row.teaser_path) {
+    return null;
+  }
+
+  return {
+    shareSlug: row.share_slug,
+    kind: "commercial",
+    teaserVideoPath: row.teaser_path,
+    posterImagePath: row.enhanced_path,
+    originalPhotoPath: null,
+    customerIntent: row.customer_intent,
+    industry: row.industry,
+    visibility: "public",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    storageSource: "studio_drafts",
+  };
+}
+
+async function createSignedPreviewUrl(
+  resolved: ResolvedPublicCommercial,
+  path: string,
+): Promise<string> {
+  if (resolved.storageSource === "studio_drafts") {
+    return createSignedStudioDraftUrlServer(path, PUBLIC_PREVIEW_STREAM_TTL_SECONDS);
+  }
+
+  return createSignedLibraryUrlServer(path, PUBLIC_PREVIEW_STREAM_TTL_SECONDS);
 }
 
 /**
@@ -75,10 +123,61 @@ export async function resolvePublicCommercial(
   return getPreviewBySlug(slug);
 }
 
+async function getPreviewAssetBySlug(
+  slug: string,
+): Promise<ResolvedPublicCommercial | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("assets")
+    .select(RESOLVED_ASSET_SELECT)
+    .eq("share_slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPreviewAssetBySlug error", { slug, error });
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapResolvedAssetRow(data as ResolvedAssetRow);
+}
+
+async function getPreviewDraftBySlug(
+  slug: string,
+): Promise<ResolvedPublicCommercial | null> {
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("studio_drafts")
+    .select(RESOLVED_DRAFT_SELECT)
+    .eq("share_slug", slug)
+    .is("claimed_at", null)
+    .gt("expires_at", now)
+    .not("teaser_path", "is", null)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPreviewDraftBySlug error", { slug, error });
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapResolvedDraftRow(data as ResolvedDraftRow);
+}
+
 /**
  * Look up a preview asset by its immutable public slug.
  * Supports Commercial (teaser) and Advertising Image (enhanced image only).
- * Never selects Premium HD, original photos, or owner identity.
+ * Falls back to unclaimed anonymous studio drafts with teaser media.
+ * Never selects Premium HD, original photos, owner identity, or resume tokens.
  */
 export async function getPreviewBySlug(
   slug: string,
@@ -87,24 +186,12 @@ export async function getPreviewBySlug(
     return null;
   }
 
-  const supabase = createAdminClient();
-
-  const { data, error } = await supabase
-    .from("assets")
-    .select(RESOLVED_COMMERCIAL_SELECT)
-    .eq("share_slug", slug)
-    .maybeSingle();
-
-  if (error) {
-    console.error("getPreviewBySlug error", { slug, error });
-    throw error;
+  const asset = await getPreviewAssetBySlug(slug);
+  if (asset) {
+    return asset;
   }
 
-  if (!data) {
-    return null;
-  }
-
-  return mapResolvedCommercialRow(data as ResolvedCommercialRow);
+  return getPreviewDraftBySlug(slug);
 }
 
 /**
@@ -189,10 +276,7 @@ export async function createPublicPreviewStreamUrl(
     return null;
   }
 
-  return createSignedLibraryUrlServer(
-    resolved.teaserVideoPath,
-    PUBLIC_PREVIEW_STREAM_TTL_SECONDS,
-  );
+  return createSignedPreviewUrl(resolved, resolved.teaserVideoPath);
 }
 
 /**
@@ -212,8 +296,5 @@ export async function createPublicPreviewImageUrl(
     return null;
   }
 
-  return createSignedLibraryUrlServer(
-    resolved.posterImagePath,
-    PUBLIC_PREVIEW_STREAM_TTL_SECONDS,
-  );
+  return createSignedPreviewUrl(resolved, resolved.posterImagePath);
 }

@@ -32,6 +32,7 @@ export type StudioDraftRecord = {
   original_content_type: string | null;
   enhanced_path: string | null;
   teaser_path: string | null;
+  share_slug: string | null;
   conversation_history: ConversationMessage[];
   pending_action: StudioDraftPendingAction | null;
   claimed_by: string | null;

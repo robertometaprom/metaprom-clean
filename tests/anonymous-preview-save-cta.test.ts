@@ -76,7 +76,7 @@ test("anonymous Preview save CTA reuses existing auth flow and preserves resume 
   assert.match(reveal, /onAnonymousSave/);
 });
 
-test("anonymous Preview save invite does not add Share or trigger second generation", () => {
+test("anonymous Preview save invite does not duplicate Share in invite component", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
   const reveal = readRepo("components/studio/CinematicReveal.tsx");
   const invite = readRepo("components/studio/AnonymousPreviewSaveInvite.tsx");
@@ -85,6 +85,8 @@ test("anonymous Preview save invite does not add Share or trigger second generat
   assert.doesNotMatch(invite, /ShareCommercialActions/);
   assert.doesNotMatch(invite, /WhatsApp/);
   assert.doesNotMatch(invite, /createCommercialAssets/);
+  assert.match(reveal, /ShareCommercialActions/);
+  assert.match(reveal, /variant="whatsapp"/);
   assert.match(reveal, /Produce tu comercial completo/);
   assert.match(
     readRepo("components/studio/DirectorReviewInvite.tsx"),
@@ -112,7 +114,7 @@ test("authenticated Preview does not show anonymous save invitation wiring", () 
   );
 });
 
-test("mobile Preview layout keeps video prominent with save CTA directly below", () => {
+test("mobile Preview layout keeps video prominent with Share then save CTA directly below", () => {
   const reveal = readRepo("components/studio/CinematicReveal.tsx");
   const review = readRepo("components/studio/DirectorResultReview.tsx");
   const invite = readRepo("components/studio/AnonymousPreviewSaveInvite.tsx");
@@ -124,6 +126,11 @@ test("mobile Preview layout keeps video prominent with save CTA directly below",
   assert.match(reveal, /if \(stage === "offer"\)[\s\S]*document\.body\.style\.overflow = ""/);
   assert.match(reveal, /if \(reviewMode\) return false;/);
   assert.doesNotMatch(invite, /Compartir|ShareCommercialActions|share_slug/);
+  assert.match(
+    reveal,
+    /ShareCommercialActions[\s\S]*anonymousSaveInviteBlock/,
+    "WhatsApp Share must appear directly below preview and above Save",
+  );
 
   assert.match(review, /preview-media-footer/);
   assert.match(

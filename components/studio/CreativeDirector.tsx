@@ -741,6 +741,9 @@ export default function CreativeDirector({
       });
 
       setResumeToken(result.resumeToken);
+      if (result.shareSlug) {
+        setShareSlug(result.shareSlug);
+      }
       authRedirectToRef.current = buildAuthRedirectUrl(result.resumeToken);
       return result.resumeToken;
     },
@@ -3519,9 +3522,11 @@ export default function CreativeDirector({
                   onAdjust={handleReviewAdjust}
                   onContinue={handleReviewContinue}
                   conversationHostRef={reviewDirectorHostRef}
-                  shareSlug={shareSlug}
+                  shareSlug={isAuthenticated ? shareSlug : null}
                   publicPreviewUrl={
-                    shareSlug ? buildPublicPreviewUrl(shareSlug) : null
+                    isAuthenticated && shareSlug
+                      ? buildPublicPreviewUrl(shareSlug)
+                      : null
                   }
                 />
               }

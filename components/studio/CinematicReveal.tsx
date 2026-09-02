@@ -419,6 +419,13 @@ export default function CinematicReveal({
                   purchaseBlock
                 ) : (
                   <div className="space-y-4">
+                    {publicPreviewUrl && shareSlug ? (
+                      <ShareCommercialActions
+                        publicPreviewUrl={publicPreviewUrl}
+                        shareSlug={shareSlug}
+                        variant="whatsapp"
+                      />
+                    ) : null}
                     {anonymousSaveInviteBlock}
                     <p className="text-center text-xs text-white/40">
                       Vista previa gratuita · La versión HD es tu comercial final

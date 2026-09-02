@@ -127,6 +127,12 @@ import type { ConversationMessage } from "@/lib/creative-director/types";
 import { createClient } from "@/lib/supabase/client";
 import type { SerializablePanelMessage } from "@/components/studio/CreativeDirectorPanel";
 import { readDirectorV2ModeFromLocation } from "@/lib/studio/director-v2-dry-run";
+import {
+  isUx4aReviewMockRequest,
+  loadUx4aPreviewHandoffAssets,
+  UX4A_FIXTURE_VIDEO_URL,
+  UX4A_REVIEW_MOCK_SHARE_SLUG,
+} from "@/lib/studio/ux4a-preview-handoff-fixture";
 
 /** Commercial Multi-Photo remains out of scope for Batch V1. */
 const COMMERCIAL_BATCH_BLOCKED_MESSAGE =
@@ -169,24 +175,6 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** Intent prompt: grow with content; scroll only after a generous cap. */
 const INTENT_PROMPT_MAX_HEIGHT_PX = 384;
-
-/** Local visual-only REVIEW mock slug — not a persisted production share. */
-const UX4A_REVIEW_MOCK_SHARE_SLUG = "UX4AREVIEW2";
-const UX4A_REVIEW_MOCK_VIDEO_URL = "/showcase/coffee/commercial.mp4";
-
-/**
- * UX4A/UX4B local visual mock (?ux4aReview=1).
- * Local-safe only: development or localhost — never a public production shortcut.
- */
-function isUx4aReviewMockRequest(): boolean {
-  if (typeof window === "undefined") return false;
-  if (new URLSearchParams(window.location.search).get("ux4aReview") !== "1") {
-    return false;
-  }
-  if (process.env.NODE_ENV === "development") return true;
-  const host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1";
-}
 
 function describeRuntimeError(error: unknown): string {
   if (error instanceof Error) {
@@ -265,7 +253,7 @@ export default function CreativeDirector({
   const batchProjectIdRef = useRef<string | null>(null);
   const [premiumImage, setPremiumImage] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(() =>
-    isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_VIDEO_URL : null,
+    isUx4aReviewMockRequest() ? UX4A_FIXTURE_VIDEO_URL : null,
   );
   const [creationStep, setCreationStep] = useState<CreationStep>("image");
   const [creationMessage, setCreationMessage] = useState("");
@@ -280,7 +268,9 @@ export default function CreativeDirector({
   const [premiumProgressComplete, setPremiumProgressComplete] = useState(false);
   const [premiumProgressRunId, setPremiumProgressRunId] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>(() =>
+    isUx4aReviewMockRequest() ? "local-only" : "idle",
+  );
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [checkoutAssetId, setCheckoutAssetId] = useState<string | null>(null);
   const [shareSlug, setShareSlug] = useState<string | null>(() =>
@@ -344,7 +334,7 @@ export default function CreativeDirector({
   const reviewDirectorHostRef = useRef<HTMLDivElement | null>(null);
   const intentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const videoUrlRef = useRef<string | null>(
-    isUx4aReviewMockRequest() ? UX4A_REVIEW_MOCK_VIDEO_URL : null,
+    isUx4aReviewMockRequest() ? UX4A_FIXTURE_VIDEO_URL : null,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sourceFilesRef = useRef<File[]>([]);
@@ -386,6 +376,8 @@ export default function CreativeDirector({
     isUx4aReviewMockRequest() ? "commercial" : null,
   );
   const teaserVideoBlobStore = useRef<Blob | null>(null);
+  /** Local UX4A fixture asset hydration — awaited before handoff persist. */
+  const ux4aFixtureHydrationRef = useRef<Promise<void> | null>(null);
   const resumeRestoredRef = useRef(false);
   const resumeClaimCompletedRef = useRef(false);
   const resumeClaimInFlightRef = useRef(false);
@@ -639,8 +631,8 @@ export default function CreativeDirector({
     if (ux4aReviewMock) {
       setCreationMode("commercial");
       creationModeRef.current = "commercial";
-      setVideoUrl(UX4A_REVIEW_MOCK_VIDEO_URL);
-      videoUrlRef.current = UX4A_REVIEW_MOCK_VIDEO_URL;
+      setVideoUrl(UX4A_FIXTURE_VIDEO_URL);
+      videoUrlRef.current = UX4A_FIXTURE_VIDEO_URL;
       // Visual-only mock share slug for local REVIEW / WhatsApp QR inspection.
       // Not a persisted production share — QR encodes a local handoff URL only.
       setShareSlug(UX4A_REVIEW_MOCK_SHARE_SLUG);
@@ -649,6 +641,20 @@ export default function CreativeDirector({
       setDirectorReviewFocus("invite");
       setDirectorPanelOpen(false);
       setPhase("preview");
+      setAutoSaveStatus("local-only");
+      // Hydrate File / enhanced data URL / teaser Blob for real draft persistence.
+      // Does not call generation endpoints or consume credits.
+      ux4aFixtureHydrationRef.current = (async () => {
+        const assets = await loadUx4aPreviewHandoffAssets();
+        setPrimarySourceFile(assets.originalFile);
+        setPremiumImage(assets.enhancedDataUrl);
+        teaserVideoBlobStore.current = assets.teaserBlob;
+        setVideoUrl(assets.videoUrl);
+        videoUrlRef.current = assets.videoUrl;
+      })().catch((fixtureError) => {
+        console.error("UX4A preview handoff fixture hydration failed", fixtureError);
+        throw fixtureError;
+      });
       return;
     }
 
@@ -3500,9 +3506,12 @@ export default function CreativeDirector({
               showAnonymousSaveInvite={
                 !isAuthenticated && autoSaveStatus === "local-only"
               }
-              onAnonymousSave={() => void handleOpenLibrary()}
-              anonymousSaveAuthRedirect={studioAuthRedirect}
-              showAnonymousSaveSignIn={showRegistrationInvite}
+              onAnonymousPersistDraft={async () => {
+                if (ux4aFixtureHydrationRef.current) {
+                  await ux4aFixtureHydrationRef.current;
+                }
+                return persistAnonymousDraft("save");
+              }}
               initialStage={reviewVisualMock ? "offer" : "fade"}
               onUnlock={handleUnlock}
               onCreateNew={resetFlow}

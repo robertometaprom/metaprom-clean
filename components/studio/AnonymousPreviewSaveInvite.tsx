@@ -1,22 +1,18 @@
 "use client";
 
-import GoogleSignInButton from "@/components/GoogleSignInButton";
+import NewUserHandoff from "@/components/studio/NewUserHandoff";
 import {
   ANONYMOUS_PREVIEW_SAVE_BODY,
-  ANONYMOUS_PREVIEW_SAVE_CTA,
   ANONYMOUS_PREVIEW_SAVE_HEADLINE,
 } from "@/lib/studio/anonymous-preview-save";
 
 type AnonymousPreviewSaveInviteProps = {
-  onSave: () => void;
-  authRedirectTo: string;
-  showSignIn?: boolean;
+  /** Persist draft then NewUserHandoff initiates Google OAuth (single tap). */
+  persistDraft: () => Promise<string>;
 };
 
 export default function AnonymousPreviewSaveInvite({
-  onSave,
-  authRedirectTo,
-  showSignIn = false,
+  persistDraft,
 }: AnonymousPreviewSaveInviteProps) {
   return (
     <div
@@ -30,21 +26,7 @@ export default function AnonymousPreviewSaveInvite({
         {ANONYMOUS_PREVIEW_SAVE_BODY}
       </p>
       <div className="mt-4">
-        {showSignIn ? (
-          <GoogleSignInButton
-            redirectTo={authRedirectTo}
-            label="Continuar con Google"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={onSave}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:from-violet-600 hover:to-purple-700 active:scale-[0.98]"
-            data-testid="anonymous-preview-save-cta"
-          >
-            {ANONYMOUS_PREVIEW_SAVE_CTA}
-          </button>
-        )}
+        <NewUserHandoff persistDraft={persistDraft} />
       </div>
     </div>
   );

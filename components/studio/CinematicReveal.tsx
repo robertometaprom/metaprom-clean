@@ -35,9 +35,8 @@ type CinematicRevealProps = {
   reviewShowPurchase?: boolean;
   /** Anonymous Preview — invite save/register before Premium. */
   showAnonymousSaveInvite?: boolean;
-  onAnonymousSave?: () => void;
-  anonymousSaveAuthRedirect?: string;
-  showAnonymousSaveSignIn?: boolean;
+  /** Single-tap NewUserHandoff: persist draft → Google OAuth. */
+  onAnonymousPersistDraft?: () => Promise<string>;
   onStageChange?: (stage: RevealStage) => void;
 };
 
@@ -61,9 +60,7 @@ export default function CinematicReveal({
   reviewDirector = null,
   reviewShowPurchase = false,
   showAnonymousSaveInvite = false,
-  onAnonymousSave,
-  anonymousSaveAuthRedirect = "/studio",
-  showAnonymousSaveSignIn = false,
+  onAnonymousPersistDraft,
   onStageChange,
 }: CinematicRevealProps) {
   const [stage, setStage] = useState<RevealStage>(initialStage);
@@ -228,12 +225,8 @@ export default function CinematicReveal({
     !showAnonymousSaveInvite;
 
   const anonymousSaveInviteBlock =
-    showAnonymousSaveInvite && onAnonymousSave ? (
-      <AnonymousPreviewSaveInvite
-        onSave={onAnonymousSave}
-        authRedirectTo={anonymousSaveAuthRedirect}
-        showSignIn={showAnonymousSaveSignIn}
-      />
+    showAnonymousSaveInvite && onAnonymousPersistDraft ? (
+      <AnonymousPreviewSaveInvite persistDraft={onAnonymousPersistDraft} />
     ) : null;
 
   const purchaseBlock = (

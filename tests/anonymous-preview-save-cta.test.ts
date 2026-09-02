@@ -13,6 +13,7 @@ import {
   ANONYMOUS_PREVIEW_SAVE_CTA,
   ANONYMOUS_PREVIEW_SAVE_HEADLINE,
 } from "../lib/studio/anonymous-preview-save.ts";
+import { NEW_USER_HANDOFF_CTA } from "../lib/studio/new-user-handoff.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -31,6 +32,7 @@ test("anonymous Preview save copy communicates preserving the current creation",
   );
   assert.match(ANONYMOUS_PREVIEW_SAVE_BODY, /Biblioteca/i);
   assert.equal(ANONYMOUS_PREVIEW_SAVE_CTA, "Guardar mi comercial");
+  assert.equal(NEW_USER_HANDOFF_CTA, ANONYMOUS_PREVIEW_SAVE_CTA);
 });
 
 test("anonymous Preview renders a visible save invitation in review mode", () => {
@@ -40,7 +42,7 @@ test("anonymous Preview renders a visible save invitation in review mode", () =>
   assert.match(invite, /anonymous-preview-save-invite/);
   assert.match(invite, /ANONYMOUS_PREVIEW_SAVE_HEADLINE/);
   assert.match(invite, /ANONYMOUS_PREVIEW_SAVE_BODY/);
-  assert.match(invite, /ANONYMOUS_PREVIEW_SAVE_CTA/);
+  assert.match(invite, /NewUserHandoff/);
   assert.match(reveal, /AnonymousPreviewSaveInvite/);
   assert.match(reveal, /showAnonymousSaveInvite/);
   assert.match(
@@ -50,20 +52,19 @@ test("anonymous Preview renders a visible save invitation in review mode", () =>
   );
 });
 
-test("anonymous Preview save CTA reuses existing auth flow and preserves resume redirect", () => {
+test("anonymous Preview save CTA uses NewUserHandoff single-tap auth flow", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
   const reveal = readRepo("components/studio/CinematicReveal.tsx");
   const invite = readRepo("components/studio/AnonymousPreviewSaveInvite.tsx");
+  const handoff = readRepo("lib/studio/new-user-handoff.ts");
 
   assert.match(
     director,
     /showAnonymousSaveInvite=\{[\s\S]*!isAuthenticated && autoSaveStatus === "local-only"/,
     "save invite is anonymous-only",
   );
-  assert.match(director, /onAnonymousSave=\{\(\) => void handleOpenLibrary\(\)\}/);
-  assert.match(director, /anonymousSaveAuthRedirect=\{studioAuthRedirect\}/);
-  assert.match(director, /showAnonymousSaveSignIn=\{showRegistrationInvite\}/);
-  assert.match(director, /void requestAuthentication\("save"\)/);
+  assert.match(director, /onAnonymousPersistDraft=/);
+  assert.match(director, /persistAnonymousDraft\("save"\)/);
   assert.match(director, /resolveStudioAuthRedirect\(resumeToken\)/);
   assert.doesNotMatch(
     director,
@@ -71,9 +72,13 @@ test("anonymous Preview save CTA reuses existing auth flow and preserves resume 
     "must not hardcode plain /studio login redirect",
   );
 
-  assert.match(invite, /onClick=\{onSave\}/);
-  assert.match(invite, /redirectTo=\{authRedirectTo\}/);
-  assert.match(reveal, /onAnonymousSave/);
+  assert.match(invite, /persistDraft/);
+  assert.match(invite, /NewUserHandoff/);
+  assert.doesNotMatch(invite, /showSignIn/);
+  assert.doesNotMatch(invite, /Continuar con Google/);
+  assert.match(reveal, /onAnonymousPersistDraft/);
+  assert.match(handoff, /prompt:\s*"select_account"/);
+  assert.match(handoff, /buildAuthRedirectUrl/);
 });
 
 test("anonymous Preview save invite does not add Share or trigger second generation", () => {
@@ -92,7 +97,7 @@ test("anonymous Preview save invite does not add Share or trigger second generat
   );
   assert.doesNotMatch(
     director,
-    /onAnonymousSave[\s\S]*createCommercialAssets/,
+    /onAnonymousPersistDraft[\s\S]*createCommercialAssets/,
     "save CTA must not invoke generation",
   );
 });

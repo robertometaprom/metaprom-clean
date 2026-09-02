@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import { LEGAL_NAV_LABELS } from "@/components/legal/LegalLinks";
 import MetapromLogo from "@/components/studio/MetapromLogo";
+import { buildStudioLoginUrl } from "@/lib/studio-draft/client";
 import { createClient } from "@/lib/supabase/client";
 import type { Locale, Messages } from "@/lib/i18n";
 import { SUPPORT_PATH } from "@/lib/support/public";
@@ -215,14 +216,14 @@ export default function StudioShell({
                   ) : (
                     <>
                       <Link
-                        href="/login?redirect=%2Fstudio"
+                        href={buildStudioLoginUrl()}
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >
                         {nav.signIn}
                       </Link>
                       <Link
-                        href="/login?redirect=%2Fstudio"
+                        href={buildStudioLoginUrl()}
                         className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
                         onClick={() => setMenuOpen(false)}
                       >

@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -109,10 +110,12 @@ import type { StudioDestination } from "@/lib/studio-destination";
 import { buildPublicPreviewUrl } from "@/lib/preview/share-url";
 import {
   buildAuthRedirectUrl,
+  buildStudioLoginUrl,
   claimStudioDraft,
   fetchStudioDraft,
   readResumeTokenFromLocation,
   readStoredResumeToken,
+  resolveStudioAuthRedirect,
   saveStudioDraft,
   stripResumeTokenFromUrl,
 } from "@/lib/studio-draft/client";
@@ -383,12 +386,23 @@ export default function CreativeDirector({
     isUx4aReviewMockRequest() ? "commercial" : null,
   );
   const teaserVideoBlobStore = useRef<Blob | null>(null);
-  const resumeHandledRef = useRef(false);
+  const resumeRestoredRef = useRef(false);
+  const resumeClaimCompletedRef = useRef(false);
+  const resumeClaimInFlightRef = useRef(false);
   const authRedirectToRef = useRef("/studio");
   const finalizingImageRef = useRef(false);
   const generatingImageRef = useRef(false);
   /** Fresh Studio / resetFlow intro — not phase changes or intentional close. */
   const directorIntroHandledRef = useRef(false);
+
+  const studioAuthRedirect = useMemo(
+    () => resolveStudioAuthRedirect(resumeToken),
+    [resumeToken],
+  );
+
+  useEffect(() => {
+    authRedirectToRef.current = studioAuthRedirect;
+  }, [studioAuthRedirect]);
 
   useEffect(() => {
     creationModeRef.current = creationMode;
@@ -955,9 +969,46 @@ export default function CreativeDirector({
     [persistAnonymousDraft],
   );
 
-  useEffect(() => {
-    if (resumeHandledRef.current) return;
+  const attemptResumeClaim = useCallback(
+    async (token: string) => {
+      if (resumeClaimCompletedRef.current || resumeClaimInFlightRef.current) {
+        return;
+      }
 
+      resumeClaimInFlightRef.current = true;
+
+      try {
+        const continuity = readAdvertisingGenerateContinuity();
+        const draftResponse = await fetchStudioDraft(token).catch(() => null);
+
+        if (continuity || (draftResponse && !draftResponse.urls.enhancedUrl)) {
+          if (draftResponse && !resumeRestoredRef.current) {
+            await restoreStudioFromDraft(draftResponse);
+            resumeRestoredRef.current = true;
+          }
+          restoreAdvertisingGenerateContinuity();
+          void ensureWelcomeAdvertisingImage();
+          resumeClaimCompletedRef.current = true;
+          return;
+        }
+
+        const claimResult = await claimStudioDraft(token);
+        await applyClaimResult(claimResult);
+        void ensureWelcomeAdvertisingImage();
+        resumeClaimCompletedRef.current = true;
+      } finally {
+        resumeClaimInFlightRef.current = false;
+      }
+    },
+    [
+      applyClaimResult,
+      ensureWelcomeAdvertisingImage,
+      restoreAdvertisingGenerateContinuity,
+      restoreStudioFromDraft,
+    ],
+  );
+
+  useEffect(() => {
     const urlToken = readResumeTokenFromLocation();
     const storedToken = readStoredResumeToken();
     const token = urlToken ?? storedToken;
@@ -974,34 +1025,17 @@ export default function CreativeDirector({
         } = await supabase.auth.getUser();
 
         if (user) {
-          // Generate-gate resume: restore prepared Advertising Image intent
-          // without claiming/persisting (no image yet — wait for explicit Generar).
-          const continuity = readAdvertisingGenerateContinuity();
-          const draftResponse = await fetchStudioDraft(token).catch(() => null);
           if (cancelled) return;
-
-          if (continuity || (draftResponse && !draftResponse.urls.enhancedUrl)) {
-            if (draftResponse) {
-              await restoreStudioFromDraft(draftResponse);
-            }
-            restoreAdvertisingGenerateContinuity();
-            void ensureWelcomeAdvertisingImage();
-            resumeHandledRef.current = true;
-            return;
-          }
-
-          const claimResult = await claimStudioDraft(token);
-          if (cancelled) return;
-          await applyClaimResult(claimResult);
-          void ensureWelcomeAdvertisingImage();
-          resumeHandledRef.current = true;
+          await attemptResumeClaim(token);
           return;
         }
+
+        if (resumeRestoredRef.current) return;
 
         const draftResponse = await fetchStudioDraft(token);
         if (cancelled) return;
         await restoreStudioFromDraft(draftResponse);
-        resumeHandledRef.current = true;
+        resumeRestoredRef.current = true;
       } catch (resumeError) {
         if (cancelled) return;
         console.error(resumeError);
@@ -1021,12 +1055,38 @@ export default function CreativeDirector({
     return () => {
       cancelled = true;
     };
-  }, [
-    applyClaimResult,
-    ensureWelcomeAdvertisingImage,
-    restoreAdvertisingGenerateContinuity,
-    restoreStudioFromDraft,
-  ]);
+  }, [attemptResumeClaim, restoreStudioFromDraft]);
+
+  useEffect(() => {
+    if (!isAuthenticated || resumeClaimCompletedRef.current) return;
+
+    const token =
+      readResumeTokenFromLocation() ??
+      readStoredResumeToken() ??
+      resumeToken;
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await attemptResumeClaim(token);
+      } catch (resumeError) {
+        if (cancelled) return;
+        console.error(resumeError);
+        setDraftRecoveryError(
+          resumeError instanceof Error
+            ? resumeError.message
+            : "No pudimos vincular tu borrador después de iniciar sesión.",
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attemptResumeClaim, isAuthenticated, resumeToken]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2247,7 +2307,9 @@ export default function CreativeDirector({
     setDraftRecoveryError(null);
     teaserVideoBlobStore.current = null;
     authRedirectToRef.current = "/studio";
-    resumeHandledRef.current = false;
+    resumeRestoredRef.current = false;
+    resumeClaimCompletedRef.current = false;
+    resumeClaimInFlightRef.current = false;
     finalizingImageRef.current = false;
     directorIntroHandledRef.current = true;
     savedProjectIdRef.current = null;
@@ -3357,7 +3419,7 @@ export default function CreativeDirector({
                           Inicia sesión para guardar tu imagen en Biblioteca.
                         </p>
                         <GoogleSignInButton
-                          redirectTo={authRedirectToRef.current}
+                          redirectTo={studioAuthRedirect}
                           label="Crear cuenta gratuita para continuar"
                         />
                       </div>
@@ -3486,7 +3548,7 @@ export default function CreativeDirector({
             {!checkoutAssetId && showRegistrationInvite && (
               <div className="mx-auto max-w-md">
                 <GoogleSignInButton
-                  redirectTo={authRedirectToRef.current}
+                  redirectTo={studioAuthRedirect}
                   label="Crear cuenta gratuita para continuar"
                 />
               </div>
@@ -3581,7 +3643,7 @@ export default function CreativeDirector({
         sessionKey={directorSessionKey}
         initialMessages={directorMessages}
         onMessagesChange={setDirectorMessages}
-        authRedirectTo={authRedirectToRef.current}
+        authRedirectTo={studioAuthRedirect}
         showRegistrationInvite={showRegistrationInvite}
         photoActions={
           <div className="space-y-2">
@@ -3629,13 +3691,13 @@ export default function CreativeDirector({
           !isAuthenticated ? (
             <>
               <Link
-                href="/login?redirect=%2Fstudio"
+                href={buildStudioLoginUrl(resumeToken)}
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
               >
                 {chrome?.signIn ?? "Iniciar sesión"}
               </Link>
               <Link
-                href="/login?redirect=%2Fstudio"
+                href={buildStudioLoginUrl(resumeToken)}
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
               >
                 {chrome?.signUp ?? "Crear cuenta"}

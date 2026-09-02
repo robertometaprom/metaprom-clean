@@ -169,3 +169,19 @@ export async function claimStudioDraft(token: string): Promise<{
 export function buildAuthRedirectUrl(resumeToken: string): string {
   return buildStudioResumeUrl(resumeToken);
 }
+
+/** Post-auth destination for Studio login/OAuth when a resume token is active. */
+export function resolveStudioAuthRedirect(
+  resumeTokenOverride?: string | null,
+): string {
+  const token =
+    resumeTokenOverride?.trim() ||
+    readResumeTokenFromLocation() ||
+    readStoredResumeToken();
+
+  return token ? buildAuthRedirectUrl(token) : "/studio";
+}
+
+export function buildStudioLoginUrl(resumeTokenOverride?: string | null): string {
+  return `/login?redirect=${encodeURIComponent(resolveStudioAuthRedirect(resumeTokenOverride))}`;
+}

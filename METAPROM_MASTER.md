@@ -6,14 +6,101 @@ The definitive operating manual for Metaprom — product vision, philosophy, arc
 
 ## Current State
 
-**Canonical date:** August 18–20, 2026 (product-philosophy / preview-architecture record: **August 19, 2026**; Preview duration + Preview/Premium launch-gate micro-update: **August 19, 2026**; Premium customer guarantee published: **August 20, 2026**).
+**Canonical date:** September 2, 2026 (session close).
 
 **Governing records:**
 
-* **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** — strategic phase, Stripe Live, Share P0, Commercial Rescue / Inspector, launch lanes, September 7, 2026 planning target. Supersedes earlier current-state language where they conflict — especially Stripe Test Mode, Dual Creation as the next BUILD sprint, Share as “functionally complete,” and Metaprom as primarily an AI generator.
-* **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** — results-not-generations philosophy, Correction vs Exploration, preferred future Preview funnel, rejected Motion Preview, Preview Pro same-project credit concept. Does **not** change LIVE Studio, current teaser/preview behavior, Stripe, prices, or GTM execution order. Storyboard / Preview Pro / refunds / duration changes are **not live** and must **not** be implemented from that record.
-* **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** — Veo 3.1 Fast working minimum of **4 seconds**, customer-facing Preview target of approximately **1–1.5 seconds**, deliberate trim, Preview = proof/WOW vs Premium = finished product, and Preview/Premium differentiation as a **LAUNCH PRODUCT GATE**. Production-account cost remains **unverified**. Does **not** implement anything. After that record, return to the GTM checklist.
-* **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)** — published customer guarantee for Premium Commercials: Metaprom AI sells the finished advertising product, not an AI-generation attempt; Metaprom AI bears generation/production risk within the purchased scope; if Metaprom AI cannot deliver a satisfactory Premium Commercial within that scope, the corresponding payment is refunded. Does **not** create unlimited revisions, unlimited concept changes, or refund rights for arbitrary post-delivery changes of mind. Does **not** change Stripe, prices, checkout mechanics, webhooks, or GTM #1–#5.2 protections. Does **not** start GTM #6.
+* **MASTER UPDATE — Session Close (September 2, 2026)** — **current operating truth.** Production baseline `655dcc1`, NewUserHandoff rebuild, zero-cost Preview fixture, anonymous generation health, failed anonymous Share rollback (`bdfc489`), dormant `share_slug` infrastructure, Google Handoff production validation, universal email auth P0, Premium Delivery pending acceptance, engineering doctrine, next-session priorities. **Supersedes** earlier **Current State** and **NEXT SESSION START HERE** where they conflict — especially August 18–20, 2026 GTM launch-hardening as the active execution compass, Share as undifferentiated launch P0, production commit `078da054`, and any implication the full New User Journey is closed.
+* **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)** — historical strategic phase record. Stripe Live, product positioning, Commercial Rescue / Inspector philosophy remain valid context. **Superseded** for active execution order and Share status by September 2, 2026 session close.
+* **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** — results-not-generations philosophy, Correction vs Exploration, preferred future Preview funnel, rejected Motion Preview, Preview Pro same-project credit concept. Does **not** change LIVE Studio, current teaser/preview behavior, Stripe, or prices. Storyboard / Preview Pro / refunds / duration changes are **not live** and must **not** be implemented from that record.
+* **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)** — Veo 3.1 Fast working minimum of **4 seconds**, customer-facing Preview target of approximately **1–1.5 seconds**, deliberate trim, Preview = proof/WOW vs Premium = finished product, and Preview/Premium differentiation as a **LAUNCH PRODUCT GATE**. Production-account cost remains **unverified**. Does **not** implement anything.
+* **MASTER UPDATE — GTM #5.3 Premium Customer Guarantee (August 20, 2026)** — published customer guarantee for Premium Commercials. Still in force. Does **not** start GTM #6.
+
+### Status legend
+
+| Label | Meaning |
+| --- | --- |
+| **Production truth** | Deployed at current production commit |
+| **Personally production-validated** | Roberto confirmed in real production |
+| **Locally/test validated** | Passed local dev, fixture, or automated tests — not necessarily production E2E |
+| **Rolled back / failed** | Attempted, reverted — do not restore without investigation |
+| **Dormant infrastructure** | Applied but unused by application code |
+| **Open / pending** | Not validated or not implemented |
+
+### Current production baseline
+
+| Field | Value |
+| --- | --- |
+| **Commit** | `655dcc1b2c25756e7102f4e2ef9d54dd18a56dfd` (short: `655dcc1`) |
+| **Message** | `feat: rebuild new user handoff with preview fixture` |
+| **Deployment** | `dpl_4Ba3MSXYhg6v4Y2MwF8jU5qX3dkF` — **READY** |
+| **URL** | https://www.metaprom.com |
+| **Previous known-good rollback baseline** | `c58285a47ef5368bc61091bfba1e1be763e65a78` (short: `c58285a`) |
+
+Release `c58285a` → `655dcc1` contained exactly **one** application commit.
+
+**Release validation (locally/test):** 76/76 relevant tests PASS. Vercel Production build/deployment READY.
+
+**Known unrelated local-only issue:** `tmp-caroline-smith-qa/run-hero-still.mts` scratch TypeScript error during local `next build`. **Not** a production application failure.
+
+### Personally production-validated (September 2, 2026)
+
+* **Anonymous generation → Preview** — healthy. Real mobile anonymous generation reached Preview after `655dcc1` release. Historical 96% stall fixed at `58689be`; mobile Preview UX at `8b7281b`. Failed anonymous Share (`bdfc489`) was rolled back; anonymous generation confirmed healthy again post-rollback and post-handoff release. **Do not reopen or modify this path without concrete evidence.**
+* **Google NewUserHandoff** — **PASS**. Roberto: anonymous visitor → Studio → real commercial generation → Preview → single tap “Guardar mi comercial” → Google auth → return → **same** commercial in Biblioteca. Immediate visible feedback; no stubborn/unresponsive save button while draft persistence occurs.
+
+### Locally/test validated (not inferred as full production E2E)
+
+* **Zero-cost Preview handoff fixture** — `http://localhost:3000/studio?ux4aReview=1` (requires `?ux4aReview=1` **and** loopback/development conditions; cannot activate for normal production users). Coffee commercial assets. Preview → Guardar → Google auth → Biblioteca **PASS** locally. Does **not** call commercial generation, image generation, OpenAI, Veo, Premium fulfillment, or credit consumption. Permanent development/testing tool for post-generation UX iteration.
+* **NewUserHandoff intermediate states** — “Preparando tu comercial...” → “Abriendo Google...”; one tap sufficient; duplicate taps blocked; draft/auth/claim contracts preserved; no second generation; same anonymous creation claimed into authenticated account.
+
+### Rolled back / failed — do not restore blindly
+
+* **`bdfc489`** — `feat: share anonymous commercial previews`. First real production acceptance test immediately regressed anonymous generation to the 96% stall. Per Metaprom guardrail: **not** debugged forward. Reverted: `5d12806` (`git revert bdfc489`); `c58285a` retained only additive dormant `studio_drafts.share_slug` migration. **Anonymous Share remains OFF.** Before reimplementing, perform read-only root-cause investigation of which `bdfc489` change reintroduced the regression. Use the zero-cost fixture for almost all Share development/testing.
+
+### Dormant infrastructure
+
+* **`studio_drafts.share_slug`** — migration `supabase/migrations/20260902120000_studio_drafts_share_slug.sql` applied. Nullable column + partial unique index. **Application code does not use it.** Compatible with production. Do not remove merely because Share is OFF. Do not activate until evidence-based, isolated Share implementation.
+
+### Open / not closed
+
+* **Full New User Journey** — **NOT closed.** Google Handoff: production-validated / PASS. **Universal account access (email auth): OPEN / P0.** Current auth offers Google only — real customer-entry barrier. Desired: “Guardar mi comercial” → Continuar con Google **OR** Continuar con correo electrónico (Outlook, Hotmail, Yahoo, corporate email, etc.). Investigate Supabase email OTP / magic-link. Core contract unchanged: anonymous creation → Preview → Guardar → authenticate → **same** creation in Biblioteca.
+* **Anonymous Preview Share / WhatsApp** — **OFF** pending safe reimplementation (P1).
+* **Premium Delivery UX** — implemented/deployed at `7a2e85f` (dedicated finished-commercial surface: “¡Tu comercial está listo!”, HD video, Ver en mi Biblioteca, Descargar comercial HD, Crear otro comercial). **Final dedicated Premium Delivery acceptance remains pending** unless a later explicit real production test proves otherwise. Premium **processing** UX personally validated at `ed76f5f` (Director + progress bar).
+* **Stripe annual packages** — future work (P4). Verify current Veo unit economics first; do not use old Kling assumptions.
+
+### Closed production baselines — do not touch absent concrete evidence
+
+* **Director V2** — CLOSED / production baseline. Key commits: `c5c0b68`, `e3a43b2`, `eeab107`, `8eb78a1`, `f610f94`, `d14431f`. V1 frozen rollback path. Generation firewall remains core architectural guardrail.
+* **Premium FFmpeg audio-only bug** — fixed at `53b5727` (FFmpeg 7.0.2 Linux + scale2ref + single-frame PNG overlay produced zero filtered video frames; fix: `-loop 1` promotional overlay input). Roberto personally generated complete Premium afterward. CLOSED unless evidence recurs.
+
+### Product funnel contract (current desired)
+
+| Action | Anonymous allowed? |
+| --- | --- |
+| Generate | Yes |
+| Watch/Replay Preview | Yes |
+| Share | **Desired yes — currently OFF** |
+| Save to Biblioteca | Registration/auth required |
+| Create another | Registration/auth gate candidate |
+| Premium | Registration/auth required |
+
+Save value proposition: *“¿Te gustó tu creación? Guárdala.”* / *“Regístrate gratis y conserva este comercial y todo lo que generes próximamente en tu Biblioteca.”* — CTA: **“Guardar mi comercial”**. Registration must preserve the exact anonymous creation — never force regenerate after sign-in.
+
+### Engineering doctrine — REBUILD OVER REPAIR
+
+When a critical component has structural failure or successive patches: stop repairing architecture that has lost trust; freeze the healthy system; identify the component boundary; rebuild only the broken component in parallel; preserve healthy server/contracts/downstream systems; turn previous failures into tests; switch only after evidence.
+
+But: **do not** indiscriminately rewrite healthy systems. If architecture/contracts are healthy and pieces are merely disconnected: **WIRE, NO REBUILD.** For localized bugs with proven root cause: **MICROFIX.** For risky production regressions: **REVERT FIRST** to known-good — do not debug forward while customers are exposed.
+
+NewUserHandoff rebuild (`655dcc1`) is the successful exemplar: healthy auth/claim contracts preserved, fragile client orchestration rebuilt, fixture created, local validation, isolated production release, real mobile production acceptance PASS.
+
+### Central product philosophy (preserved)
+
+Metaprom should not make the customer learn AI or become “the glue” between image tools, video tools, voice tools, editing tools, prompting, and model selection. Metaprom delivers the finished advertising outcome.
+
+> Las herramientas de IA generan partes. Metaprom entrega el resultado.
+
+Core transformation: customer says what they need to sell → Metaprom understands → produces finished advertising asset → customer publishes/shares it. Preview belongs to Metaprom. Premium belongs to the customer. Creation → Distribution → Audience → Platform.
 
 ---
 
@@ -148,11 +235,13 @@ Advertising Image packages, entitlements, and Live fulfillment are operational. 
 
 Unknown-customer E2E of both journeys remains a **launch-readiness audit** item (GTM Lane A). Do not claim a CEO Product Review PASS of the full unknown-customer Advertising Image journey unless separately recorded. Do not treat Dual Creation as a reason to remain in BUILD-only mode.
 
-### Share — Launch-Critical P0
+### Share — Anonymous OFF; Biblioteca infrastructure exists
 
-RC1 built a **functional Share foundation** (public Preview pages, share controls, signed streaming). That historical milestone remains true.
+RC1 built a **functional Share foundation** for authenticated Biblioteca assets (public Preview pages, share controls, signed streaming). That historical milestone remains true.
 
-Share is **not** launch-complete. As of August 18–19, 2026, Share is **P0 launch-hardening**: video and image previews must distribute a Metaprom public share page (not raw media), with branding, acquisition CTA, and instrumentation. See the GTM update.
+**Anonymous Preview Share is OFF** (failed `bdfc489`, rolled back). Do **not** restore without read-only root-cause investigation. Dormant `studio_drafts.share_slug` migration remains applied but unused.
+
+**P1 (after email auth P0):** safe anonymous Preview Share / WhatsApp. **P2:** Biblioteca WhatsApp Share via existing `ShareCommercialActions`. See **MASTER UPDATE — Session Close (September 2, 2026)**.
 
 ### Commercial Rescue / Inspector / Escalation
 
@@ -162,17 +251,11 @@ Share is **not** launch-complete. As of August 18–19, 2026, Share is **P0 laun
 
 **Human escalation:** internal production architecture. Not a customer-facing button, advertised premium service, or default workflow.
 
-### Active Next Objective
+### Active Next Objective — superseded September 2, 2026
 
-**GO-TO-MARKET — minimum commercially launchable Metaprom.**
+The August 18–20, 2026 GTM launch-hardening checklist is **historical context**, not the active execution compass.
 
-Not a new feature. Not Dual Creation as a BUILD sprint. Not Inspector implementation. Not destination packs. Not Storyboard. Not Preview Pro. Not Motion Preview. Not refunds implementation.
-
-The August 19, 2026 product-architecture discussion is **documented**, including the same-day Preview duration + launch-gate micro-update. It must **not** restart broad development. **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM launch checklist.
-
-Preview/Premium differentiation is a **LAUNCH PRODUCT GATE** (validate before broad sales push). It is **not** the next implementation task. Storyboard, Preview Pro, and project-credit accounting are **not** automatically launch-blocking.
-
-See **NEXT SESSION START HERE**.
+**Current P0:** universal email auth / access without Google — preserve production-validated Google Handoff. See **NEXT SESSION START HERE** and **MASTER UPDATE — Session Close (September 2, 2026)**.
 
 ### CEO Product Rule
 
@@ -196,57 +279,335 @@ Canonical Stripe Live webhook: `https://www.metaprom.com/api/payments/webhook`
 
 Official repository: `metaprom-ai`
 
-Recent production commit cited in the Commercial Rescue closeout and Stripe Live audit (August 18, 2026): `078da0545d086b53e46fcea9cd59b4843c9dd6cb`
+**Current production commit (September 2, 2026):** `655dcc1b2c25756e7102f4e2ef9d54dd18a56dfd` (`655dcc1`)
+
+Historical production commit from Commercial Rescue closeout and Stripe Live audit (August 18, 2026): `078da0545d086b53e46fcea9cd59b4843c9dd6cb`
 
 ---
 
 ## NEXT SESSION START HERE
 
-Do **not** restart old debates (Stripe Test Mode, Dual Creation as the next BUILD sprint, Share as complete, Metaprom as a generator, lowering $180 without market evidence, building Inspector as a universal judge, inventing a new feature).
+**Canonical as of September 2, 2026 session close.** Supersedes the August 18–20, 2026 GTM launch-hardening checklist as the active execution compass.
 
-**STOP THE PRODUCT-ARCHITECTURE DETOUR.**
+**Hard guardrails before any risky change:** identify exact known-good commit/deployment. If a change breaks generation, Preview completion, authentication continuity, claim, Premium, payment, or another critical customer flow — **REVERT immediately** to known-good. Current production reference: `655dcc1`. Do not infer validation of unrelated functionality merely because deployment is READY.
 
-Do **not** begin Storyboard, Preview Pro, Motion Preview, refunds, Preview duration changes, trimming, Preview prompt work, or any other work from **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)** or **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Those records are documentation of product decisions from a GTM architecture detour. They are **not** the next execution task.
+**Do not touch without concrete evidence:** anonymous generation → Preview (production-validated); Google NewUserHandoff (production-validated); Director V2 (closed baseline); Premium FFmpeg fix (`53b5727`).
 
-GTM #5.3 published the Premium Commercial customer guarantee. **Do not begin GTM #6 from this record.**
+**Do not restore:** `bdfc489` anonymous Share implementation.
 
-The one-page GO TO MARKET launch-hardening checklist below is the next-session execution compass.
+Use the zero-cost Preview fixture (`http://localhost:3000/studio?ux4aReview=1`) for almost all post-generation UX development. One real production generation only for final E2E acceptance when necessary.
 
-Preserve: **Preview/Premium differentiation = LAUNCH PRODUCT GATE** — must be established and validated before broad paid acquisition / serious public sales push. Do **not** make Storyboard, Preview Pro, or project-credit accounting automatically launch-blocking merely because they are related to the future architecture.
+---
 
-**Current strategic state:**
+### P0 — NOW: UNIVERSAL EMAIL AUTH / ACCESS WITHOUT GOOGLE
 
-* Metaprom has entered **GO-TO-MARKET** transition.
-* Stripe Live webhook 307 incident is **RESOLVED**.
-* #34 $99 async purchase recovered through the **normal webhook flow**.
-* Advertising Image balance visibly moved **5 → 15**.
-* Commercial Rescue R1 architecture is ready for a **clean selective commit**, with exclusions already identified in `docs/commercial-rescue-r1-closeout.md`.
-* Inspector is intentionally **not** universal and **not** yet implemented.
-* Share is **launch-critical** and needs final hardening/audit.
-* Landing positioning / customer education is **launch-critical**.
-* **MXN $180** Commercial price remains for initial market validation.
-* Product philosophy **results, not generations** and preferred future Preview architecture are **documented** (August 19, 2026). They are **not** live implementation work.
-* Veo 3.1 Fast working generation minimum (**4 seconds**), customer-facing Preview target (~**1–1.5 seconds**), deliberate trim, and Preview/Premium **LAUNCH PRODUCT GATE** are **documented**. They are **not** live. Production-account cost remains **unverified**.
-* No unnecessary new features before launch.
+Start with **READ-ONLY investigation**.
 
-**Core operating rule until launch:** If it is on the GTM launch checklist, do it. If it is not on the checklist and is not a newly discovered real P0/P1 blocker, defer it until after launch.
+**Goal:** Google remains the easiest primary path, but customers can also authenticate/register using any normal email address (Outlook, Hotmail, Yahoo, corporate/business email, other valid addresses).
 
-**NEXT EXECUTION ORDER** (existing GTM launch-hardening sequence — unchanged):
+**Preserve:** production-validated Google Handoff, anonymous draft, resume token, claim, same-commercial continuity, generation firewall.
 
-1. Verify/close Stripe incident in repo documentation if needed.
-2. Perform clean Commercial Rescue R1 **COMMIT ONLY** with known exclusions.
-3. Run formal **LAUNCH READINESS AUDIT** against production + MASTER.
-4. Produce closed **P0 / P1 / P2** launch list.
-5. Audit/harden Share for video + image.
-6. Audit full unknown-customer E2E.
-7. Implement Landing positioning + FAQ.
-8. Complete analytics / instrumentation / legal minimum.
-9. Product freeze.
-10. Build launch content.
-11. Soft launch.
-12. Public launch target **September 7, 2026**.
+**Preferred UX direction:** avoid forcing traditional password creation if possible. Investigate Supabase-supported email OTP / magic-link style authentication.
 
-Do not begin by inventing a new feature. Do not begin Storyboard, Preview Pro, duration/trim implementation, or Preview prompt work. Do not begin another product-architecture detour. Do **not** begin GTM #6 from this record.
+**Desired flow:** Guardar mi comercial → Continuar con Google **OR** Continuar con correo electrónico.
+
+**Do not disturb** the now production-validated Google Handoff. Use the zero-cost fixture for testing.
+
+---
+
+### P1: ANONYMOUS PREVIEW SHARE / WHATSAPP
+
+**Before coding:** read-only root-cause investigation of `bdfc489` and the 96% regression. **Do NOT restore `bdfc489`.**
+
+**Desired final E2E:** anonymous sender → Preview → WhatsApp Share → recipient opens public Metaprom page without auth → sender later Guardar/login → same commercial in Biblioteca → original shared link continues working.
+
+Use fixture for most development.
+
+---
+
+### P2: BIBLIOTECA WHATSAPP SHARE
+
+Existing `ShareCommercialActions` infrastructure already exists for eligible assets. Treat as separate small block after anonymous Share foundation is safe.
+
+---
+
+### P3: PREMIUM DELIVERY MANUAL ACCEPTANCE
+
+Perform one real acceptance test of the dedicated finished-commercial delivery surface (`7a2e85f`) if still pending. Premium processing UX is personally validated (`ed76f5f`); dedicated delivery acceptance is **not**.
+
+---
+
+### P4: STRIPE / ANNUAL PACKAGES
+
+Investigate actual current production Veo unit economics first. **Do NOT** use old Kling assumptions as final pricing evidence.
+
+Strategic package candidates: MX$2,990/year, MX$4,990/year. Positioning: professional advertising for the whole year at radically simpler/lower total cost than assembling multiple AI tools. Finalize exact included generation capacity only after real current Veo economics are verified.
+
+---
+
+### P5: CUSTOMER ACQUISITION — HARD
+
+After the above launch-minimum barriers: TikTok, Facebook, WhatsApp, organic demos/content, outreach, then measured paid acquisition. Do not continue polishing indefinitely before customer acquisition.
+
+---
+
+### Lower priority — do not displace P0–P5 without new evidence
+
+Internal health/alerts dashboard; generated text typo/orthography (e.g. “JARDON”); OAuth branding/custom auth domain; abuse/one-anonymous-generation controls; no-photo generation path; other cosmetic optimizations.
+
+August 19, 2026 product-architecture records (Storyboard, Preview Pro, Motion Preview, refunds, duration/trim) remain **documented direction, not live implementation work**. GTM #5.3 Premium guarantee remains published. Do **not** begin GTM #6 from this record.
+
+---
+
+## MASTER UPDATE — Session Close (September 2, 2026)
+
+*Canonical record for production baseline, NewUserHandoff rebuild validation, zero-cost Preview fixture, anonymous generation health, failed anonymous Share rollback, dormant share_slug infrastructure, Google Handoff production validation, universal email auth P0, Premium Delivery pending acceptance, engineering doctrine, and next-session priorities. **Supersedes** **Current State** and **NEXT SESSION START HERE** from August 18–20, 2026 where they conflict. Historical incident records below remain valid context.*
+
+### 1. Current production baseline
+
+| Field | Value |
+| --- | --- |
+| **Commit** | `655dcc1b2c25756e7102f4e2ef9d54dd18a56dfd` (short: `655dcc1`) |
+| **Message** | `feat: rebuild new user handoff with preview fixture` |
+| **Deployment** | `dpl_4Ba3MSXYhg6v4Y2MwF8jU5qX3dkF` — **READY** |
+| **URL** | https://www.metaprom.com |
+| **Previous known-good rollback baseline** | `c58285a47ef5368bc61091bfba1e1be763e65a78` (short: `c58285a`) |
+
+Release `c58285a` → `655dcc1` contained exactly **one** application commit.
+
+**Release validation:** 76/76 relevant tests PASS. Vercel Production build/deployment READY.
+
+**Known unrelated local-only issue:** `tmp-caroline-smith-qa/run-hero-still.mts` scratch TypeScript error during local `next build`. **Not** a production application failure.
+
+### 2. New User Handoff — production validated
+
+The rebuilt NewUserHandoff is **personally validated in REAL PRODUCTION** on a mobile phone.
+
+**Production acceptance test (Roberto):**
+
+1. Anonymous visitor entered Studio
+2. Generated a **real** commercial
+3. Generation completed successfully
+4. Preview displayed successfully
+5. Tapped “Guardar mi comercial” **once**
+6. Authentication flow opened
+7. Authenticated with Google
+8. Returned successfully to Metaprom
+9. **Same** anonymously generated commercial appeared correctly in Biblioteca
+
+**Result: PASS.** This validates the Google-based NewUserHandoff in real production.
+
+**UX improvement:** “Guardar mi comercial” no longer appears stubborn/unresponsive while draft persistence occurs. The rebuilt handoff gives immediate visible feedback and automatically progresses through authentication. One tap is sufficient. Duplicate taps are blocked.
+
+**Locally tested states:** “Preparando tu comercial...” → “Abriendo Google...”
+
+**Contracts preserved:** existing draft/auth/claim contracts; no second generation; same anonymous creation claimed into authenticated account.
+
+### 3. Zero-cost Preview handoff fixture
+
+A protected zero-cost Preview fixture now exists for post-generation UX testing.
+
+**Purpose:** Allow repeated testing of Preview → Save/Auth and future Preview → Share behavior **without** calling generation providers and **without** consuming generation credits.
+
+| Field | Value |
+| --- | --- |
+| **Local URL** | `http://localhost:3000/studio?ux4aReview=1` |
+| **Fixture media** | Existing coffee commercial assets |
+| **Protection** | Requires `?ux4aReview=1` **and** loopback/development conditions. Cannot activate for normal production users. |
+
+**Fixture does NOT call:** commercial generation, image generation, OpenAI, Veo, Premium fulfillment, credit consumption.
+
+**Local manual result:** Preview fixture → Guardar mi comercial → immediate preparation feedback → Google authentication → successful return → **same** coffee commercial in Biblioteca. **PASS.**
+
+**Strategic value:** Post-generation UX can now be iterated/tested dozens of times without generating a new commercial. Use one real production generation only for final E2E acceptance when necessary. Permanent development/testing tool.
+
+### 4. Anonymous generation → Preview
+
+**Personally production-validated:** anonymous generation successfully reaches Preview in production.
+
+| Event | Detail |
+| --- | --- |
+| Historical 96% stall fix | `58689be` |
+| Mobile Preview UX | `8b7281b` |
+| Failed Share reintroduced 96% stall | `bdfc489` — rolled back |
+| Post-rollback confirmation | Roberto personally confirmed anonymous generation completed successfully |
+| Post-handoff release (`655dcc1`) | Roberto performed **real** anonymous generation on mobile; successfully reached Preview |
+
+**Current status:** Anonymous generation → Preview is **production healthy.** Do **not** reopen or modify this path without concrete evidence.
+
+### 5. Failed anonymous Share attempt — keep rolled back
+
+| Field | Value |
+| --- | --- |
+| **Failed implementation** | `bdfc489` — `feat: share anonymous commercial previews` |
+| **Production result** | First real production acceptance test immediately regressed anonymous commercial generation to the 96% stall |
+| **Response** | Per Metaprom guardrail: **not** debugged forward; **reverted** |
+| **Rollback commits** | `5d12806` (`git revert bdfc489`); `c58285a` retained only additive dormant `studio_drafts.share_slug` migration |
+
+**Current state:** Anonymous Share remains **OFF.** Do **not** restore `bdfc489`. Do **not** retry the same implementation blindly.
+
+**Before reimplementing Anonymous Share:** perform read-only root-cause investigation to determine exactly which application change in `bdfc489` reintroduced the 96% completion regression. Use the zero-cost Preview fixture for almost all future Share development/testing. Only one final real generation should be necessary for production E2E acceptance.
+
+### 6. Dormant share_slug infrastructure
+
+The additive Supabase migration remains applied:
+
+`supabase/migrations/20260902120000_studio_drafts_share_slug.sql`
+
+Adds nullable `studio_drafts.share_slug` plus its partial unique index.
+
+**Current application code does NOT use it.** Dormant and compatible with production. Do not remove it merely because Share is currently OFF. Do not activate it until the future Share implementation is evidence-based and isolated.
+
+### 7. New User Journey — important status correction
+
+**Do NOT** mark the entire New User Journey as fully closed.
+
+| Component | Status |
+| --- | --- |
+| **Google Handoff** | **PRODUCTION VALIDATED / PASS** |
+| **Universal account access** | **OPEN / P0** |
+
+Current authentication only offers Google. This creates a real customer-entry barrier. Metaprom must **not** assume every customer has a Google account, has Gmail, or wants to connect Google.
+
+**Desired future customer experience:**
+
+Guardar mi comercial → choose:
+- Continuar con Google
+- **OR** Continuar con correo electrónico
+
+The email option should accept normal email identities: Outlook, Hotmail, Yahoo, corporate/business email, other valid email addresses.
+
+**Preferred UX direction:** avoid forcing traditional password creation if possible. Investigate Supabase-supported email OTP / magic-link style authentication.
+
+**Core product contract (unchanged):** anonymous creation → Preview → Guardar → authenticate by Google **or** email → **same** creation appears in Biblioteca.
+
+**Next session:** begin with READ-ONLY investigation of existing Supabase Auth/login/callback/claim architecture. Determine the smallest safe way to add email authentication **without** disturbing the now production-validated Google Handoff.
+
+### 8. Premium delivery status
+
+| Component | Status | Commit |
+| --- | --- | --- |
+| **Premium processing UX** | Personally production-validated | `ed76f5f` — Director + progress bar display correctly |
+| **Premium Delivery UX** | Implemented/deployed; **final dedicated acceptance pending** | `7a2e85f` |
+
+Dedicated finished-commercial delivery surface includes:
+- “¡Tu comercial está listo!”
+- HD video
+- Ver en mi Biblioteca
+- Descargar comercial HD
+- Crear otro comercial
+
+Do **not** incorrectly mark Premium Delivery as personally validated unless a later explicit real production test proves otherwise.
+
+### 9. Director V2 / generation
+
+**Director V2: CLOSED / PRODUCTION BASELINE.**
+
+| Commit | Significance |
+| --- | --- |
+| `c5c0b68` | Known-good Director/generation semantic baseline |
+| `e3a43b2` | Beats-specific retry fix |
+| `eeab107` | Director V2 Phase 1+2 |
+| `8eb78a1` | Director UI workspace |
+| `f610f94` | V2 controlled handoff |
+| `d14431f` | V2 default with V1 rollback |
+
+Director V2 has extensive manual regression validation and real generation/Premium E2E validation. Do not optimize/refactor/touch Director V2 absent concrete evidence. V1 remains frozen rollback path. Generation firewall remains a core architectural guardrail.
+
+### 10. Premium FFmpeg
+
+Premium audio-only production bug fixed at `53b5727`.
+
+**Root cause:** FFmpeg 7.0.2 Linux + scale2ref + single-frame PNG overlay produced zero filtered video frames.
+
+**Minimal fix:** `-loop 1` promotional overlay input.
+
+Roberto personally generated a complete Premium successfully afterward. **CLOSED** unless evidence recurs.
+
+### 11. Rebuild over repair doctrine
+
+**METAPROM — REBUILD OVER REPAIR**
+
+When a critical component has structural failure or successive patches:
+- stop repairing architecture that has lost trust,
+- freeze the healthy system,
+- identify the component boundary,
+- rebuild only the broken component in parallel,
+- preserve healthy server/contracts/downstream systems,
+- turn previous failures into tests,
+- switch only after evidence.
+
+But:
+- **do not** indiscriminately rewrite healthy systems,
+- if architecture/contracts are healthy and pieces are merely disconnected: **WIRE, NO REBUILD**,
+- for localized bugs with proven root cause: **MICROFIX**,
+- for risky production regressions: **REVERT FIRST** to known-good — do not debug forward while customers are exposed.
+
+**NewUserHandoff rebuild (`655dcc1`)** is the successful exemplar: healthy auth/claim contracts preserved, fragile client orchestration rebuilt, fixture created, local validation performed, isolated production release, real mobile production acceptance PASS.
+
+### 12. Product funnel — current desired contract
+
+| Action | Anonymous allowed? |
+| --- | --- |
+| Generate | Yes |
+| Watch/Replay Preview | Yes |
+| Share | Desired yes — **currently OFF** pending safe reimplementation |
+| Save to Biblioteca | Registration/authentication required |
+| Create another | Registration/authentication gate candidate |
+| Premium | Registration/authentication required |
+
+Registration/authentication must preserve the exact anonymous creation. Never make the customer regenerate after signing in.
+
+**Save value proposition:**
+- “¿Te gustó tu creación? Guárdala.”
+- “Regístrate gratis y conserva este comercial y todo lo que generes próximamente en tu Biblioteca.”
+- CTA: “Guardar mi comercial”
+
+### 13. Next priorities — reconciled
+
+See **NEXT SESSION START HERE** for the exact strategic order (P0–P5). Summary:
+
+| Priority | Item |
+| --- | --- |
+| **P0** | Universal email auth / access without Google |
+| **P1** | Anonymous Preview Share / WhatsApp (after root-cause investigation) |
+| **P2** | Biblioteca WhatsApp Share |
+| **P3** | Premium Delivery manual acceptance |
+| **P4** | Stripe / annual packages (verify Veo economics first) |
+| **P5** | Customer acquisition |
+
+### 14. Lower priority — do not distract now
+
+Keep visible but below launch priorities: internal health/alerts dashboard; generated text typo/orthography (e.g. “JARDON”); OAuth branding/custom auth domain; abuse/one-anonymous-generation controls; no-photo generation path; other cosmetic optimizations. Do not allow these to displace P0–P5 without new evidence.
+
+### 15. Product / market strategy to preserve
+
+Metaprom philosophy: the customer should not learn AI or become “the glue” between image tools, video tools, voice tools, editing tools, prompting, and model selection. Metaprom delivers the finished advertising outcome.
+
+> Las herramientas de IA generan partes. Metaprom entrega el resultado.
+
+Core transformation: customer says what they need to sell → Metaprom understands → produces finished advertising asset → customer publishes/shares it.
+
+Sharing remains strategically important: Preview belongs to Metaprom; Premium belongs to the customer. Creation → Distribution → Audience → Platform.
+
+### 16. Engineering safety baseline
+
+Before any risky change: identify exact known-good commit/deployment.
+
+If a change breaks generation, Preview completion, authentication continuity, claim, Premium, payment, or another critical customer flow — **REVERT immediately** to known-good behavior. Do not improvise additional patches on top of a newly broken production state.
+
+**Current production commit at session close:** `655dcc1`
+
+This becomes the new production reference only for behavior that has actually been validated:
+
+| Behavior | Validation |
+| --- | --- |
+| Google NewUserHandoff | Personally production-validated |
+| Anonymous generation → Preview | Personally production-validated |
+| Premium Delivery dedicated surface | **Not** personally validated |
+| Anonymous Share | **OFF** |
+
+Do not infer validation of unrelated functionality merely because the deployment is READY.
 
 ---
 
@@ -308,7 +669,7 @@ This update is legal/copy/product-guarantee alignment. It is **not** a refund-en
 
 ## MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)
 
-*Current canonical record for strategic phase, product positioning, Stripe Live operations, Share launch status, Commercial Rescue / Inspector philosophy, and the September 7, 2026 public-launch planning target. Supersedes earlier current-state language in **Current State** (pre-GTM), **MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)**, **Product Backlog (RC2)** Dual Creation as next sprint, **Revenue Strategy (July 10, 2026)** Test Mode status, and **Launch Strategy (July 10, 2026)** where they conflict. Prior sections remain historical context and previously validated decisions remain valid unless explicitly updated here.*
+*Historical strategic phase record. **Superseded for active execution order, Share status, and production baseline** by **MASTER UPDATE — Session Close (September 2, 2026)**. Stripe Live operations, product positioning, Commercial Rescue / Inspector philosophy, and September 7, 2026 planning target remain valid context. Supersedes earlier current-state language in pre-GTM records where they conflict. Prior sections remain historical context and previously validated decisions remain valid unless explicitly updated by September 2, 2026.*
 
 *August 19, 2026: core commercial philosophy (results, not generations), Correction vs Exploration, preferred future Preview architecture, rejected Motion Preview, Preview Pro project-credit concept, and related open questions are recorded in **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**. Same-day duration / trim / Preview-Premium **LAUNCH PRODUCT GATE** conclusions are recorded in **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**. Those updates do **not** replace this GTM launch record. After documenting them, return to this GTM checklist. Where this GTM commercial-philosophy language is less specific than the August 19 formulation, the August 19 records govern product philosophy. LIVE Studio / Preview behavior remains as shipped. Production-account Veo cost remains unverified.*
 
@@ -621,11 +982,13 @@ Possible escalation triggers:
 
 Initial limits recorded in the closeout document are **engineering defaults** and must not become public customer promises without separate approval.
 
-### 13. Share System — Pre-Launch P0
+### 13. Share System — historical GTM P0 (superseded September 2, 2026)
 
-**Reconciliation:** RC1.4 recorded Share Experience as “functionally complete.” That was true as a **historical foundation** (share controls, `share_slug`, public `/p/{share_slug}` pages, signed-URL streaming, CTA). It is **not** current launch-complete status.
+**September 2, 2026 reconciliation:** Anonymous Preview Share is **OFF** (`bdfc489` failed and rolled back). Biblioteca Share infrastructure exists. Active priorities: P1 anonymous Share (after investigation), P2 Biblioteca Share. See **MASTER UPDATE — Session Close (September 2, 2026)**.
 
-Share is now **LAUNCH-CRITICAL** and requires final hardening/validation.
+**Historical context:** RC1.4 recorded Share Experience as “functionally complete.” That was true as a **historical foundation** (share controls, `share_slug`, public `/p/{share_slug}` pages, signed-URL streaming, CTA). It is **not** current launch-complete status.
+
+Share was **LAUNCH-CRITICAL** under August GTM and required final hardening/validation.
 
 Official principle remains:
 
@@ -1623,9 +1986,9 @@ Do not make Storyboard, Preview Pro, or project-credit accounting automatically 
 
 ## Historical Milestones
 
-*The sections below record prior sprint and RC milestones. Where they conflict with **Current State**, **NEXT SESSION START HERE**, **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**, **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**, or **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**, those later sections govern. GTM governs launch/Stripe/Share/Rescue. The August 19, 2026 records govern future Preview architecture, results-not-generations commercial philosophy, Veo duration/trim direction, and Preview/Premium as a **LAUNCH PRODUCT GATE**. LIVE Studio behavior is unchanged until separately implemented.*
+*The sections below record prior sprint and RC milestones. Where they conflict with **Current State**, **NEXT SESSION START HERE**, or **MASTER UPDATE — Session Close (September 2, 2026)**, the September 2, 2026 session close governs. Where they conflict only with **MASTER UPDATE — Go-to-Market Transition (August 18–19, 2026)**, **MASTER UPDATE — Product Philosophy + Preview Architecture (August 19, 2026)**, or **MASTER UPDATE — Preview Duration + Preview/Premium Launch Gate (August 19, 2026)**, those August records govern for their specific domains unless superseded by September 2, 2026.*
 
-*In particular, treat as historical rather than current truth: Stripe remains Test Mode / Live not enabled; Dual Creation as the next BUILD sprint; Advertising Image journey as the single active blocker; Share Experience as launch-complete; Metaprom as primarily an AI Commercial generator; older “current active objective” and June/July 2026 “current priorities” tables.*
+*In particular, treat as historical rather than current truth: Stripe remains Test Mode / Live not enabled; Dual Creation as the next BUILD sprint; Advertising Image journey as the single active blocker; Share Experience as launch-complete or undifferentiated launch P0 without noting Anonymous Share is OFF; August GTM launch-hardening checklist as active execution compass; Metaprom as primarily an AI Commercial generator; older “current active objective” and June/July 2026 “current priorities” tables; production commit `078da054` as current.*
 
 ## MASTER UPDATE — Stripe V1 E2E + Dual Product Architecture (August 2026)
 
@@ -7453,4 +7816,4 @@ Then-current project status (July 10, 2026):
 
 ---
 
-**Current operating handoff:** see **NEXT SESSION START HERE** at the top of this document (GO-TO-MARKET transition, August 18–19, 2026). Product philosophy + Preview architecture + duration/launch-gate decisions of August 19, 2026 are documented; do **not** implement Storyboard, Preview Pro, Motion Preview, refunds, duration/trim, or Preview prompts from those records. Do not restart from Sprint 3.2, Dual Creation as the next BUILD sprint, or Stripe Test Mode. **STOP THE PRODUCT-ARCHITECTURE DETOUR.** Return to the GTM launch checklist.
+**Current operating handoff:** see **NEXT SESSION START HERE** at the top of this document (September 2, 2026 session close). Production baseline: `655dcc1`. Google Handoff and anonymous generation → Preview are personally production-validated. Universal email auth is P0. Anonymous Share is OFF (`bdfc489` rolled back). Premium Delivery dedicated surface acceptance pending. August 18–20, 2026 GTM records remain historical context. Do **not** implement Storyboard, Preview Pro, Motion Preview, refunds, duration/trim, or Preview prompts from August 19 records. Do not restore `bdfc489`. Do not restart from Sprint 3.2, Dual Creation as the next BUILD sprint, or Stripe Test Mode.

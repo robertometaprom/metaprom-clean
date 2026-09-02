@@ -3497,6 +3497,12 @@ export default function CreativeDirector({
               priceMxn={HD_COMMERCIAL_PRICE}
               autoSaveMessage={autoSaveMessage}
               onAutoSaveClick={handleOpenLibrary}
+              showAnonymousSaveInvite={
+                !isAuthenticated && autoSaveStatus === "local-only"
+              }
+              onAnonymousSave={() => void handleOpenLibrary()}
+              anonymousSaveAuthRedirect={studioAuthRedirect}
+              showAnonymousSaveSignIn={showRegistrationInvite}
               initialStage={reviewVisualMock ? "offer" : "fade"}
               onUnlock={handleUnlock}
               onCreateNew={resetFlow}

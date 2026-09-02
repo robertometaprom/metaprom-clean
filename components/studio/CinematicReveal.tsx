@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import MetapromInfinityLogo from "@/components/studio/MetapromInfinityLogo";
+import AnonymousPreviewSaveInvite from "@/components/studio/AnonymousPreviewSaveInvite";
 import DirectorResultReview from "@/components/studio/DirectorResultReview";
 import { ShareCommercialActions } from "@/components/share";
 import { requestCinematicFullscreen } from "@/lib/cinematic-fullscreen";
@@ -32,6 +33,11 @@ type CinematicRevealProps = {
   reviewDirector?: ReactNode;
   /** `invite` hides purchase CTAs; `continue` / `conversation` can show unlock path. */
   reviewShowPurchase?: boolean;
+  /** Anonymous Preview — invite save/register before Premium. */
+  showAnonymousSaveInvite?: boolean;
+  onAnonymousSave?: () => void;
+  anonymousSaveAuthRedirect?: string;
+  showAnonymousSaveSignIn?: boolean;
   onStageChange?: (stage: RevealStage) => void;
 };
 
@@ -54,6 +60,10 @@ export default function CinematicReveal({
   reviewMode = false,
   reviewDirector = null,
   reviewShowPurchase = false,
+  showAnonymousSaveInvite = false,
+  onAnonymousSave,
+  anonymousSaveAuthRedirect = "/studio",
+  showAnonymousSaveSignIn = false,
   onStageChange,
 }: CinematicRevealProps) {
   const [stage, setStage] = useState<RevealStage>(initialStage);
@@ -202,10 +212,21 @@ export default function CinematicReveal({
   const showAutoSaveLink =
     Boolean(autoSaveMessage) &&
     Boolean(onAutoSaveClick) &&
-    autoSaveClickable;
+    autoSaveClickable &&
+    !showAnonymousSaveInvite;
+
+  const anonymousSaveInviteBlock =
+    showAnonymousSaveInvite && onAnonymousSave ? (
+      <AnonymousPreviewSaveInvite
+        onSave={onAnonymousSave}
+        authRedirectTo={anonymousSaveAuthRedirect}
+        showSignIn={showAnonymousSaveSignIn}
+      />
+    ) : null;
 
   const purchaseBlock = (
     <div className="space-y-4 text-center">
+      {anonymousSaveInviteBlock}
       <button
         type="button"
         onClick={onUnlock}
@@ -382,9 +403,12 @@ export default function CinematicReveal({
                 reviewShowPurchase ? (
                   purchaseBlock
                 ) : (
-                  <p className="text-center text-xs text-white/40">
-                    Vista previa gratuita · La versión HD es tu comercial final
-                  </p>
+                  <div className="space-y-4">
+                    {anonymousSaveInviteBlock}
+                    <p className="text-center text-xs text-white/40">
+                      Vista previa gratuita · La versión HD es tu comercial final
+                    </p>
+                  </div>
                 )
               }
               director={reviewDirector}

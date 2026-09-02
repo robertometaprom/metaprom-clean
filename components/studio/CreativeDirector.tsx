@@ -1246,14 +1246,18 @@ export default function CreativeDirector({
           assetId: result.assetId ?? undefined,
         });
       } else if (result.status === "local-only") {
+        let anonymousDraftSaved = false;
         try {
           await persistAnonymousDraft(null, {
             enhancedDataUrl: input.enhancedDataUrl,
             teaserVideoBlob: input.teaserVideoBlob,
           });
+          anonymousDraftSaved = true;
         } catch (draftError) {
           console.error("Anonymous draft persistence failed", draftError);
         }
+        setAutoSaveStatus(result.status);
+        return { ...result, anonymousDraftSaved };
       } else if (result.status === "requires-package") {
         setError(
           result.message ??
@@ -1746,7 +1750,15 @@ export default function CreativeDirector({
         billAdvertisingAsset: false,
       });
 
-      if (persistResult.status !== "saved" || !persistResult.assetId) {
+      const authenticatedCommercialSaved =
+        persistResult.status === "saved" && Boolean(persistResult.assetId);
+      const anonymousCommercialReady =
+        persistResult.status === "local-only" &&
+        "anonymousDraftSaved" in persistResult &&
+        persistResult.anonymousDraftSaved === true &&
+        Boolean(videoUrlRef.current);
+
+      if (!authenticatedCommercialSaved && !anonymousCommercialReady) {
         setCommercialPersisting(false);
         setCreationProgressComplete(false);
         return;

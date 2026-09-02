@@ -277,10 +277,18 @@ test("persistence retry contains no media generation calls", () => {
 
 test("Studio blocks Preview and checkout until persistence is verified", () => {
   const director = readRepo("components/studio/CreativeDirector.tsx");
+  const commercialBlock = director.slice(
+    director.indexOf("const result = await createCommercialAssets({"),
+    director.indexOf("} catch (createError)", director.indexOf("const result = await createCommercialAssets({")),
+  );
 
   assert.match(
-    director,
-    /if \(persistResult\.status !== "saved" \|\| !persistResult\.assetId\)[\s\S]*?return;[\s\S]*?setPhase\("preview"\)/,
+    commercialBlock,
+    /const authenticatedCommercialSaved =[\s\S]*?persistResult\.status === "saved"[\s\S]*?persistResult\.assetId/,
+  );
+  assert.match(
+    commercialBlock,
+    /if \(!authenticatedCommercialSaved && !anonymousCommercialReady\)[\s\S]*?return;[\s\S]*?setPhase\("preview"\)/,
   );
   assert.match(
     director,

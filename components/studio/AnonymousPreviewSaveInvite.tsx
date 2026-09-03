@@ -1,6 +1,7 @@
 "use client";
 
 import NewUserHandoff from "@/components/studio/NewUserHandoff";
+import PreviewSaveEmailAuthLink from "@/components/studio/PreviewSaveEmailAuthLink";
 import {
   ANONYMOUS_PREVIEW_SAVE_BODY,
   ANONYMOUS_PREVIEW_SAVE_HEADLINE,
@@ -9,10 +10,16 @@ import {
 type AnonymousPreviewSaveInviteProps = {
   /** Persist draft then NewUserHandoff initiates Google OAuth (single tap). */
   persistDraft: () => Promise<string>;
+  emailAuthLabel?: string;
+  emailAuthPreparingLabel?: string;
+  emailAuthErrorLabel?: string;
 };
 
 export default function AnonymousPreviewSaveInvite({
   persistDraft,
+  emailAuthLabel = "Continuar con email",
+  emailAuthPreparingLabel = "Preparando tu comercial...",
+  emailAuthErrorLabel = "No pudimos preparar tu comercial. Intenta de nuevo.",
 }: AnonymousPreviewSaveInviteProps) {
   return (
     <div
@@ -27,6 +34,12 @@ export default function AnonymousPreviewSaveInvite({
       </p>
       <div className="mt-4">
         <NewUserHandoff persistDraft={persistDraft} />
+        <PreviewSaveEmailAuthLink
+          persistDraft={persistDraft}
+          label={emailAuthLabel}
+          preparingLabel={emailAuthPreparingLabel}
+          errorLabel={emailAuthErrorLabel}
+        />
       </div>
     </div>
   );

@@ -4,9 +4,9 @@
  * Product truth remains in generation_jobs (Supabase / store).
  * This file only provides durable step scheduling via start() + "use step".
  *
- * On Vercel Preview/Production with GENERATION_V2_STORE=supabase, each step
- * loads the store and reconstructs fake providers from the job request
- * (Phase 1B controls). Process registries remain for Vitest Local World only.
+ * IMPORTANT: Workflow step bundles forbid dynamic `require()`. Use static imports.
+ * On Vercel with GENERATION_V2_STORE=supabase, each step reconstructs fake providers
+ * from the job request (Phase 1B controls). Process registries remain for Vitest only.
  */
 
 import { generationWorkflowSteps } from "../lib/generation-v2/runner";
@@ -19,6 +19,9 @@ import {
 } from "../lib/generation-v2/providers/fake";
 import type { GenerationJobsStore } from "../lib/generation-v2/store";
 import { createMemoryGenerationJobsStore } from "../lib/generation-v2/store-memory";
+import { createSupabaseGenerationJobsStore } from "../lib/generation-v2/store-supabase";
+import { buildJobError } from "../lib/generation-v2/failures";
+import { assertTransition, isTerminalStatus } from "../lib/generation-v2/state-machine";
 import type { GenerationJobRecord } from "../lib/generation-v2/types";
 
 type GenerationV2Globals = typeof globalThis & {
@@ -73,8 +76,6 @@ function useSupabaseStore(): boolean {
 
 function resolveStore(generationId: string): GenerationJobsStore {
   if (useSupabaseStore()) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createSupabaseGenerationJobsStore } = require("../lib/generation-v2/store-supabase");
     return createSupabaseGenerationJobsStore();
   }
 
@@ -138,6 +139,34 @@ async function persistStep(generationId: string): Promise<void> {
   );
 }
 
+/** Ensure product truth reaches FAILED if Workflow fatals before stage handlers. */
+async function markWorkflowFatalStep(
+  generationId: string,
+  message: string,
+): Promise<void> {
+  "use step";
+  const store = resolveStore(generationId);
+  const job = await store.getById(generationId);
+  if (!job || isTerminalStatus(job.status)) return;
+  try {
+    assertTransition(job.status, "failed");
+  } catch {
+    return;
+  }
+  const error = buildJobError({
+    class: "internal",
+    message,
+    attempt: Math.max(job.attemptImage, job.attemptVideo, job.attemptPersist, 1),
+    atStatus: job.status,
+    detail: "workflow_fatal",
+  });
+  await store.update(job.id, {
+    status: "failed",
+    error,
+    failedAt: new Date().toISOString(),
+  });
+}
+
 /**
  * Durable workflow orchestrator.
  * `"use workflow"` is recognized by the Workflow SDK compiler when configured.
@@ -147,9 +176,15 @@ export async function commercialGenerationWorkflow(
 ): Promise<{ generationId: string }> {
   "use workflow";
 
-  await imageStep(generationId);
-  await videoStep(generationId);
-  await persistStep(generationId);
+  try {
+    await imageStep(generationId);
+    await videoStep(generationId);
+    await persistStep(generationId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Workflow fatal error";
+    await markWorkflowFatalStep(generationId, message);
+    throw err;
+  }
 
   return { generationId };
 }

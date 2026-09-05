@@ -25,10 +25,20 @@ const MODE = String(flag("mode", "smoke"));
 const STRESS = Number(flag("stress", "10"));
 const POLL_MS = Number(flag("pollMs", "1500"));
 const TIMEOUT_MS = Number(flag("timeoutMs", "180000"));
+const BYPASS =
+  process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
+  process.env.PHASE1B_PROTECTION_BYPASS ||
+  "";
 
 if (!BASE) {
   console.error("Missing --base <preview-url>");
   process.exit(2);
+}
+
+function headers(extra = {}) {
+  const h = { "content-type": "application/json", ...extra };
+  if (BYPASS) h["x-vercel-protection-bypass"] = BYPASS;
+  return h;
 }
 
 function baseRequest(overrides = {}) {
@@ -56,7 +66,7 @@ async function postJob(body) {
   const t0 = Date.now();
   const res = await fetch(`${BASE}/api/generation-v2`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: headers(),
     body: JSON.stringify(body),
   });
   const elapsed = Date.now() - t0;
@@ -65,7 +75,9 @@ async function postJob(body) {
 }
 
 async function getJob(id) {
-  const res = await fetch(`${BASE}/api/generation-v2/${id}`);
+  const res = await fetch(`${BASE}/api/generation-v2/${id}`, {
+    headers: headers(),
+  });
   const json = await res.json().catch(() => ({}));
   return { status: res.status, json };
 }
@@ -429,14 +441,19 @@ async function durability() {
 }
 
 async function main() {
-  console.log({ BASE, MODE, STRESS });
+  console.log({ BASE, MODE, STRESS, bypassConfigured: Boolean(BYPASS) });
   const health = await fetch(`${BASE}/api/generation-v2`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: headers(),
     body: "{}",
   });
   if (health.status === 404) {
     throw new Error("Generation V2 not enabled on this deployment (404)");
+  }
+  if (health.status === 401) {
+    throw new Error(
+      "Preview Deployment Protection returned 401. Set VERCEL_AUTOMATION_BYPASS_SECRET or PHASE1B_PROTECTION_BYPASS.",
+    );
   }
 
   if (MODE === "smoke" || MODE === "all") await smoke();

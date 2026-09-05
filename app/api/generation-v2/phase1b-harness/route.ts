@@ -42,9 +42,17 @@ function isEnabled(): boolean {
 
 function authorized(request: Request): boolean {
   const secret = process.env.GENERATION_V2_PHASE1B_SECRET?.trim();
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  return auth === `Bearer ${secret}`;
+  if (secret) {
+    const auth = request.headers.get("authorization") ?? "";
+    return auth === `Bearer ${secret}`;
+  }
+  // Phase 1B Preview fallback: Vercel Deployment Protection is the access gate.
+  // Never allow this on production target.
+  return (
+    process.env.VERCEL_ENV === "preview" &&
+    process.env.VERCEL_ENV !== "production" &&
+    !process.env.VERCEL_TARGET?.includes("production")
+  );
 }
 
 function store() {

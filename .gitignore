@@ -41,6 +41,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# workflow SDK local/test artifacts
+.workflow-data/
+.workflow-data-phase1/
+.workflow-vitest/
+.workflow-vitest-phase1/
+
 .vercel
 .env*
 !.env.example
@@ -58,3 +64,4 @@ vercel-production.env
 /experimental/
 scripts/verify-auth-continuity.mjs
 .tmp-oauth-browser-profile/
+/.swc

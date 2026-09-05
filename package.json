@@ -29,7 +29,11 @@
     "test:antiabuse": "tsx --tsconfig tests/tsconfig.antiabuse.json --test tests/antiabuse-cost-control.test.ts",
     "test:analytics": "tsx --test tests/analytics-funnel.test.ts tests/analytics-dashboard.test.ts",
     "test:analytics-dashboard": "tsx --test tests/analytics-dashboard.test.ts",
-    "test:tiktok": "tsx --tsconfig tests/tsconfig.stripe-payment.json --test tests/tiktok-tracking.test.ts"
+    "test:tiktok": "tsx --tsconfig tests/tsconfig.stripe-payment.json --test tests/tiktok-tracking.test.ts",
+    "test:generation-v2": "tsx --tsconfig tests/tsconfig.generation-v2.json --test tests/generation-v2/pipeline-phase1.test.ts",
+    "test:generation-v2:workflow": "vitest run --config vitest.generation-v2.workflow.config.ts",
+    "test:generation-v2:workflow-correctness": "vitest run --config vitest.generation-v2.workflow.config.ts tests/generation-v2/pipeline-phase1.workflow-correctness.test.ts",
+    "test:generation-v2:workflow-stress": "vitest run --config vitest.generation-v2.workflow.config.ts tests/generation-v2/pipeline-phase1.workflow-stress.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",
@@ -45,17 +49,21 @@
     "react-dom": "19.2.4",
     "resend": "^6.20.0",
     "sharp": "0.34.5",
-    "stripe": "^22.3.1"
+    "stripe": "^22.3.1",
+    "workflow": "^4.8.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@workflow/vitest": "^4.0.21",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
   }
 }

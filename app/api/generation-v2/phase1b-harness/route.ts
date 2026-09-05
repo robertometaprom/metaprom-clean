@@ -33,7 +33,8 @@ import {
 } from "@/workflows/commercial-generation";
 
 export const runtime = "nodejs";
-export const maxDuration = 800;
+/** Hobby plan hard max is 300s — report as platform limit if stress needs longer. */
+export const maxDuration = 300;
 
 function isEnabled(): boolean {
   const v = process.env.GENERATION_V2_ENABLED?.trim().toLowerCase();

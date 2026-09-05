@@ -47,12 +47,7 @@ function authorized(request: Request): boolean {
     return auth === `Bearer ${secret}`;
   }
   // Phase 1B Preview fallback: Vercel Deployment Protection is the access gate.
-  // Never allow this on production target.
-  return (
-    process.env.VERCEL_ENV === "preview" &&
-    process.env.VERCEL_ENV !== "production" &&
-    !process.env.VERCEL_TARGET?.includes("production")
-  );
+  return process.env.VERCEL_ENV === "preview";
 }
 
 function store() {
